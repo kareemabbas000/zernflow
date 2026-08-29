@@ -68,7 +68,7 @@ export function AdminChannelsView({ initialChannels }: { initialChannels: Channe
       setFeedback({ message: res.error, type: "error" });
     } else {
       setFeedback({
-        message: `Zernio Reconcile Complete: Scanned ${res.totalZernioAccounts} live accounts (${res.updated} updated, ${res.disconnected} pruned/disconnected).`,
+        message: `Zernio Reconcile Complete: Scanned ${res.totalZernioAccounts} live accounts (${res.created || 0} discovered/imported, ${res.updated} updated, ${res.disconnected} pruned/disconnected).`,
         type: "success",
       });
       // Refresh page data

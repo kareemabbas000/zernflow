@@ -385,21 +385,35 @@ export async function syncAllPlatformChannelsAdmin() {
   const zernio = createZernioClient(apiKey);
 
   try {
-    // 1. Fetch all accounts from Zernio
-    const accountsRes = await zernio.accounts.listAccounts({ query: { limit: 100 } as any });
+    // 1. Fetch all workspaces with their zernio_profile_id
+    const { data: workspaces } = await serviceClient
+      .from("workspaces")
+      .select("id, zernio_profile_id");
+
+    const wsByProfile = new Map<string, string>();
+    (workspaces || []).forEach((w) => {
+      if (w.zernio_profile_id) wsByProfile.set(w.zernio_profile_id, w.id);
+    });
+    const defaultWorkspaceId = workspaces?.[0]?.id;
+
+    // 2. Fetch all accounts from Zernio (pass page and limit together as required by Zernio)
+    const accountsRes = await zernio.accounts.listAccounts({
+      query: { page: 1, limit: 100 } as any,
+    });
     const zernioAccounts = accountsRes.data?.accounts || [];
     const zernioAccountIds = new Set(zernioAccounts.map((a: any) => a._id).filter(Boolean));
 
-    // 2. Fetch all local channels in database
+    // 3. Fetch all local channels in database
     const { data: dbChannels } = await serviceClient.from("channels").select("*");
 
+    let createdCount = 0;
     let updatedCount = 0;
     let disconnectedCount = 0;
 
-    // 3. Mark removed accounts as disconnected
+    // 4. Mark removed accounts as disconnected
     for (const ch of dbChannels || []) {
       const accId = ch.zernio_account_id || ch.late_account_id;
-      if (!zernioAccountIds.has(accId) && ch.is_active) {
+      if (accId && !zernioAccountIds.has(accId) && ch.is_active) {
         await serviceClient
           .from("channels")
           .update({
@@ -412,12 +426,19 @@ export async function syncAllPlatformChannelsAdmin() {
       }
     }
 
-    // 4. Update existing channels with latest display name / avatar from Zernio
+    // 5. Upsert / update channels for every active account in Zernio
     for (const acc of zernioAccounts) {
       if (!acc._id) continue;
+      if (!isSupportedPlatform(acc.platform)) continue;
+
       const matchingCh = dbChannels?.find(
         (c) => c.zernio_account_id === acc._id || c.late_account_id === acc._id
       );
+
+      const targetWsId =
+        (acc.profileId && wsByProfile.get(acc.profileId)) ||
+        matchingCh?.workspace_id ||
+        defaultWorkspaceId;
 
       if (matchingCh) {
         await serviceClient
@@ -432,6 +453,21 @@ export async function syncAllPlatformChannelsAdmin() {
           })
           .eq("id", matchingCh.id);
         updatedCount++;
+      } else if (targetWsId) {
+        // Insert new channel discovered from Zernio into its workspace
+        await serviceClient.from("channels").insert({
+          workspace_id: targetWsId,
+          platform: acc.platform,
+          late_account_id: acc._id,
+          zernio_account_id: acc._id,
+          username: acc.username || null,
+          display_name: acc.displayName || acc.username || null,
+          profile_picture: acc.profilePicture || null,
+          is_active: true,
+          status: "connected",
+          connected_at: new Date().toISOString(),
+        });
+        createdCount++;
       }
     }
 
@@ -441,6 +477,7 @@ export async function syncAllPlatformChannelsAdmin() {
       target_type: "platform",
       metadata: {
         totalZernioAccounts: zernioAccounts.length,
+        created: createdCount,
         updated: updatedCount,
         disconnected: disconnectedCount,
       } as any,
@@ -448,9 +485,11 @@ export async function syncAllPlatformChannelsAdmin() {
 
     revalidatePath("/admin/channels");
     revalidatePath("/admin");
+    revalidatePath("/dashboard/channels");
     return {
       ok: true,
       totalZernioAccounts: zernioAccounts.length,
+      created: createdCount,
       updated: updatedCount,
       disconnected: disconnectedCount,
     };
@@ -532,7 +571,7 @@ export async function testSystemHealthAdmin() {
       results.zernio.message = "ZERNIO_API_KEY environment variable missing";
     } else {
       const zernio = createZernioClient(apiKey);
-      const accounts = await zernio.accounts.listAccounts({ query: { limit: 1 } as any });
+      await zernio.accounts.listAccounts({ query: { page: 1, limit: 10 } as any });
       results.zernio.latencyMs = Date.now() - startZernio;
       results.zernio.ok = true;
       results.zernio.message = `Operational (API Authenticated successfully)`;
