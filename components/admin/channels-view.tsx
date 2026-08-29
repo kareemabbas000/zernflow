@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Plug,
@@ -22,6 +22,7 @@ import {
   syncAllPlatformChannelsAdmin,
 } from "@/lib/actions/admin";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { createClient } from "@/lib/supabase/client";
 import type { Channel } from "@/lib/admin";
 
 interface ChannelWithWorkspace extends Channel {
@@ -41,6 +42,31 @@ export function AdminChannelsView({ initialChannels }: { initialChannels: Channe
   const [syncingAll, setSyncingAll] = useState(false);
   const [channelToDelete, setChannelToDelete] = useState<ChannelWithWorkspace | null>(null);
   const [feedback, setFeedback] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  // Auto-sync with Zernio silently on mount
+  useEffect(() => {
+    let isMounted = true;
+    syncAllPlatformChannelsAdmin()
+      .then((res) => {
+        if (isMounted && res.ok && (res.created || res.updated || res.disconnected)) {
+          const supabase = createClient();
+          supabase
+            .from("channels")
+            .select("*, workspaces(id, name, slug)")
+            .order("created_at", { ascending: false })
+            .then(({ data }) => {
+              if (isMounted && data) {
+                setChannels(data as any);
+              }
+            });
+        }
+      })
+      .catch((err) => console.warn("Admin channels auto-sync warning:", err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filtered = channels.filter((c) => {
     const matchesSearch =
