@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { WORKSPACE_COOKIE } from "@/lib/workspace";
 
 async function getWorkspaceId(supabase: Awaited<ReturnType<typeof createClient>>) {
   const {
@@ -7,14 +9,28 @@ async function getWorkspaceId(supabase: Awaited<ReturnType<typeof createClient>>
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: membership } = await supabase
+  const cookieStore = await cookies();
+  const selectedId = cookieStore.get(WORKSPACE_COOKIE)?.value;
+
+  if (selectedId) {
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("workspace_id")
+      .eq("user_id", user.id)
+      .eq("workspace_id", selectedId)
+      .maybeSingle();
+
+    if (membership) return membership.workspace_id;
+  }
+
+  const { data: fallback } = await supabase
     .from("workspace_members")
     .select("workspace_id")
     .eq("user_id", user.id)
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  return membership?.workspace_id || null;
+  return fallback?.workspace_id || null;
 }
 
 export async function GET(
@@ -32,7 +48,7 @@ export async function GET(
     .select("*, triggers(*)")
     .eq("id", flowId)
     .eq("workspace_id", workspaceId)
-    .single();
+    .maybeSingle();
 
   if (error || !flow)
     return NextResponse.json({ error: "Flow not found" }, { status: 404 });
@@ -65,7 +81,7 @@ export async function PUT(
     .eq("id", flowId)
     .eq("workspace_id", workspaceId)
     .select("id, name, status, updated_at")
-    .single();
+    .maybeSingle();
 
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });

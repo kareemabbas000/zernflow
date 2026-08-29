@@ -81,7 +81,6 @@ export async function POST(
     .from("triggers")
     .delete()
     .eq("flow_id", flowId)
-    .is("channel_id", null)
     .in("type", [...BUILDER_TRIGGER_TYPES]);
 
   if (desiredTriggers.length > 0) {

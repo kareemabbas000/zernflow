@@ -148,12 +148,13 @@ async function sendSequenceMessage(
     .eq("id", workspaceId)
     .single();
 
-  if (!workspace?.late_api_key_encrypted) {
-    console.error("No Zernio API key for workspace:", workspaceId);
+  const apiKey = workspace?.late_api_key_encrypted || process.env.ZERNIO_API_KEY;
+  if (!apiKey) {
+    console.error("No Zernio API key configured on platform or workspace:", workspaceId);
     return;
   }
 
-  const zernio = createZernioClient(workspace.late_api_key_encrypted);
+  const zernio = createZernioClient(apiKey);
 
   // Get channel's late_account_id
   const { data: channel } = await supabase

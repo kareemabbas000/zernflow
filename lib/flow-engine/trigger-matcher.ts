@@ -31,13 +31,24 @@ export async function matchTrigger(
   // Triggers with null channel_id are workspace-wide, NOT global: the flows
   // join must be pinned to the channel's workspace or one tenant's triggers
   // (and flows) would run on another tenant's channels.
+  // 1. Get published flows for this workspace
+  const { data: publishedFlows } = await supabase
+    .from("flows")
+    .select("id")
+    .eq("workspace_id", workspaceId)
+    .eq("status", "published");
+
+  if (!publishedFlows || publishedFlows.length === 0) return null;
+
+  const flowIds = publishedFlows.map((f) => f.id);
+
+  // 2. Fetch active triggers for these published flows matching this channel or workspace-wide
   const { data: triggers } = await supabase
     .from("triggers")
-    .select("*, flows!inner(status, workspace_id)")
+    .select("*")
+    .in("flow_id", flowIds)
     .or(`channel_id.eq.${channelId},channel_id.is.null`)
     .eq("is_active", true)
-    .eq("flows.status", "published")
-    .eq("flows.workspace_id", workspaceId)
     .order("priority", { ascending: false });
 
   if (!triggers || triggers.length === 0) return null;

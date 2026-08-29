@@ -1,38 +1,39 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-sans",
+});
 
 export const metadata: Metadata = {
   title: {
-    default: "ZernFlow - The Open Source ManyChat Alternative",
-    template: "%s | ZernFlow",
+    default: "KA COMM — AI-Powered Omnichannel Communication",
+    template: "%s | KA COMM",
   },
   description:
-    "Automate DMs, comments, and flows across Instagram, Facebook, WhatsApp, Telegram, X, Bluesky, and Reddit. Free, self-hostable, and open source.",
-  metadataBase: new URL("https://zernflow.com"),
+    "Manage customer conversations across Facebook, Instagram, WhatsApp, X, and Telegram with a unified inbox, visual automations, and AI agents.",
+  metadataBase: new URL("https://kacomm.com"),
   openGraph: {
-    title: "ZernFlow - The Open Source ManyChat Alternative",
+    title: "KA COMM — AI-Powered Omnichannel Communication",
     description:
-      "Automate DMs, comments, and flows across Instagram, Facebook, WhatsApp, Telegram, X, Bluesky, and Reddit. Free, self-hostable, and open source.",
-    url: "https://zernflow.com",
-    siteName: "ZernFlow",
+      "Every conversation in one intelligent workspace. Seamless messaging across Facebook, Instagram, WhatsApp, X, and Telegram.",
+    url: "https://kacomm.com",
+    siteName: "KA COMM",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ZernFlow - The Open Source ManyChat Alternative",
+    title: "KA COMM — AI-Powered Omnichannel Communication",
     description:
-      "Automate DMs, comments, and flows across 7 platforms. Free, self-hostable, open source.",
+      "Manage all your customer conversations from one intelligent workspace with AI and automation.",
   },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
     ],
-    apple: "/apple-touch-icon.png",
   },
 };
 
@@ -42,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={plusJakarta.variable} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -50,7 +51,9 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={`${plusJakarta.className} font-sans min-h-screen bg-background text-foreground antialiased`}>
+        {children}
+      </body>
     </html>
   );
 }

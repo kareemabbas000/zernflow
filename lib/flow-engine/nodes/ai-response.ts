@@ -31,19 +31,20 @@ export async function executeAiResponse(
     .eq("id", context.workspaceId)
     .single();
 
-  if (!workspace?.late_api_key_encrypted) {
-    console.error("No Zernio API key for workspace:", context.workspaceId);
+  const apiKey = workspace?.late_api_key_encrypted || process.env.ZERNIO_API_KEY;
+  if (!apiKey) {
+    console.error("No Zernio API key configured on platform or workspace:", context.workspaceId);
     return cancelRun(supabase, sessionId);
   }
 
-  const zernio = createZernioClient(workspace.late_api_key_encrypted);
+  const zernio = createZernioClient(apiKey);
 
-  // Resolve late_account_id from channel if not in context
+  // Resolve account ID from channel if not in context
   let lateAccountId = context.lateAccountId;
   if (!lateAccountId) {
     const { data: channel } = await supabase
       .from("channels")
-      .select("late_account_id, platform")
+      .select("late_account_id, zernio_account_id, platform")
       .eq("id", context.channelId)
       .single();
 
@@ -51,7 +52,7 @@ export async function executeAiResponse(
       console.error("No channel found for id:", context.channelId);
       return cancelRun(supabase, sessionId);
     }
-    lateAccountId = channel.late_account_id;
+    lateAccountId = channel.zernio_account_id || channel.late_account_id;
     if (!context.platform) {
       context.platform = channel.platform as FlowExecutionContext["platform"];
     }
@@ -99,7 +100,7 @@ export async function executeAiResponse(
 
   try {
     const model = data.model || "openai/gpt-4o-mini";
-    const aiGatewayKey = workspace.ai_api_key || process.env.AI_GATEWAY_API_KEY;
+    const aiGatewayKey = workspace?.ai_api_key || process.env.AI_GATEWAY_API_KEY;
     const gw = createGateway({ apiKey: aiGatewayKey || undefined });
     const result = await generateText({
       model: gw(model),

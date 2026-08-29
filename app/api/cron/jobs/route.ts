@@ -554,13 +554,16 @@ async function processJob(
         .eq("id", broadcast.workspace_id)
         .single();
 
-      if (!workspace?.late_api_key_encrypted) return;
+      const apiKey = workspace?.late_api_key_encrypted || process.env.ZERNIO_API_KEY;
+      if (!apiKey) return;
 
       const { createZernioClient } = await import("@/lib/zernio-client");
-      const zernio = createZernioClient(workspace.late_api_key_encrypted);
+      const zernio = createZernioClient(apiKey);
 
-      const channel = recipient.channels as { late_account_id: string } | null;
+      const channel = recipient.channels as { late_account_id?: string; zernio_account_id?: string } | null;
       if (!channel) return;
+      const accountId = channel.zernio_account_id || channel.late_account_id;
+      if (!accountId) return;
 
       // Get the conversation for this contact+channel (need late_conversation_id)
       const { data: conv } = await supabase
@@ -596,7 +599,7 @@ async function processJob(
       try {
         await zernio.messages.sendInboxMessage({
           path: { conversationId: conv.late_conversation_id },
-          body: { accountId: channel.late_account_id, message: messageContent?.text || "" },
+          body: { accountId, message: messageContent?.text || "" },
         });
 
         await supabase

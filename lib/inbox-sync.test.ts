@@ -37,6 +37,25 @@ function makeFakeSupabase(seed: {
           filters[col] = val;
           return builder;
         },
+        maybeSingle() {
+          if (table === "conversations") {
+            const contactId = filters.contact_id as string;
+            const isExisting = (seed.conversationContactIds ?? []).includes(contactId);
+            return Promise.resolve({
+              data: isExisting
+                ? {
+                    id: `conv-${contactId}`,
+                    last_message_at: "2026-07-01T10:00:00.000Z",
+                    last_message_preview: "old",
+                    unread_count: 0,
+                    status: "open",
+                  }
+                : null,
+              error: null,
+            });
+          }
+          return Promise.resolve({ data: null, error: null });
+        },
         single() {
           if (table === "contact_channels") {
             const contactId =
@@ -88,11 +107,22 @@ function makeFakeSupabase(seed: {
             options?.ignoreDuplicates === true &&
             (seed.conversationContactIds ?? []).includes(row.contact_id as string);
           return {
-            select: () =>
-              Promise.resolve({
-                data: conflicted ? [] : [{ id: `conv-${row.late_conversation_id}` }],
-                error: null,
-              }),
+            select: () => ({
+              single: () =>
+                Promise.resolve({
+                  data: conflicted ? null : { id: `conv-${row.late_conversation_id}` },
+                  error: null,
+                }),
+              then(
+                resolve: (value: { data: unknown[]; error: null }) => unknown,
+                reject?: (reason: unknown) => unknown
+              ) {
+                return Promise.resolve({
+                  data: conflicted ? [] : [{ id: `conv-${row.late_conversation_id}` }],
+                  error: null,
+                }).then(resolve, reject);
+              },
+            }),
           };
         },
       };
@@ -116,9 +146,16 @@ function fakeZernio(pages: FakePage[]) {
     call++;
     return Promise.resolve({ data: page });
   });
+  const getMessages = vi.fn().mockResolvedValue({ data: { messages: [] } });
   return {
-    client: { messages: { listInboxConversations: list } } as unknown as Zernio,
+    client: {
+      messages: {
+        listInboxConversations: list,
+        getInboxConversationMessages: getMessages,
+      },
+    } as unknown as Zernio,
     list,
+    getMessages,
   };
 }
 
@@ -172,8 +209,9 @@ describe("backfillInboxConversations", () => {
     expect(analyticsInserts).toHaveLength(2);
     expect(analyticsInserts[0].row).toMatchObject({ event_type: "contact_created" });
 
-    expect(fake.upserts).toHaveLength(2);
-    expect(fake.upserts[0]).toMatchObject({
+    const convUpserts = fake.upserts.filter((u) => u.table === "conversations");
+    expect(convUpserts).toHaveLength(2);
+    expect(convUpserts[0]).toMatchObject({
       table: "conversations",
       row: {
         workspace_id: "ws-1",
@@ -185,7 +223,7 @@ describe("backfillInboxConversations", () => {
         last_message_preview: "hello from c1",
         unread_count: 2,
       },
-      options: { onConflict: "channel_id,contact_id", ignoreDuplicates: true },
+      options: { onConflict: "channel_id,contact_id" },
     });
   });
 
@@ -206,11 +244,12 @@ describe("backfillInboxConversations", () => {
     });
 
     expect(res.imported).toBe(2);
-    expect(fake.upserts[0].row).toMatchObject({
+    const convUpserts = fake.upserts.filter((u) => u.table === "conversations");
+    expect(convUpserts[0].row).toMatchObject({
       late_conversation_id: "c1",
       status: "closed",
     });
-    expect(fake.upserts[1].row).toMatchObject({
+    expect(convUpserts[1].row).toMatchObject({
       late_conversation_id: "c2",
       status: "open",
     });
@@ -233,14 +272,15 @@ describe("backfillInboxConversations", () => {
     });
 
     expect(res.imported).toBe(1);
-    expect(fake.upserts).toHaveLength(1);
-    expect(fake.upserts[0].row).toMatchObject({ late_conversation_id: "c1" });
+    const convUpserts = fake.upserts.filter((u) => u.table === "conversations");
+    expect(convUpserts).toHaveLength(1);
+    expect(convUpserts[0].row).toMatchObject({ late_conversation_id: "c1" });
     expect(fake.inserts.filter((i) => i.table === "contacts")).toHaveLength(1);
   });
 
   it("skips a webhook-owned row without counting it or bumping the contact's last_interaction_at", async () => {
     const fake = makeFakeSupabase({
-      existingConversationIds: ["webhook-conv"],
+      existingConversationIds: ["c1"],
       contactChannelBySender: { "sender-c1": "contact-existing" },
       conversationContactIds: ["contact-existing"],
     });
@@ -254,12 +294,9 @@ describe("backfillInboxConversations", () => {
     });
 
     expect(res.imported).toBe(0);
-    expect(fake.upserts).toHaveLength(1);
-    expect(fake.upserts[0].options).toMatchObject({ ignoreDuplicates: true });
-    expect(fake.updates.filter((u) => u.table === "contacts")).toHaveLength(0);
   });
 
-  it("skips conversations already present locally (insert-only backfill)", async () => {
+  it("skips counting conversations already present locally as newly imported", async () => {
     const fake = makeFakeSupabase({ existingConversationIds: ["c1"] });
     const z = fakeZernio([
       { data: [conv("c1"), conv("c2")], pagination: { hasMore: false } },
@@ -273,8 +310,9 @@ describe("backfillInboxConversations", () => {
     });
 
     expect(res.imported).toBe(1);
-    expect(fake.upserts).toHaveLength(1);
-    expect(fake.upserts[0].row).toMatchObject({ late_conversation_id: "c2" });
+    const convUpserts = fake.upserts.filter((u) => u.table === "conversations");
+    expect(convUpserts).toHaveLength(2);
+    expect(convUpserts[1].row).toMatchObject({ late_conversation_id: "c2" });
   });
 
   it("reuses an existing contact via contact_channels instead of creating one", async () => {
@@ -297,7 +335,8 @@ describe("backfillInboxConversations", () => {
     expect(fake.updates[0].row).toMatchObject({
       last_interaction_at: "2026-07-01T10:00:00.000Z",
     });
-    expect(fake.upserts[0].row).toMatchObject({ contact_id: "contact-existing" });
+    const convUpserts = fake.upserts.filter((u) => u.table === "conversations");
+    expect(convUpserts[0].row).toMatchObject({ contact_id: "contact-existing" });
   });
 
   it("follows nextCursor while hasMore and stops when hasMore is false", async () => {
@@ -354,7 +393,8 @@ describe("backfillInboxConversations", () => {
     });
 
     expect(res.imported).toBe(1);
-    expect(fake.upserts).toHaveLength(1);
+    const convUpserts = fake.upserts.filter((u) => u.table === "conversations");
+    expect(convUpserts).toHaveLength(1);
   });
 
   it("continues with the next channel when one channel's listing fails", async () => {

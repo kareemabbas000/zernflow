@@ -6,9 +6,9 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/dashboard/", "/api/", "/invite/"],
+        disallow: ["/dashboard/", "/api/", "/invite/", "/admin/"],
       },
     ],
-    sitemap: "https://zernflow.com/sitemap.xml",
+    sitemap: "https://kacomm.com/sitemap.xml",
   };
 }

@@ -10,6 +10,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Zernio } from "./zernio-client";
 import { messagePreview } from "@/lib/message-preview";
+import { matchTrigger } from "@/lib/flow-engine/trigger-matcher";
+import { executeFlow } from "@/lib/flow-engine/engine";
 
 /** Cap per channel: 4 pages x 50 conversations. */
 const MAX_PAGES_PER_CHANNEL = 4;
@@ -180,17 +182,16 @@ async function backfillChannel({
     });
 
     const conversations = (res.data?.data ?? []) as ZernioInboxConversation[];
+    if (conversations.length === 0) break;
 
     for (const conv of conversations) {
       if (!conv.id || !conv.participantId) continue;
-      // A participant can have several Zernio conversations but the local
-      // table is unique on (channel_id, contact_id). sortOrder desc means the
-      // first conversation seen per participant is the most recent one; later
-      // ones are dropped so they cannot overwrite it.
       if (seenParticipants.has(conv.participantId)) continue;
       seenParticipants.add(conv.participantId);
-      if (known.has(conv.id)) continue;
-      if (await importConversation({ supabase, workspaceId, channel, conv })) {
+
+      const isNew = !known.has(conv.id);
+      const success = await importConversation({ supabase, zernio, workspaceId, channel, conv });
+      if (success && isNew) {
         imported++;
       }
     }
@@ -205,11 +206,13 @@ async function backfillChannel({
 
 async function importConversation({
   supabase,
+  zernio,
   workspaceId,
   channel,
   conv,
 }: {
   supabase: SupabaseClient;
+  zernio: Zernio;
   workspaceId: string;
   channel: BackfillChannel;
   conv: ZernioInboxConversation;
@@ -222,7 +225,7 @@ async function importConversation({
     senderName: conv.participantName || conv.participantId!,
     senderPicture: conv.participantPicture || null,
     interactionAt,
-    stampExisting: false,
+    stampExisting: true,
   });
 
   if (!contact) {
@@ -230,11 +233,46 @@ async function importConversation({
     return false;
   }
 
-  // ignoreDuplicates: an existing (channel_id, contact_id) row is owned by the
-  // webhook (possibly under a different late_conversation_id) and must stay
-  // untouched; the conflict then returns no rows, so it is not counted as
-  // imported either.
-  const { data: insertedRows, error } = await supabase
+  // 1. Check if conversation already exists and if anything changed
+  const { data: existingConv } = await supabase
+    .from("conversations")
+    .select("id, last_message_at, last_message_preview, unread_count, status")
+    .eq("channel_id", channel.id)
+    .eq("contact_id", contact.contactId)
+    .maybeSingle();
+
+  const newPreview = messagePreview(conv.lastMessage);
+  const targetStatus = conv.status === "archived" ? "closed" : "open";
+  const newTimestamp = conv.updatedTime || existingConv?.last_message_at || interactionAt;
+
+  const isNewer =
+    Boolean(existingConv) &&
+    Boolean(conv.updatedTime) &&
+    Boolean(existingConv?.last_message_at) &&
+    new Date(conv.updatedTime!).getTime() > new Date(existingConv!.last_message_at).getTime();
+
+  let newUnread = 0;
+  if (typeof conv.unreadCount === "number") {
+    newUnread = conv.unreadCount;
+  } else if (!existingConv) {
+    newUnread = 0;
+  } else {
+    // Preserve the user's existing read state
+    newUnread = existingConv.unread_count || 0;
+  }
+
+  // If conversation exists and hasn't changed, skip database write to prevent realtime loops
+  if (
+    existingConv &&
+    existingConv.last_message_at === newTimestamp &&
+    existingConv.last_message_preview === newPreview &&
+    existingConv.unread_count === newUnread &&
+    existingConv.status === targetStatus
+  ) {
+    return false;
+  }
+
+  const { data: convRow, error } = await supabase
     .from("conversations")
     .upsert(
       {
@@ -243,30 +281,77 @@ async function importConversation({
         contact_id: contact.contactId,
         platform: channel.platform,
         late_conversation_id: conv.id,
-        status: conv.status === "archived" ? "closed" : "open",
-        last_message_at: conv.updatedTime ?? null,
-        last_message_preview: messagePreview(conv.lastMessage),
-        unread_count: conv.unreadCount ?? 0,
+        status: targetStatus,
+        last_message_at: newTimestamp,
+        last_message_preview: newPreview,
+        unread_count: newUnread,
+        updated_at: new Date().toISOString(),
       },
-      { onConflict: "channel_id,contact_id", ignoreDuplicates: true }
+      { onConflict: "channel_id,contact_id" }
     )
-    .select("id");
+    .select("id, unread_count, last_message_at")
+    .single();
 
-  if (error) {
+  if (error || !convRow) {
     console.error(`[inbox-sync] failed to upsert conversation ${conv.id}:`, error);
     return false;
   }
 
-  const inserted = (insertedRows ?? []).length > 0;
+  // 2. Only store inbound messages when unread count > 0 to prevent outbound messages from being marked as inbound
+  if (conv.lastMessage && convRow.id && newUnread > 0) {
+    try {
+      const msgId = `sync-${conv.id}-${conv.updatedTime || Date.now()}`;
+      await supabase.from("messages").upsert(
+        {
+          conversation_id: convRow.id,
+          platform_message_id: msgId,
+          direction: "inbound",
+          text: conv.lastMessage,
+          status: "delivered",
+          created_at: conv.updatedTime ?? new Date().toISOString(),
+        },
+        { onConflict: "conversation_id,platform_message_id" }
+      );
 
-  // Stamp the existing contact only after the conversation row was actually
-  // inserted; a webhook-owned duplicate is not a new interaction.
-  if (inserted && contact.existed) {
-    await supabase
-      .from("contacts")
-      .update({ last_interaction_at: interactionAt })
-      .eq("id", contact.contactId);
+      // 3. Autopilot: Trigger automated flows when a new inbound message arrives
+      if (isNewer || !existingConv) {
+        const incomingMessage = {
+          text: conv.lastMessage,
+          sender: {
+            id: contact.contactId,
+            name: conv.participantName || contact.contactId,
+            username: (conv as any).participantUsername || (conv as any).username || undefined,
+          },
+        };
+
+        const trigger = await matchTrigger(supabase as any, {
+          channelId: channel.id,
+          workspaceId,
+          conversationId: convRow.id,
+          message: incomingMessage,
+          isFirstMessage: !existingConv,
+        });
+
+        if (trigger) {
+          executeFlow(supabase as any, {
+            triggerId: trigger.id,
+            flowId: trigger.flow_id,
+            channelId: channel.id,
+            contactId: contact.contactId,
+            conversationId: convRow.id,
+            workspaceId,
+            incomingMessage,
+            lateConversationId: conv.id,
+            lateAccountId: (channel as any).zernio_account_id || channel.late_account_id,
+          }).catch((err) => {
+            console.error("[inbox-sync] Autopilot flow execution error:", err);
+          });
+        }
+      }
+    } catch {
+      // Non-fatal
+    }
   }
 
-  return inserted;
+  return true;
 }

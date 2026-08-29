@@ -1,9 +1,9 @@
-"use client";
-
-import { useCallback, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { useCallback, useState, useEffect } from "react";
+import { Plus, X, Globe, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { TriggerType } from "@/lib/types/database";
+import { createClient } from "@/lib/supabase/client";
+import { PlatformIcon } from "@/components/platform-icon";
+import type { TriggerType, Platform } from "@/lib/types/database";
 
 interface Keyword {
   value: string;
@@ -12,6 +12,7 @@ interface Keyword {
 
 interface TriggerPanelData {
   triggerType?: string;
+  channelId?: string | null;
   keywords?: Keyword[];
   payload?: string;
   alsoMatchInDms?: boolean;
@@ -21,6 +22,13 @@ interface TriggerPanelData {
 interface TriggerPanelProps {
   data: Record<string, unknown>;
   onChange: (data: Record<string, unknown>) => void;
+}
+
+interface ChannelOption {
+  id: string;
+  platform: Platform;
+  display_name: string | null;
+  username: string | null;
 }
 
 const triggerTypes: Array<{ value: TriggerType; label: string; description: string }> = [
@@ -41,9 +49,30 @@ const matchTypes: Array<{ value: "exact" | "contains" | "startsWith"; label: str
 export function TriggerPanel({ data: rawData, onChange }: TriggerPanelProps) {
   const data = rawData as TriggerPanelData;
   const triggerType = data.triggerType || "keyword";
+  const selectedChannelId = (data.channelId as string) || "";
   const keywords = data.keywords || [];
+  const [channels, setChannels] = useState<ChannelOption[]>([]);
   const [newKeyword, setNewKeyword] = useState("");
   const [newMatchType, setNewMatchType] = useState<"exact" | "contains" | "startsWith">("contains");
+
+  useEffect(() => {
+    async function loadChannels() {
+      const supabase = createClient();
+      const { data: list } = await supabase
+        .from("channels")
+        .select("id, platform, display_name, username")
+        .eq("is_active", true);
+      if (list) setChannels(list as unknown as ChannelOption[]);
+    }
+    loadChannels();
+  }, []);
+
+  const handleChannelChange = useCallback(
+    (channelId: string) => {
+      onChange({ ...data, channelId: channelId || null });
+    },
+    [data, onChange]
+  );
 
   const handleTriggerTypeChange = useCallback(
     (type: string) => {
@@ -81,6 +110,32 @@ export function TriggerPanel({ data: rawData, onChange }: TriggerPanelProps) {
 
   return (
     <div className="space-y-5">
+      {/* Target Channel Selector / Autopilot Scope */}
+      <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-3.5">
+        <div className="flex items-center gap-2 mb-2">
+          <Radio className="h-4 w-4 text-primary animate-pulse" />
+          <label className="text-xs font-bold text-foreground tracking-tight">
+            Deploy to Channel (Autopilot)
+          </label>
+        </div>
+        <select
+          value={selectedChannelId}
+          onChange={(e) => handleChannelChange(e.target.value)}
+          className="w-full rounded-lg border border-border bg-card py-2 px-3 text-xs font-semibold text-foreground shadow-xs focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="">🌐 All Connected Channels (Workspace-wide)</option>
+          {channels.map((ch) => (
+            <option key={ch.id} value={ch.id}>
+              {ch.platform.toUpperCase()}: {ch.username ? `@${ch.username.replace(/^@/, "")}` : ch.display_name || "Channel"}
+            </option>
+          ))}
+        </select>
+        <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+          {selectedChannelId
+            ? "⚡ This flow will run on autopilot exclusively for the selected channel."
+            : "⚡ This flow is active across all connected social channels in this workspace."}
+        </p>
+      </div>
       {/* Trigger Type */}
       <div>
         <label className="mb-2 block text-xs font-semibold text-foreground">

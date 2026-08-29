@@ -157,47 +157,97 @@ export function MessageThread({
     setMessages(initialMessages);
   }, [initialMessages]);
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  const lastConvIdRef = useRef<string | null>(null);
 
-  // Listen for conversation updates (last_message_at changes when a new message arrives)
-  // and re-fetch messages from Zernio API.
+  // Auto-scroll to bottom: instant on initial conversation open, smooth on new message ONLY if user is already near bottom
+  useEffect(() => {
+    if (!messagesEndRef.current) return;
+
+    if (lastConvIdRef.current !== conversation?.id) {
+      lastConvIdRef.current = conversation?.id ?? null;
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      }
+      messagesEndRef.current.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+    } else {
+      const container = scrollContainerRef.current;
+      const isNearBottom = container
+        ? container.scrollHeight - container.scrollTop - container.clientHeight < 150
+        : true;
+
+      if (isNearBottom) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [messages, conversation?.id]);
+
+  // Listen for conversation updates and poll messages dynamically
   useEffect(() => {
     if (!conversation) return;
 
+    let isMounted = true;
+    const convId = conversation.id;
+
+    async function fetchLatestMessages() {
+      try {
+        const res = await fetch(`/api/v1/messages?conversationId=${convId}`);
+        if (res.ok) {
+          const freshMessages = await res.json();
+          if (!isMounted) return;
+          setMessages((prev) => {
+            const optimistic = prev.filter((m) => m.id.startsWith("optimistic-"));
+            const combined = [...freshMessages, ...optimistic];
+            if (
+              prev.length === combined.length &&
+              prev[prev.length - 1]?.id === combined[combined.length - 1]?.id &&
+              prev[prev.length - 1]?.status === combined[combined.length - 1]?.status
+            ) {
+              return prev; // unchanged, do not trigger scroll effect
+            }
+            return combined;
+          });
+        }
+      } catch (err) {
+        console.warn("Failed to poll messages:", err);
+      }
+    }
+
+    // 1. Supabase Realtime subscription on conversations & messages
     const supabase = createClient();
     const channel = supabase
-      .channel(`conversation-${conversation.id}`)
+      .channel(`thread-${convId}`)
       .on(
         "postgres_changes",
         {
-          event: "UPDATE",
+          event: "*",
           schema: "public",
           table: "conversations",
-          filter: `id=eq.${conversation.id}`,
+          filter: `id=eq.${convId}`,
         },
-        async () => {
-          try {
-            const res = await fetch(
-              `/api/v1/messages?conversationId=${conversation.id}`
-            );
-            if (res.ok) {
-              const freshMessages = await res.json();
-              setMessages((prev) => {
-                const optimistic = prev.filter((m) => m.id.startsWith("optimistic-"));
-                return [...freshMessages, ...optimistic];
-              });
-            }
-          } catch (err) {
-            console.error("Failed to refresh messages:", err);
-          }
+        () => {
+          fetchLatestMessages();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${convId}`,
+        },
+        () => {
+          fetchLatestMessages();
         }
       )
       .subscribe();
 
+    // 2. Resilient live poller every 3 seconds for instant dynamic updates
+    const pollTimer = setInterval(fetchLatestMessages, 3000);
+
     return () => {
+      isMounted = false;
+      clearInterval(pollTimer);
       supabase.removeChannel(channel);
     };
   }, [conversation?.id]);

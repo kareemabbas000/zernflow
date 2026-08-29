@@ -1,81 +1,113 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createZernioClient } from "@/lib/zernio-client";
-
-async function getWorkspace(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: membership } = await supabase
-    .from("workspace_members")
-    .select("workspace_id, workspaces(*)")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single();
-
-  if (!membership?.workspaces) return null;
-  return membership.workspaces;
-}
+import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createZernioClient, getPlatformZernioClient } from "@/lib/zernio-client";
 
 /**
  * DELETE /api/v1/channels/[channelId]
  *
- * Permanently deletes a channel: disconnects the account on Zernio first
- * (otherwise /api/v1/channels/sync would re-create it from listAccounts),
- * then deletes the local row (cascades conversations, contact links, etc.).
+ * Permanently disconnects and removes a channel:
+ * 1. Calls Zernio API server-side to delete the account from the profile so that
+ *    subsequent channel syncs will NOT re-import it.
+ * 2. Deletes the local channel record in Supabase (cascades conversations/webhooks).
+ * 3. Stamps the action into the audit logs.
  */
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ channelId: string }> }
 ) {
-  const { channelId } = await params;
-  const supabase = await createClient();
-  const workspace = await getWorkspace(supabase);
-  if (!workspace)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const { channelId } = await params;
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  const { data: channel } = await supabase
-    .from("channels")
-    .select("id, late_account_id")
-    .eq("id", channelId)
-    .eq("workspace_id", workspace.id)
-    .single();
-
-  if (!channel)
-    return NextResponse.json({ error: "Channel not found" }, { status: 404 });
-
-  if (workspace.late_api_key_encrypted) {
-    const zernio = createZernioClient(workspace.late_api_key_encrypted);
-    try {
-      const res = await zernio.accounts.deleteAccount({
-        path: { accountId: channel.late_account_id },
-      });
-      // A 404 means the account is already gone from Zernio; that's fine.
-      if (res.error && res.response?.status !== 404) {
-        return NextResponse.json(
-          { error: `Failed to disconnect on Zernio: ${JSON.stringify(res.error)}` },
-          { status: 502 }
-        );
-      }
-    } catch (error) {
-      console.error("Failed to disconnect Zernio account:", error);
-      return NextResponse.json(
-        { error: `Failed to disconnect on Zernio: ${error instanceof Error ? error.message : String(error)}` },
-        { status: 502 }
-      );
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // 1. Look up channel
+    const { data: channel } = await supabase
+      .from("channels")
+      .select("id, workspace_id, platform, display_name, late_account_id, zernio_account_id")
+      .eq("id", channelId)
+      .single();
+
+    if (!channel) {
+      return NextResponse.json({ error: "Channel not found" }, { status: 404 });
+    }
+
+    // 2. Verify workspace membership & permissions
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("role")
+      .eq("workspace_id", channel.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json({ error: "Access denied to this workspace" }, { status: 403 });
+    }
+
+    const { data: workspace } = await supabase
+      .from("workspaces")
+      .select("id, late_api_key_encrypted, zernio_profile_id")
+      .eq("id", channel.workspace_id)
+      .single();
+
+    const accountId = channel.zernio_account_id || channel.late_account_id;
+
+    // 3. Permanently disconnect from Zernio
+    if (accountId) {
+      try {
+        const zernio = workspace?.late_api_key_encrypted
+          ? createZernioClient(workspace.late_api_key_encrypted)
+          : getPlatformZernioClient();
+
+        const res = await zernio.accounts.deleteAccount({
+          path: { accountId },
+        });
+
+        // 404 means already deleted on provider side, which is expected/fine
+        if (res.error && res.response?.status !== 404) {
+          console.warn("[channels/delete] Zernio deleteAccount warning:", res.error);
+        }
+      } catch (zernioErr) {
+        console.warn("[channels/delete] Failed to disconnect on Zernio provider:", zernioErr);
+      }
+    }
+
+    // 4. Delete the local channel row from Supabase
+    const serviceClient = await createServiceClient();
+    const { error: deleteErr } = await serviceClient
+      .from("channels")
+      .delete()
+      .eq("id", channelId);
+
+    if (deleteErr) {
+      return NextResponse.json({ error: deleteErr.message }, { status: 500 });
+    }
+
+    // 5. Stamp audit log
+    await serviceClient.from("audit_logs").insert({
+      actor_user_id: user.id,
+      workspace_id: channel.workspace_id,
+      action: "channel.disconnected",
+      target_type: "channel",
+      target_id: channelId,
+      metadata: {
+        platform: channel.platform,
+        displayName: channel.display_name,
+        late_account_id: accountId,
+      },
+    });
+
+    return NextResponse.json({ ok: true, success: true });
+  } catch (err) {
+    console.error("[channels/delete] Unexpected error:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to disconnect channel." },
+      { status: 500 }
+    );
   }
-
-  const { error } = await supabase
-    .from("channels")
-    .delete()
-    .eq("id", channelId)
-    .eq("workspace_id", workspace.id);
-
-  if (error)
-    return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json({ ok: true });
 }

@@ -1,5 +1,6 @@
 import { getWorkspace } from "@/lib/workspace";
 import { Sidebar } from "@/components/sidebar";
+import { GlobalLiveSyncProvider } from "@/components/providers/global-live-sync-provider";
 
 export default async function DashboardLayout({
   children,
@@ -8,22 +9,45 @@ export default async function DashboardLayout({
 }) {
   const { workspace, user, supabase } = await getWorkspace();
 
-  const { data: memberships } = await supabase
-    .from("workspace_members")
-    .select("role, workspaces(id, name, slug)")
-    .eq("user_id", user.id);
+  const [{ data: memberships }, { data: profile }] = await Promise.all([
+    supabase
+      .from("workspace_members")
+      .select("role, workspaces(id, name, slug)")
+      .eq("user_id", user.id),
+    supabase
+      .from("profiles")
+      .select("platform_role")
+      .eq("id", user.id)
+      .maybeSingle(),
+  ]);
 
   const workspaces = (memberships ?? [])
-    .map((m) => ({
-      ...(m.workspaces as { id: string; name: string; slug: string }),
-      role: m.role,
-    }))
-    .filter((w) => w.id);
+    .map((m) => {
+      const rawWs = m.workspaces as any;
+      const wsObj = Array.isArray(rawWs) ? rawWs[0] : rawWs;
+      if (!wsObj || !wsObj.id) return null;
+      return {
+        id: wsObj.id as string,
+        name: wsObj.name as string,
+        slug: wsObj.slug as string,
+        role: m.role,
+      };
+    })
+    .filter((w): w is NonNullable<typeof w> => w !== null);
+
+  const isSuperAdmin = profile?.platform_role === "super_admin";
 
   return (
-    <div className="flex h-screen">
-      <Sidebar workspace={workspace} user={user} workspaces={workspaces} />
-      <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
-    </div>
+    <GlobalLiveSyncProvider workspaceId={workspace.id}>
+      <div className="flex h-screen">
+        <Sidebar
+          workspace={workspace}
+          user={user}
+          workspaces={workspaces}
+          isSuperAdmin={isSuperAdmin}
+        />
+        <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
+      </div>
+    </GlobalLiveSyncProvider>
   );
 }

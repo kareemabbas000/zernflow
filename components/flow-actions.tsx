@@ -69,14 +69,18 @@ export function ExportFlowButton({
 
 export function DeleteFlowButton({
   flow,
+  onDeleted,
 }: {
   flow: { id: string; name: string };
+  onDeleted?: (flowId: string) => void;
 }) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   async function handleDelete() {
+    setConfirmOpen(false);
+    onDeleted?.(flow.id);
     setDeleting(true);
 
     try {

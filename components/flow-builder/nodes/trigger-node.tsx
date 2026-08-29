@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 export interface TriggerNodeProps {
   label?: string;
   triggerType?: string;
+  channelId?: string | null;
   keywords?: Array<{ value: string; matchType: string }>;
   alsoMatchInDms?: boolean;
 }
@@ -32,12 +33,17 @@ export function TriggerNode({ data, selected }: NodeProps) {
         selected ? "border-emerald-500 shadow-md" : "border-border"
       )}
     >
-      <div className="flex items-center gap-2 rounded-t-lg bg-emerald-500 px-3 py-2 text-white">
-        <Zap className="h-3.5 w-3.5" />
-        <span className="text-xs font-semibold">Trigger</span>
+      <div className="flex items-center justify-between rounded-t-lg bg-emerald-500 px-3 py-2 text-white">
+        <div className="flex items-center gap-2">
+          <Zap className="h-3.5 w-3.5" />
+          <span className="text-xs font-semibold">Trigger</span>
+        </div>
+        <span className="text-[9px] font-bold uppercase tracking-wider bg-black/20 px-1.5 py-0.5 rounded">
+          {nodeData.channelId ? "Channel Scope" : "All Channels"}
+        </span>
       </div>
       <div className="p-3">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <p className="text-sm font-medium">{label}</p>
           {triggerType === "comment_keyword" && nodeData.alsoMatchInDms === true && (
             <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">

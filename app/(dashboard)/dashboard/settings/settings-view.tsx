@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   Settings,
-  Key,
   Hash,
   Save,
   Plus,
@@ -11,28 +10,26 @@ import {
   Check,
   Eye,
   EyeOff,
-  Plug,
-  Loader2,
-  ExternalLink,
   Users,
   ChevronRight,
   Sparkles,
+  ExternalLink,
+  Shield,
+  Layers,
+  Info,
+  Scale,
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { BrandLogo } from "@/components/brand-logo";
 
 interface WorkspaceSettings {
   id: string;
   name: string;
-  hasApiKey: boolean;
+  plan: string;
+  status: string;
   hasAiKey: boolean;
   globalKeywords: string[];
-}
-
-interface TestResult {
-  success: boolean;
-  accountCount?: number;
-  error?: string;
 }
 
 export function SettingsView({
@@ -41,8 +38,6 @@ export function SettingsView({
   workspace: WorkspaceSettings;
 }) {
   const [name, setName] = useState(workspace.name);
-  const [apiKey, setApiKey] = useState("");
-  const [showApiKey, setShowApiKey] = useState(false);
   const [aiKey, setAiKey] = useState("");
   const [showAiKey, setShowAiKey] = useState(false);
   const [keywords, setKeywords] = useState<string[]>(workspace.globalKeywords);
@@ -50,8 +45,6 @@ export function SettingsView({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<TestResult | null>(null);
 
   function addKeyword() {
     const trimmed = newKeyword.trim().toLowerCase();
@@ -68,48 +61,6 @@ export function SettingsView({
     setKeywords((prev) => prev.filter((k) => k !== kw));
   }
 
-  async function handleTestConnection() {
-    const keyToTest = apiKey.trim();
-    if (!keyToTest) return;
-
-    setTesting(true);
-    setTestResult(null);
-
-    try {
-      const res = await fetch("/api/v1/channels/test-key", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: keyToTest, workspaceId: workspace.id }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || data.error) {
-        setTestResult({
-          success: false,
-          error: data.error || `Connection failed (${res.status})`,
-        });
-        return;
-      }
-
-      const accounts = data.accounts || [];
-      setTestResult({
-        success: true,
-        accountCount: accounts.length,
-      });
-
-      // Key was saved and channels synced server-side
-      setApiKey("");
-    } catch {
-      setTestResult({
-        success: false,
-        error: "Could not reach the Zernio API. Please check your network connection.",
-      });
-    } finally {
-      setTesting(false);
-    }
-  }
-
   async function handleSave() {
     if (saving) return;
     setSaving(true);
@@ -124,10 +75,6 @@ export function SettingsView({
         global_keywords: keywords,
       };
 
-      // Only update keys if user entered new ones
-      if (apiKey.trim()) {
-        update.late_api_key_encrypted = apiKey.trim();
-      }
       if (aiKey.trim()) {
         update.ai_api_key = aiKey.trim();
       }
@@ -140,14 +87,11 @@ export function SettingsView({
         .single();
 
       if (updateError) {
-        console.error("Settings save error:", updateError);
         throw new Error(updateError.message);
       }
 
       setSaved(true);
-      setApiKey("");
       setAiKey("");
-      setTestResult(null);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       console.error("Failed to save settings:", err);
@@ -158,210 +102,103 @@ export function SettingsView({
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-background">
       {/* Header */}
-      <div className="border-b border-border px-8 py-6">
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Manage your workspace settings
+      <div className="border-b border-border px-8 py-6 bg-card/40">
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Workspace Settings</h1>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Manage workspace preferences, AI configurations, and global keywords
         </p>
       </div>
 
       {/* Settings form */}
       <div className="flex-1 overflow-auto">
         <div className="mx-auto max-w-2xl space-y-8 px-8 py-8">
-          {/* Workspace name */}
-          <section>
+          {/* General Workspace Details */}
+          <section className="rounded-3xl border border-border bg-card p-6 shadow-sm space-y-5">
             <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold">General</h2>
+              <Settings className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-bold text-foreground">General Preferences</h2>
             </div>
-            <div className="mt-4">
-              <label className="text-xs font-medium text-muted-foreground">
-                Workspace Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-foreground uppercase tracking-wider">
+                  Workspace Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-1.5 w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary transition-all"
+                />
+              </div>
+
+              <div className="flex items-center justify-between rounded-2xl border border-border bg-muted/20 p-3.5">
+                <div className="flex items-center gap-2.5">
+                  <Layers className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-xs font-bold text-foreground">Workspace Identifier</p>
+                    <p className="text-[11px] font-mono text-muted-foreground">{workspace.id}</p>
+                  </div>
+                </div>
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary capitalize">
+                  {workspace.plan} Plan
+                </span>
+              </div>
             </div>
           </section>
-
-          <hr className="border-border" />
-
-          {/* Zernio API Key */}
-          <section>
-            <div className="flex items-center gap-2">
-              <Key className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold">Zernio API Key</h2>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Your Zernio API key is used to connect with social media platforms.
-              {workspace.hasApiKey && " A key is currently configured."}
-            </p>
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              You can get your API key from your{" "}
-              <a
-                href="https://zernio.com/dashboard/settings/api"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-0.5 text-primary underline underline-offset-2 hover:opacity-80"
-              >
-                Zernio dashboard
-                <ExternalLink className="h-3 w-3" />
-              </a>
-              . Sign up at{" "}
-              <a
-                href="https://zernio.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary underline underline-offset-2 hover:opacity-80"
-              >
-                zernio.com
-              </a>{" "}
-              if you don&apos;t have an account yet.
-            </p>
-
-            <div className="mt-4 relative">
-              <input
-                type={showApiKey ? "text" : "password"}
-                value={apiKey}
-                onChange={(e) => {
-                  setApiKey(e.target.value);
-                  // Clear test result when key changes
-                  if (testResult) setTestResult(null);
-                }}
-                placeholder={
-                  workspace.hasApiKey
-                    ? "Enter a new key to replace the current one"
-                    : "Enter your Zernio API key"
-                }
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 pr-10 text-sm font-mono placeholder:text-muted-foreground placeholder:font-sans focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <button
-                type="button"
-                onClick={() => setShowApiKey(!showApiKey)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showApiKey ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-
-            {/* Test Connection button */}
-            <div className="mt-3 flex items-center gap-3">
-              <button
-                onClick={handleTestConnection}
-                disabled={!apiKey.trim() || testing}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {testing ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Plug className="h-3.5 w-3.5" />
-                )}
-                {testing ? "Testing..." : "Test Connection"}
-              </button>
-
-              {testResult && testResult.success && (
-                <span className="flex items-center gap-1 text-xs text-green-600">
-                  <Check className="h-3.5 w-3.5" />
-                  Connected ({testResult.accountCount}{" "}
-                  {testResult.accountCount === 1 ? "account" : "accounts"}{" "}
-                  found)
-                </span>
-              )}
-
-              {testResult && !testResult.success && (
-                <span className="text-xs text-red-600">
-                  {testResult.error}
-                </span>
-              )}
-            </div>
-
-            {workspace.hasApiKey && !testResult && (
-              <p className="mt-1.5 flex items-center gap-1 text-xs text-green-600">
-                <Check className="h-3 w-3" />
-                API key configured
-              </p>
-            )}
-          </section>
-
-          <hr className="border-border" />
 
           {/* AI Gateway API Key */}
-          <section>
+          <section className="rounded-3xl border border-border bg-card p-6 shadow-sm space-y-4">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold">AI Gateway</h2>
+              <Sparkles className="h-4 w-4 text-[#00C2FF]" />
+              <h2 className="text-sm font-bold text-foreground">AI Copilot &amp; LLM Configuration</h2>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Required for the AI Response flow node. Uses{" "}
-              <a
-                href="https://vercel.com/ai-gateway"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-0.5 text-primary underline underline-offset-2 hover:opacity-80"
-              >
-                Vercel AI Gateway
-                <ExternalLink className="h-3 w-3" />
-              </a>{" "}
-              to access OpenAI, Anthropic, and Google models with a single key.
-              {workspace.hasAiKey && " A key is currently configured."}
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Custom AI key for OpenAI, Anthropic, or Vercel AI Gateway for contextual auto-responses.
+              {workspace.hasAiKey && " A custom key is configured."}
             </p>
 
-            <div className="mt-4 relative">
+            <div className="relative">
               <input
                 type={showAiKey ? "text" : "password"}
                 value={aiKey}
                 onChange={(e) => setAiKey(e.target.value)}
                 placeholder={
                   workspace.hasAiKey
-                    ? "Enter a new key to replace the current one"
-                    : "Enter your AI Gateway API key"
+                    ? "Enter a new key to replace current key"
+                    : "sk-ant-... or sk-... (optional)"
                 }
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 pr-10 text-sm font-mono placeholder:text-muted-foreground placeholder:font-sans focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 pr-10 text-sm font-mono placeholder:text-muted-foreground placeholder:font-sans outline-none focus:ring-2 focus:ring-primary transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowAiKey(!showAiKey)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                {showAiKey ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {showAiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
 
             {workspace.hasAiKey && (
-              <p className="mt-1.5 flex items-center gap-1 text-xs text-green-600">
-                <Check className="h-3 w-3" />
-                AI Gateway key configured
+              <p className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                <Check className="h-3.5 w-3.5" />
+                Custom AI key active
               </p>
             )}
           </section>
 
-          <hr className="border-border" />
-
           {/* Global Keywords */}
-          <section>
+          <section className="rounded-3xl border border-border bg-card p-6 shadow-sm space-y-4">
             <div className="flex items-center gap-2">
-              <Hash className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold">Global Keywords</h2>
+              <Hash className="h-4 w-4 text-[#FF3D81]" />
+              <h2 className="text-sm font-bold text-foreground">Global Automation Keywords</h2>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Keywords that trigger flows across all channels. Flow-specific triggers take priority over global keywords.
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Keywords that trigger global opt-in/out or conversation actions across all connected channels.
             </p>
 
-            {/* Keyword input */}
-            <div className="mt-4 flex gap-2">
+            <div className="flex gap-2">
               <input
                 type="text"
                 value={newKeyword}
@@ -372,30 +209,31 @@ export function SettingsView({
                     addKeyword();
                   }
                 }}
-                placeholder="Add a keyword..."
-                className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="e.g. stop, help, pricing"
+                className="flex-1 rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary transition-all"
               />
               <button
+                type="button"
                 onClick={addKeyword}
                 disabled={!newKeyword.trim()}
-                className="rounded-lg bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground hover:opacity-90 disabled:opacity-50"
+                className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 <Plus className="h-4 w-4" />
               </button>
             </div>
 
-            {/* Keyword list */}
             {keywords.length > 0 ? (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 pt-1">
                 {keywords.map((kw) => (
                   <span
                     key={kw}
-                    className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold text-primary"
                   >
-                    {kw}
+                    #{kw}
                     <button
+                      type="button"
                       onClick={() => removeKeyword(kw)}
-                      className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
+                      className="rounded-full p-0.5 hover:bg-primary/10 text-primary"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -403,41 +241,60 @@ export function SettingsView({
                 ))}
               </div>
             ) : (
-              <p className="mt-3 text-xs text-muted-foreground/70">
-                No global keywords configured
+              <p className="text-xs text-muted-foreground/70">
+                No global keywords configured yet
               </p>
             )}
           </section>
 
-          <hr className="border-border" />
-
-          {/* Team */}
-          <section>
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold">Team</h2>
+          {/* Team Management */}
+          <section className="rounded-3xl border border-border bg-card p-6 shadow-sm flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-bold text-foreground">Team &amp; Permissions</h2>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Invite team members and collaborate within this workspace.
+              </p>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Manage workspace members and invitations.
-            </p>
             <Link
               href="/dashboard/settings/team"
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-4 py-2 text-xs font-bold text-foreground hover:bg-muted transition-colors"
             >
-              <Users className="h-4 w-4" />
+              <Shield className="h-3.5 w-3.5" />
               Manage Team
               <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
             </Link>
           </section>
 
-          <hr className="border-border" />
+          {/* About KA COMM & Legal Attribution */}
+          <section className="rounded-3xl border border-border/80 bg-muted/20 p-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <BrandLogo size="sm" />
+              <Link
+                href="/legal/open-source"
+                className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+              >
+                <Scale className="h-3.5 w-3.5" />
+                Open Source Notices
+              </Link>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              KA COMM is an AI-powered omnichannel communication and customer engagement SaaS.
+            </p>
+            <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
+              <span>© 2026 KA COMM</span>
+              <span className="font-semibold text-foreground">Developed by Kareem Abbas</span>
+            </div>
+          </section>
 
-          {/* Save button */}
-          <div className="flex items-center gap-3">
+          {/* Save Action */}
+          <div className="flex items-center gap-3 pt-2">
             <button
               onClick={handleSave}
               disabled={saving || !name.trim()}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/25 hover:opacity-95 disabled:opacity-50 transition-all"
             >
               {saving ? (
                 <>
@@ -453,14 +310,14 @@ export function SettingsView({
             </button>
 
             {saved && (
-              <span className="flex items-center gap-1 text-sm text-green-600">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 animate-in fade-in">
                 <Check className="h-4 w-4" />
-                Settings saved
+                Settings saved successfully
               </span>
             )}
 
             {error && (
-              <span className="text-sm text-red-600">
+              <span className="text-xs font-semibold text-destructive">
                 {error}
               </span>
             )}

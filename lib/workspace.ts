@@ -2,6 +2,9 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import type { Database } from "@/lib/types/database";
+
+type WorkspaceRow = Database["public"]["Tables"]["workspaces"]["Row"];
 
 export const WORKSPACE_COOKIE = "zernflow_workspace_id";
 
@@ -27,15 +30,23 @@ export const getWorkspace = cache(async () => {
       .select("workspace_id, role, workspaces(*)")
       .eq("user_id", user.id)
       .eq("workspace_id", selectedId)
-      .single();
+      .maybeSingle();
 
     if (membership?.workspaces) {
-      return {
-        user,
-        workspace: membership.workspaces,
-        role: membership.role,
-        supabase,
-      };
+      const ws = (
+        Array.isArray(membership.workspaces)
+          ? membership.workspaces[0]
+          : membership.workspaces
+      ) as unknown as WorkspaceRow;
+
+      if (ws?.id) {
+        return {
+          user,
+          workspace: ws,
+          role: membership.role,
+          supabase,
+        };
+      }
     }
   }
 
@@ -45,13 +56,25 @@ export const getWorkspace = cache(async () => {
     .select("workspace_id, role, workspaces(*)")
     .eq("user_id", user.id)
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (!membership?.workspaces) redirect("/login");
+  if (!membership?.workspaces) {
+    redirect("/onboarding");
+  }
+
+  const ws = (
+    Array.isArray(membership.workspaces)
+      ? membership.workspaces[0]
+      : membership.workspaces
+  ) as unknown as WorkspaceRow;
+
+  if (!ws?.id) {
+    redirect("/onboarding");
+  }
 
   return {
     user,
-    workspace: membership.workspaces,
+    workspace: ws,
     role: membership.role,
     supabase,
   };

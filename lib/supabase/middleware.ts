@@ -31,9 +31,15 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  const isAuthPage = pathname === "/login" || pathname === "/register";
+  const isAuthPage =
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password";
   const isAuthCallback = pathname === "/auth/callback";
   const isDashboard = pathname.startsWith("/dashboard");
+  const isAdmin = pathname.startsWith("/admin");
+  const isOnboarding = pathname.startsWith("/onboarding");
   const isApiRoute = pathname.startsWith("/api/");
 
   // Auth callback and API routes (including webhooks) always pass through
@@ -41,24 +47,22 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Redirect logged-in users away from auth pages to dashboard
-  if (user && isAuthPage) {
+  // Redirect logged-in users away from login/register to dashboard
+  if (user && (pathname === "/login" || pathname === "/register")) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     const redirectResponse = NextResponse.redirect(url);
-    // Forward any refreshed session cookies
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie.name, cookie.value);
     });
     return redirectResponse;
   }
 
-  // Redirect unauthenticated users trying to access dashboard to login
-  if (!user && isDashboard) {
+  // Redirect unauthenticated users trying to access dashboard, onboarding, or admin to login
+  if (!user && (isDashboard || isAdmin || isOnboarding)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     const redirectResponse = NextResponse.redirect(url);
-    // Forward any refreshed session cookies
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie.name, cookie.value);
     });

@@ -8,6 +8,7 @@ import { upsertContactForSender } from "@/lib/inbox-sync";
 import { processComment } from "@/lib/comment-processor";
 import type { Database } from "@/lib/types/database";
 import { messagePreview } from "@/lib/message-preview";
+import { isSupportedPlatform, type Platform } from "@/lib/platforms";
 
 // ── Zernio API webhook payload ───────────────────────────────────────────────
 
@@ -144,15 +145,32 @@ async function handleWebhook(request: NextRequest) {
 
   const supabase = await createServiceClient();
 
-  // Look up channel by late_account_id
-  const { data: channel } = await supabase
+  // Look up channel by late_account_id and matching platform
+  const targetPlatform = msg.platform || account.platform;
+  let channelQuery = supabase
     .from("channels")
     .select("*")
     .eq("late_account_id", account.id)
-    .eq("is_active", true)
-    .single();
+    .eq("is_active", true);
 
-  if (!channel) {
+  if (targetPlatform && isSupportedPlatform(targetPlatform)) {
+    channelQuery = channelQuery.eq("platform", targetPlatform as Platform);
+  }
+
+  const { data: matchedChannels } = await channelQuery;
+  const channel = matchedChannels?.[0];
+
+  const activeChannel =
+    channel ||
+    (await supabase
+      .from("channels")
+      .select("*")
+      .eq("late_account_id", account.id)
+      .eq("is_active", true)
+      .limit(1)
+      .then((r) => r.data?.[0]));
+
+  if (!activeChannel) {
     return NextResponse.json({ error: "Channel not found" }, { status: 404 });
   }
 
@@ -163,7 +181,7 @@ async function handleWebhook(request: NextRequest) {
     const { data: senderChannel } = await supabase
       .from("channels")
       .select("id")
-      .eq("workspace_id", channel.workspace_id)
+      .eq("workspace_id", activeChannel.workspace_id)
       .eq("username", msg.sender.username)
       .eq("is_active", true)
       .maybeSingle();
@@ -175,7 +193,7 @@ async function handleWebhook(request: NextRequest) {
 
   // Verify HMAC-SHA256 signature against the workspace-level secret
   // (falls back to the legacy per-channel secret during transition).
-  const secret = await resolveWebhookSecret(supabase, channel);
+  const secret = await resolveWebhookSecret(supabase, activeChannel);
   if (secret && !verifyWebhookSignature(secret, body, signature)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
@@ -189,7 +207,7 @@ async function handleWebhook(request: NextRequest) {
   // nodes) must never run before the 200 goes out.
   after(async () => {
     try {
-      await processMessageEvent(supabase, payload, channel);
+      await processMessageEvent(supabase, payload, activeChannel);
     } catch (err) {
       console.error("Webhook message processing error:", err);
     }
@@ -327,12 +345,27 @@ async function handleCommentWebhook(
 ) {
   const supabase = await createServiceClient();
 
-  const { data: channel } = await supabase
+  const commentPlatform = payload.comment.platform || payload.account.platform;
+  let commentQuery = supabase
     .from("channels")
     .select("*")
     .eq("late_account_id", payload.account.id)
-    .eq("is_active", true)
-    .single();
+    .eq("is_active", true);
+
+  if (commentPlatform && isSupportedPlatform(commentPlatform)) {
+    commentQuery = commentQuery.eq("platform", commentPlatform as Platform);
+  }
+
+  const { data: matchedCommentChannels } = await commentQuery;
+  const channel =
+    matchedCommentChannels?.[0] ||
+    (await supabase
+      .from("channels")
+      .select("*")
+      .eq("late_account_id", payload.account.id)
+      .eq("is_active", true)
+      .limit(1)
+      .then((r) => r.data?.[0]));
 
   if (!channel) {
     return NextResponse.json({ error: "Channel not found" }, { status: 404 });

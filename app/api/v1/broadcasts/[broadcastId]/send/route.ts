@@ -109,13 +109,39 @@ export async function POST(
     );
   }
 
-  // For each contact, find their first active channel link (via contact_channels)
+  // For each contact, find their active channel link (via contact_channels or conversations)
   const { data: contactChannels } = await supabase
     .from("contact_channels")
     .select("contact_id, channel_id")
     .in("contact_id", contactIds);
 
-  if (!contactChannels?.length) {
+  const { data: convChannels } = await supabase
+    .from("conversations")
+    .select("contact_id, channel_id")
+    .in("contact_id", contactIds);
+
+  const allChannelLinks: { contact_id: string; channel_id: string }[] = [
+    ...(contactChannels || []),
+    ...(convChannels || []),
+  ];
+
+  // If contacts have no explicit link yet, find any active channel in the workspace
+  if (!allChannelLinks.length) {
+    const { data: activeChannels } = await supabase
+      .from("channels")
+      .select("id")
+      .eq("workspace_id", membership.workspace_id)
+      .eq("is_active", true)
+      .limit(1);
+
+    if (activeChannels?.length) {
+      for (const cid of contactIds) {
+        allChannelLinks.push({ contact_id: cid, channel_id: activeChannels[0].id });
+      }
+    }
+  }
+
+  if (!allChannelLinks.length) {
     return NextResponse.json(
       { error: "No contacts have active channel connections" },
       { status: 400 }
@@ -125,7 +151,7 @@ export async function POST(
   // Deduplicate: one recipient per contact (first channel found)
   const seen = new Set<string>();
   const recipientPairs: { contactId: string; channelId: string }[] = [];
-  for (const cc of contactChannels) {
+  for (const cc of allChannelLinks) {
     if (!seen.has(cc.contact_id)) {
       seen.add(cc.contact_id);
       recipientPairs.push({
@@ -172,14 +198,105 @@ export async function POST(
     );
   }
 
-  // Schedule delivery
+  // Schedule delivery in scheduled_jobs fallback
   await scheduleBroadcastDelivery(supabase, broadcastId, recipientIds);
+
+  // Deliver broadcast directly
+  deliverBroadcastDirectly(supabase, broadcastId, membership.workspace_id, messageContent.text);
 
   return NextResponse.json({
     broadcastId,
     totalRecipients: recipientIds.length,
     status: "sending",
   });
+}
+
+/**
+ * Deliver broadcast messages directly to recipients via Zernio API.
+ */
+async function deliverBroadcastDirectly(
+  supabase: SupabaseClient<Database>,
+  broadcastId: string,
+  workspaceId: string,
+  text: string
+) {
+  try {
+    const { data: recipients } = await supabase
+      .from("broadcast_recipients")
+      .select("id, contact_id, channel_id, channels(late_account_id, zernio_account_id)")
+      .eq("broadcast_id", broadcastId)
+      .eq("status", "pending");
+
+    if (!recipients?.length) return;
+
+    const { data: workspace } = await supabase
+      .from("workspaces")
+      .select("late_api_key_encrypted")
+      .eq("id", workspaceId)
+      .single();
+
+    const apiKey = workspace?.late_api_key_encrypted || process.env.ZERNIO_API_KEY;
+    if (!apiKey) return;
+
+    const { createZernioClient } = await import("@/lib/zernio-client");
+    const zernio = createZernioClient(apiKey);
+
+    let sentCount = 0;
+    let failedCount = 0;
+
+    for (const rec of recipients) {
+      try {
+        const channel = rec.channels as { late_account_id?: string; zernio_account_id?: string } | null;
+        const accountId = channel?.zernio_account_id || channel?.late_account_id;
+
+        // Find conversation
+        const { data: conv } = await supabase
+          .from("conversations")
+          .select("late_conversation_id")
+          .eq("contact_id", rec.contact_id)
+          .eq("channel_id", rec.channel_id)
+          .single();
+
+        if (conv?.late_conversation_id && accountId) {
+          await zernio.messages.sendInboxMessage({
+            path: { conversationId: conv.late_conversation_id },
+            body: { accountId, message: text },
+          });
+
+          await supabase
+            .from("broadcast_recipients")
+            .update({ status: "sent", sent_at: new Date().toISOString() })
+            .eq("id", rec.id);
+
+          sentCount++;
+        } else {
+          await supabase
+            .from("broadcast_recipients")
+            .update({ status: "failed", error_message: "No active conversation found" })
+            .eq("id", rec.id);
+          failedCount++;
+        }
+      } catch (err: any) {
+        await supabase
+          .from("broadcast_recipients")
+          .update({ status: "failed", error_message: err?.message || "Send failed" })
+          .eq("id", rec.id);
+        failedCount++;
+      }
+    }
+
+    // Update broadcast summary stats
+    await supabase
+      .from("broadcasts")
+      .update({
+        status: "completed",
+        sent: sentCount,
+        failed: failedCount,
+      })
+      .eq("id", broadcastId);
+  } catch (err) {
+    console.error("[Broadcast] Direct delivery error:", err);
+  }
 }
 
 /**

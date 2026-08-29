@@ -64,18 +64,69 @@ export interface SequenceStep {
   delayMinutes?: number;
 }
 
+export type PlatformRole = "user" | "super_admin";
+export type UserStatus = "active" | "suspended";
+export type WorkspaceStatus = "active" | "suspended";
+export type SubscriptionStatus =
+  | "trialing"
+  | "active"
+  | "suspended"
+  | "cancelled"
+  | "past_due";
+export type ChannelStatus = "connected" | "disconnected" | "error";
+
 export interface Database {
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          full_name: string | null;
+          email: string | null;
+          avatar_url: string | null;
+          platform_role: PlatformRole;
+          status: UserStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          full_name?: string | null;
+          email?: string | null;
+          avatar_url?: string | null;
+          platform_role?: PlatformRole;
+          status?: UserStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          full_name?: string | null;
+          email?: string | null;
+          avatar_url?: string | null;
+          platform_role?: PlatformRole;
+          status?: UserStatus;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       workspaces: {
         Row: {
           id: string;
           name: string;
           slug: string;
+          owner_id: string | null;
+          zernio_profile_id: string | null;
+          subscription_status: SubscriptionStatus;
+          status: WorkspaceStatus;
+          plan: string;
+          trial_started_at: string | null;
+          trial_ends_at: string | null;
+          limits: Json | null;
           late_api_key_encrypted: string | null;
           ai_api_key: string | null;
           ai_provider: string;
           global_keywords: Json | null;
+          webhook_secret: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -83,10 +134,19 @@ export interface Database {
           id?: string;
           name: string;
           slug: string;
+          owner_id?: string | null;
+          zernio_profile_id?: string | null;
+          subscription_status?: SubscriptionStatus;
+          status?: WorkspaceStatus;
+          plan?: string;
+          trial_started_at?: string | null;
+          trial_ends_at?: string | null;
+          limits?: Json | null;
           late_api_key_encrypted?: string | null;
           ai_api_key?: string | null;
           ai_provider?: string;
           global_keywords?: Json | null;
+          webhook_secret?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -94,10 +154,19 @@ export interface Database {
           id?: string;
           name?: string;
           slug?: string;
+          owner_id?: string | null;
+          zernio_profile_id?: string | null;
+          subscription_status?: SubscriptionStatus;
+          status?: WorkspaceStatus;
+          plan?: string;
+          trial_started_at?: string | null;
+          trial_ends_at?: string | null;
+          limits?: Json | null;
           late_api_key_encrypted?: string | null;
           ai_api_key?: string | null;
           ai_provider?: string;
           global_keywords?: Json | null;
+          webhook_secret?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -134,12 +203,17 @@ export interface Database {
           workspace_id: string;
           platform: Platform;
           late_account_id: string;
+          zernio_account_id: string | null;
           username: string | null;
           display_name: string | null;
           profile_picture: string | null;
           webhook_id: string | null;
           webhook_secret: string | null;
           is_active: boolean;
+          status: ChannelStatus;
+          connected_at: string;
+          disconnected_at: string | null;
+          metadata: Json | null;
           last_comment_cursor: string | null;
           comment_rules: Json | null;
           created_at: string;
@@ -150,12 +224,17 @@ export interface Database {
           workspace_id: string;
           platform: Platform;
           late_account_id: string;
+          zernio_account_id?: string | null;
           username?: string | null;
           display_name?: string | null;
           profile_picture?: string | null;
           webhook_id?: string | null;
           webhook_secret?: string | null;
           is_active?: boolean;
+          status?: ChannelStatus;
+          connected_at?: string;
+          disconnected_at?: string | null;
+          metadata?: Json | null;
           last_comment_cursor?: string | null;
           comment_rules?: Json | null;
           created_at?: string;
@@ -164,12 +243,17 @@ export interface Database {
         Update: {
           platform?: Platform;
           late_account_id?: string;
+          zernio_account_id?: string | null;
           username?: string | null;
           display_name?: string | null;
           profile_picture?: string | null;
           webhook_id?: string | null;
           webhook_secret?: string | null;
           is_active?: boolean;
+          status?: ChannelStatus;
+          connected_at?: string;
+          disconnected_at?: string | null;
+          metadata?: Json | null;
           last_comment_cursor?: string | null;
           comment_rules?: Json | null;
           updated_at?: string;
@@ -183,6 +267,63 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      audit_logs: {
+        Row: {
+          id: string;
+          actor_user_id: string | null;
+          workspace_id: string | null;
+          action: string;
+          target_type: string;
+          target_id: string | null;
+          metadata: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor_user_id?: string | null;
+          workspace_id?: string | null;
+          action: string;
+          target_type: string;
+          target_id?: string | null;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          action?: string;
+          target_type?: string;
+          target_id?: string | null;
+          metadata?: Json | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      platform_settings: {
+        Row: {
+          key: string;
+          value: Json;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          key: string;
+          value: Json;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          value?: Json;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
       };
       contacts: {
         Row: {

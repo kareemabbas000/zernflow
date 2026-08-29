@@ -175,9 +175,10 @@ export async function processComment({
         .eq("id", channel.workspace_id)
         .single();
 
-      if (workspace?.late_api_key_encrypted) {
+      const apiKey = workspace?.late_api_key_encrypted || process.env.ZERNIO_API_KEY;
+      if (apiKey) {
         try {
-          const zernio = createZernioClient(workspace.late_api_key_encrypted);
+          const zernio = createZernioClient(apiKey);
           await zernio.comments.replyToInboxPost({
             path: { postId: comment.postId },
             body: {

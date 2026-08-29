@@ -64,16 +64,17 @@ export async function executeFlow(
   const nodes = flow.nodes as unknown as FlowNode[];
   const edges = flow.edges as unknown as FlowEdge[];
 
-  // Get channel platform and late_account_id
+  // Get channel platform and account ID
   const { data: channel } = await supabase
     .from("channels")
-    .select("platform, late_account_id")
+    .select("platform, late_account_id, zernio_account_id")
     .eq("id", context.channelId)
     .single();
 
   context.platform = channel?.platform as FlowExecutionContext["platform"];
-  if (channel?.late_account_id && !context.lateAccountId) {
-    context.lateAccountId = channel.late_account_id;
+  const accountId = channel?.zernio_account_id || channel?.late_account_id;
+  if (accountId && !context.lateAccountId) {
+    context.lateAccountId = accountId;
   }
 
   // Resolve late_conversation_id from the conversation record if not already set
@@ -168,13 +169,14 @@ export async function resumeSession(
 
   const { data: channel } = await supabase
     .from("channels")
-    .select("platform, late_account_id")
+    .select("platform, late_account_id, zernio_account_id")
     .eq("id", context.channelId)
     .single();
 
   context.platform = channel?.platform as FlowExecutionContext["platform"];
-  if (channel?.late_account_id && !context.lateAccountId) {
-    context.lateAccountId = channel.late_account_id;
+  const resumeAccId = channel?.zernio_account_id || channel?.late_account_id;
+  if (resumeAccId && !context.lateAccountId) {
+    context.lateAccountId = resumeAccId;
   }
 
   // Resolve late_conversation_id if not set
@@ -443,21 +445,22 @@ async function executeSendMessage(
     .eq("id", context.workspaceId)
     .single();
 
-  if (!workspace?.late_api_key_encrypted) return;
+  const apiKey = workspace?.late_api_key_encrypted || process.env.ZERNIO_API_KEY;
+  if (!apiKey) return;
 
-  const zernio = createZernioClient(workspace.late_api_key_encrypted);
+  const zernio = createZernioClient(apiKey);
 
-  // Resolve late_account_id from channel if not in context
+  // Resolve account ID from channel if not in context
   let lateAccountId = context.lateAccountId;
   if (!lateAccountId) {
     const { data: channel } = await supabase
       .from("channels")
-      .select("late_account_id, platform")
+      .select("late_account_id, zernio_account_id, platform")
       .eq("id", context.channelId)
       .single();
 
     if (!channel) return;
-    lateAccountId = channel.late_account_id;
+    lateAccountId = channel.zernio_account_id || channel.late_account_id;
     if (!context.platform) {
       context.platform = channel.platform as FlowExecutionContext["platform"];
     }
@@ -871,9 +874,10 @@ async function executeCommentReply(
     .eq("id", context.workspaceId)
     .single();
 
-  if (!workspace?.late_api_key_encrypted) return;
+  const apiKey = workspace?.late_api_key_encrypted || process.env.ZERNIO_API_KEY;
+  if (!apiKey) return;
 
-  const zernio = createZernioClient(workspace.late_api_key_encrypted);
+  const zernio = createZernioClient(apiKey);
 
   // Resolve late_account_id
   let lateAccountId = context.lateAccountId;
@@ -924,9 +928,10 @@ async function executePrivateReply(
     .eq("id", context.workspaceId)
     .single();
 
-  if (!workspace?.late_api_key_encrypted) return;
+  const apiKey = workspace?.late_api_key_encrypted || process.env.ZERNIO_API_KEY;
+  if (!apiKey) return;
 
-  const zernio = createZernioClient(workspace.late_api_key_encrypted);
+  const zernio = createZernioClient(apiKey);
 
   // Resolve late_account_id
   let lateAccountId = context.lateAccountId;

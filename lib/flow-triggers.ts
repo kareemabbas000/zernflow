@@ -18,7 +18,7 @@ const isBuilderTriggerType = (t: string): t is BuilderTriggerType =>
 
 export interface DesiredTrigger {
   flow_id: string;
-  channel_id: null;
+  channel_id: string | null;
   type: TriggerType;
   config: Json;
   is_active: boolean;
@@ -61,9 +61,11 @@ export function buildDesiredTriggers(
         if (payload !== undefined) config.payload = payload;
       }
 
+      const targetChannelId = (data.channelId ?? nodeConfig.channelId ?? null) || null;
+
       const row: DesiredTrigger = {
         flow_id: flowId,
-        channel_id: null,
+        channel_id: targetChannelId,
         type: type as TriggerType,
         config,
         is_active: true,
