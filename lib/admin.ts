@@ -81,15 +81,45 @@ export async function getAdminOverviewStats() {
       .limit(6),
     serviceClient
       .from("channels")
-      .select("id, platform, username, display_name, status, is_active, created_at, workspace_id, workspaces(name)")
+      .select("id, platform, username, display_name, status, is_active, created_at, workspace_id")
       .order("created_at", { ascending: false })
       .limit(6),
     serviceClient
       .from("audit_logs")
-      .select("id, actor_user_id, action, target_type, target_id, metadata, created_at, profiles:actor_user_id(email, full_name)")
+      .select("id, actor_user_id, action, target_type, target_id, metadata, created_at")
       .order("created_at", { ascending: false })
       .limit(8),
   ]);
+
+  // Fetch workspaces for recentChannels and profiles for recentAuditLogs
+  const workspaceIds: string[] = Array.from(
+    new Set((recentChannels || []).map((c) => c.workspace_id).filter((id): id is string => Boolean(id)))
+  );
+  const actorIds: string[] = Array.from(
+    new Set((recentAuditLogs || []).map((a) => a.actor_user_id).filter((id): id is string => Boolean(id)))
+  );
+
+  const [{ data: wsData }, { data: actorProfiles }] = await Promise.all([
+    workspaceIds.length > 0
+      ? serviceClient.from("workspaces").select("id, name").in("id", workspaceIds)
+      : Promise.resolve({ data: [] }),
+    actorIds.length > 0
+      ? serviceClient.from("profiles").select("id, email, full_name").in("id", actorIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const wsMap = new Map((wsData || []).map((w) => [w.id, w]));
+  const actorMap = new Map((actorProfiles || []).map((p) => [p.id, p]));
+
+  const mappedRecentChannels = (recentChannels || []).map((c) => ({
+    ...c,
+    workspaces: wsMap.get(c.workspace_id) || null,
+  }));
+
+  const mappedRecentAuditLogs = (recentAuditLogs || []).map((a) => ({
+    ...a,
+    profiles: a.actor_user_id ? actorMap.get(a.actor_user_id) || null : null,
+  }));
 
   // Group channels by platform
   const platformCounts: Record<string, number> = {};
@@ -108,7 +138,7 @@ export async function getAdminOverviewStats() {
     platformCounts,
     recentUsers: recentUsers || [],
     recentWorkspaces: recentWorkspaces || [],
-    recentChannels: recentChannels || [],
-    recentAuditLogs: recentAuditLogs || [],
+    recentChannels: mappedRecentChannels || [],
+    recentAuditLogs: mappedRecentAuditLogs || [],
   };
 }

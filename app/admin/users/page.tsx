@@ -8,10 +8,35 @@ export default async function AdminUsersPage() {
   const { user } = await requireSuperAdmin();
   const serviceClient = await createServiceClient();
 
-  const { data: users } = await serviceClient
-    .from("profiles")
-    .select("*, workspace_members(workspace_id, role, workspaces(id, name, slug, status))")
-    .order("created_at", { ascending: false });
+  const [{ data: profiles }, { data: members }, { data: workspaces }] =
+    await Promise.all([
+      serviceClient
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      serviceClient
+        .from("workspace_members")
+        .select("user_id, workspace_id, role"),
+      serviceClient
+        .from("workspaces")
+        .select("id, name, slug, status"),
+    ]);
 
-  return <UsersView initialUsers={(users as any) || []} currentAdminId={user.id} />;
+  const workspacesMap = new Map((workspaces || []).map((w) => [w.id, w]));
+
+  const usersWithWorkspaces = (profiles || []).map((p) => {
+    const userMembers = (members || []).filter((m) => m.user_id === p.id);
+    const userWorkspaces = userMembers.map((m) => ({
+      workspace_id: m.workspace_id,
+      role: m.role,
+      workspaces: workspacesMap.get(m.workspace_id) || null,
+    }));
+
+    return {
+      ...p,
+      workspaces: userWorkspaces,
+    };
+  });
+
+  return <UsersView initialUsers={usersWithWorkspaces as any} currentAdminId={user.id} />;
 }

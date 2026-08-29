@@ -8,10 +8,22 @@ export default async function AdminChannelsPage() {
   await requireSuperAdmin();
   const serviceClient = await createServiceClient();
 
-  const { data: channels } = await serviceClient
-    .from("channels")
-    .select("*, workspaces(id, name, slug)")
-    .order("created_at", { ascending: false });
+  const [{ data: channels }, { data: workspaces }] = await Promise.all([
+    serviceClient
+      .from("channels")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    serviceClient
+      .from("workspaces")
+      .select("id, name, slug"),
+  ]);
 
-  return <AdminChannelsView initialChannels={(channels as any) || []} />;
+  const workspacesMap = new Map((workspaces || []).map((w) => [w.id, w]));
+
+  const mapped = (channels || []).map((ch) => ({
+    ...ch,
+    workspaces: workspacesMap.get(ch.workspace_id) || null,
+  }));
+
+  return <AdminChannelsView initialChannels={mapped as any} />;
 }
