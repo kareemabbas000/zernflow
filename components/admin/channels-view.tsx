@@ -11,10 +11,17 @@ import {
   AlertCircle,
   ExternalLink,
   PowerOff,
+  RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import { PlatformIcon } from "@/components/platform-icon";
 import { PLATFORMS, PLATFORM_LABELS, platformLabel, type Platform } from "@/lib/platforms";
-import { disconnectChannelAdmin } from "@/lib/actions/admin";
+import {
+  disconnectChannelAdmin,
+  deleteChannelAdmin,
+  syncAllPlatformChannelsAdmin,
+} from "@/lib/actions/admin";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { Channel } from "@/lib/admin";
 
 interface ChannelWithWorkspace extends Channel {
@@ -31,6 +38,8 @@ export function AdminChannelsView({ initialChannels }: { initialChannels: Channe
   const [platformFilter, setPlatformFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [syncingAll, setSyncingAll] = useState(false);
+  const [channelToDelete, setChannelToDelete] = useState<ChannelWithWorkspace | null>(null);
   const [feedback, setFeedback] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const filtered = channels.filter((c) => {
@@ -49,11 +58,29 @@ export function AdminChannelsView({ initialChannels }: { initialChannels: Channe
     return matchesSearch && matchesPlatform && matchesStatus;
   });
 
-  async function handleDisconnect(channel: ChannelWithWorkspace) {
-    if (!confirm(`Are you sure you want to disconnect channel ${channel.display_name || channel.username}?`)) {
-      return;
-    }
+  async function handleSyncAll() {
+    setSyncingAll(true);
+    setFeedback(null);
 
+    const res = await syncAllPlatformChannelsAdmin();
+
+    if (res.error) {
+      setFeedback({ message: res.error, type: "error" });
+    } else {
+      setFeedback({
+        message: `Zernio Reconcile Complete: Scanned ${res.totalZernioAccounts} live accounts (${res.updated} updated, ${res.disconnected} pruned/disconnected).`,
+        type: "success",
+      });
+      // Refresh page data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    }
+    setSyncingAll(false);
+    setTimeout(() => setFeedback(null), 5000);
+  }
+
+  async function handleDisconnect(channel: ChannelWithWorkspace) {
     setLoadingId(channel.id);
     setFeedback(null);
 
@@ -78,14 +105,50 @@ export function AdminChannelsView({ initialChannels }: { initialChannels: Channe
     setTimeout(() => setFeedback(null), 4000);
   }
 
+  async function handleDeleteChannel() {
+    if (!channelToDelete) return;
+    setLoadingId(channelToDelete.id);
+    setFeedback(null);
+
+    const res = await deleteChannelAdmin(channelToDelete.id);
+
+    if (res.error) {
+      setFeedback({ message: res.error, type: "error" });
+    } else {
+      setChannels((prev) => prev.filter((c) => c.id !== channelToDelete.id));
+      setFeedback({
+        message: `Channel ${channelToDelete.display_name || channelToDelete.username} permanently deleted.`,
+        type: "success",
+      });
+    }
+    setChannelToDelete(null);
+    setLoadingId(null);
+    setTimeout(() => setFeedback(null), 4000);
+  }
+
   return (
     <div className="flex flex-col gap-6 p-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Connected Social Accounts</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Platform-wide inventory of social media channels and external account links.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Connected Social Channels</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Multi-tenant channel registry with direct Zernio two-way mirror sync and root controls.
+          </p>
+        </div>
+
+        <button
+          onClick={handleSyncAll}
+          disabled={syncingAll}
+          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {syncingAll ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5" />
+          )}
+          Reconcile with Zernio
+        </button>
       </div>
 
       {feedback && (
@@ -148,119 +211,149 @@ export function AdminChannelsView({ initialChannels }: { initialChannels: Channe
       <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-border bg-muted/50 font-semibold text-muted-foreground uppercase tracking-wider">
+            <thead className="bg-muted/50 border-b border-border text-muted-foreground font-medium">
               <tr>
-                <th className="p-4">Channel / Account</th>
+                <th className="p-4">Channel & Handle</th>
                 <th className="p-4">Platform</th>
                 <th className="p-4">Workspace</th>
-                <th className="p-4">Zernio Account ID</th>
                 <th className="p-4">Status</th>
-                <th className="p-4">Connected At</th>
+                <th className="p-4">Zernio Account ID</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                    No channels matching criteria.
+                  <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                    No channels matching search criteria
                   </td>
                 </tr>
               ) : (
-                filtered.map((ch) => (
-                  <tr key={ch.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        {ch.profile_picture ? (
-                          <img
-                            src={ch.profile_picture}
-                            alt={ch.display_name || ch.username || ""}
-                            className="h-8 w-8 rounded-lg object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
-                            <PlatformIcon platform={ch.platform as Platform} className="h-4 w-4" />
-                          </div>
-                        )}
-                        <div>
-                          <p className="font-semibold text-foreground">
-                            {ch.display_name || ch.username || "Account"}
-                          </p>
-                          {ch.username && (
-                            <p className="text-[11px] text-muted-foreground">@{ch.username}</p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5 font-medium">
-                        <PlatformIcon platform={ch.platform as Platform} className="h-3.5 w-3.5" />
-                        {platformLabel(ch.platform)}
-                      </div>
-                    </td>
-
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-foreground font-medium">
-                        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                        {ch.workspaces?.name || "Workspace"}
-                      </div>
-                    </td>
-
-                    <td className="p-4 font-mono text-[11px] text-muted-foreground">
-                      {ch.zernio_account_id || ch.late_account_id}
-                    </td>
-
-                    <td className="p-4">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                          ch.is_active
-                            ? "bg-green-50 text-green-700 dark:bg-green-950/60 dark:text-green-300"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            ch.is_active ? "bg-green-500" : "bg-muted-foreground"
-                          }`}
-                        />
-                        {ch.is_active ? "Active" : "Disconnected"}
-                      </span>
-                    </td>
-
-                    <td className="p-4 text-muted-foreground">
-                      {new Date(ch.connected_at || ch.created_at).toLocaleDateString([], {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </td>
-
-                    <td className="p-4 text-right">
-                      {ch.is_active && (
-                        <button
-                          onClick={() => handleDisconnect(ch)}
-                          disabled={loadingId === ch.id}
-                          className="inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/60 disabled:opacity-50 transition-colors"
-                          title="Disconnect channel from workspace"
-                        >
-                          {loadingId === ch.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
+                filtered.map((ch) => {
+                  const accountId = ch.zernio_account_id || ch.late_account_id;
+                  return (
+                    <tr key={ch.id} className="hover:bg-muted/30 transition-colors">
+                      {/* Channel */}
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          {ch.profile_picture ? (
+                            <img
+                              src={ch.profile_picture}
+                              alt=""
+                              className="h-8 w-8 rounded-full object-cover border"
+                            />
                           ) : (
-                            <>
-                              <PowerOff className="h-3 w-3" /> Disconnect
-                            </>
+                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center font-bold text-xs">
+                              {ch.platform[0]?.toUpperCase()}
+                            </div>
                           )}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))
+                          <div>
+                            <div className="font-semibold text-foreground">
+                              {ch.display_name || ch.username || "Unnamed Channel"}
+                            </div>
+                            {ch.username && (
+                              <div className="text-muted-foreground text-[11px]">
+                                @{ch.username.replace(/^@/, "")}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Platform */}
+                      <td className="p-4">
+                        <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-[11px] font-medium">
+                          <PlatformIcon platform={ch.platform as Platform} className="h-3.5 w-3.5" />
+                          {platformLabel(ch.platform as Platform)}
+                        </span>
+                      </td>
+
+                      {/* Workspace */}
+                      <td className="p-4">
+                        {ch.workspaces ? (
+                          <div className="flex items-center gap-1.5 font-medium text-foreground">
+                            <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                            {ch.workspaces.name}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground italic">Unlinked</span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="p-4">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                            ch.is_active
+                              ? "bg-green-100 text-green-700 dark:bg-green-950/60 dark:text-green-300"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {ch.is_active ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                          ) : (
+                            <PowerOff className="h-3 w-3" />
+                          )}
+                          {ch.is_active ? "Connected" : "Disconnected"}
+                        </span>
+                      </td>
+
+                      {/* Account ID */}
+                      <td className="p-4 font-mono text-[11px] text-muted-foreground">
+                        {accountId ? (
+                          <span className="rounded bg-muted px-1.5 py-0.5">{accountId}</span>
+                        ) : (
+                          <span className="text-amber-500 italic">None</span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="p-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {ch.is_active && (
+                            <button
+                              onClick={() => handleDisconnect(ch)}
+                              disabled={loadingId === ch.id}
+                              className="p-1.5 rounded-lg border border-amber-200 text-amber-600 hover:bg-amber-50 dark:border-amber-900/50 transition-colors"
+                              title="Disconnect Channel"
+                            >
+                              {loadingId === ch.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <PowerOff className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => setChannelToDelete(ch)}
+                            disabled={loadingId === ch.id}
+                            className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 transition-colors"
+                            title="Delete Channel Record"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Delete Channel Confirm Dialog */}
+      <ConfirmDialog
+        open={Boolean(channelToDelete)}
+        title="Delete Channel Record"
+        message={`Are you sure you want to permanently delete the channel record for "${channelToDelete?.display_name || channelToDelete?.username}"?`}
+        confirmLabel="Delete Channel"
+        destructive={true}
+        onCancel={() => setChannelToDelete(null)}
+        onConfirm={handleDeleteChannel}
+      />
     </div>
   );
 }

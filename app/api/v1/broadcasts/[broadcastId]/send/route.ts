@@ -249,13 +249,14 @@ async function deliverBroadcastDirectly(
         const channel = rec.channels as { late_account_id?: string; zernio_account_id?: string } | null;
         const accountId = channel?.zernio_account_id || channel?.late_account_id;
 
-        // Find conversation
+        // 1. First attempt: existing conversation thread
         const { data: conv } = await supabase
           .from("conversations")
           .select("late_conversation_id")
           .eq("contact_id", rec.contact_id)
           .eq("channel_id", rec.channel_id)
-          .single();
+          .limit(1)
+          .maybeSingle();
 
         if (conv?.late_conversation_id && accountId) {
           await zernio.messages.sendInboxMessage({
@@ -269,10 +270,53 @@ async function deliverBroadcastDirectly(
             .eq("id", rec.id);
 
           sentCount++;
+        } else if (accountId) {
+          // 2. Second attempt: Direct send by participant identifier
+          const { data: contact } = await supabase
+            .from("contacts")
+            .select("metadata")
+            .eq("id", rec.contact_id)
+            .limit(1)
+            .maybeSingle();
+
+          const contactMeta = (contact?.metadata as Record<string, any>) || {};
+          const participantId =
+            contactMeta.phone ||
+            contactMeta.phone_number ||
+            contactMeta.participantId ||
+            contactMeta.id;
+          const participantUsername = contactMeta.username || contactMeta.handle;
+
+          if (participantId || participantUsername) {
+            await zernio.messages.createInboxConversation({
+              body: {
+                accountId,
+                participantId: participantId || undefined,
+                participantUsername: participantUsername || undefined,
+                message: text,
+              },
+            });
+
+            await supabase
+              .from("broadcast_recipients")
+              .update({ status: "sent", sent_at: new Date().toISOString() })
+              .eq("id", rec.id);
+
+            sentCount++;
+          } else {
+            await supabase
+              .from("broadcast_recipients")
+              .update({
+                status: "failed",
+                error_message: "No active conversation or recipient handle found",
+              })
+              .eq("id", rec.id);
+            failedCount++;
+          }
         } else {
           await supabase
             .from("broadcast_recipients")
-            .update({ status: "failed", error_message: "No active conversation found" })
+            .update({ status: "failed", error_message: "Channel account ID missing" })
             .eq("id", rec.id);
           failedCount++;
         }

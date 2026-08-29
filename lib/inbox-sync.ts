@@ -252,12 +252,13 @@ async function importConversation({
     new Date(conv.updatedTime!).getTime() > new Date(existingConv!.last_message_at).getTime();
 
   let newUnread = 0;
-  if (typeof conv.unreadCount === "number") {
-    newUnread = conv.unreadCount;
-  } else if (!existingConv) {
-    newUnread = 0;
+  if (!existingConv) {
+    newUnread = typeof conv.unreadCount === "number" ? conv.unreadCount : 0;
+  } else if (isNewer && (conv.unreadCount ?? 0) > 0) {
+    // Only increment when a genuinely newer inbound message has arrived
+    newUnread = (existingConv.unread_count || 0) + 1;
   } else {
-    // Preserve the user's existing read state
+    // Preserve the user's read state (do not reset to unread on sync)
     newUnread = existingConv.unread_count || 0;
   }
 

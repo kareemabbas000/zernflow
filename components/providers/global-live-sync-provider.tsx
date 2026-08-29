@@ -144,9 +144,23 @@ export function GlobalLiveSyncProvider({
       // Calculate total unread count
       const totalUnread = freshList.reduce((acc, c) => acc + (c.unread_count || 0), 0);
 
-      // Atomic batch update for UI
-      setUnreadCount(totalUnread);
-      setConversations(sortedFresh);
+      // Atomic batch update for UI - only update state if values actually changed
+      setUnreadCount((curr) => (curr !== totalUnread ? totalUnread : curr));
+      setConversations((prev) => {
+        if (
+          prev.length === sortedFresh.length &&
+          prev.every(
+            (p, i) =>
+              p.id === sortedFresh[i]?.id &&
+              p.unread_count === sortedFresh[i]?.unread_count &&
+              p.last_message_at === sortedFresh[i]?.last_message_at &&
+              p.last_message_preview === sortedFresh[i]?.last_message_preview
+          )
+        ) {
+          return prev;
+        }
+        return sortedFresh;
+      });
 
       const prevMap = prevConversationsRef.current;
 

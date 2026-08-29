@@ -97,6 +97,16 @@ export function ChannelsView({
       }
     }
 
+    // Silent initial sync with Zernio to ensure 100% mirror accuracy
+    fetch("/api/v1/channels/sync", { method: "POST" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data?.channels) {
+          setChannels(data.channels);
+        }
+      })
+      .catch((err) => console.warn("Channels initial sync warning:", err));
+
     const channel = supabase
       .channel(`channels-live-${workspaceId}`)
       .on(
