@@ -194,15 +194,17 @@ export async function resumeSession(
 
   context.variables = (session.variables as Record<string, string>) || {};
 
-  // The resume is driven by a fresh reply; make {{message}} reflect it.
+  // The resume is driven by a fresh reply; make {{message}}, {{last_message}}, and {{input}} reflect it.
   if (context.incomingMessage.text) {
     context.variables.message = context.incomingMessage.text;
+    context.variables.last_message = context.incomingMessage.text;
+    context.variables.input = context.incomingMessage.text;
   }
 
   // Update session
   await supabase
     .from("flow_sessions")
-    .update({ waiting_for_input: false, waiting_until: null })
+    .update({ waiting_for_input: false, waiting_until: null, variables: (context.variables ?? {}) as Json })
     .eq("id", session.id);
 
   // Continue from current node
@@ -626,7 +628,7 @@ async function executeSendMessage(
     }
 
     // Small delay between messages
-    if (data.messages.length > 1) {
+    if (messageList.length > 1) {
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
@@ -748,6 +750,8 @@ async function executeDelay(
     .update({
       waiting_until: runAt,
       current_node_id: nodeId,
+      status: "active",
+      waiting_for_input: false,
     })
     .eq("id", sessionId);
 
@@ -790,26 +794,55 @@ async function executeSetField(
   data: SetFieldNodeData,
   context: FlowExecutionContext
 ) {
-  // Find field definition
+  if (!data.fieldSlug) return;
+  const value = interpolateVariables(data.value, context.variables || {});
+
+  // Update context variables
+  if (context.variables) {
+    context.variables[data.fieldSlug] = value;
+  }
+
+  // Update standard contact columns if field matches
+  const slug = data.fieldSlug.toLowerCase();
+  if (slug === "name" || slug === "display_name") {
+    await supabase.from("contacts").update({ display_name: value }).eq("id", context.contactId);
+  } else if (slug === "email") {
+    await supabase.from("contacts").update({ email: value }).eq("id", context.contactId);
+  }
+
+  // Find or create field definition
   const { data: fieldDef } = await supabase
     .from("custom_field_definitions")
     .select("id")
     .eq("workspace_id", context.workspaceId)
     .eq("slug", data.fieldSlug)
-    .single();
+    .maybeSingle();
 
-  if (!fieldDef) return;
+  let fieldId = fieldDef?.id;
+  if (!fieldId) {
+    const { data: newField } = await supabase
+      .from("custom_field_definitions")
+      .insert({
+        workspace_id: context.workspaceId,
+        name: data.fieldSlug,
+        slug: data.fieldSlug,
+        type: "text",
+      })
+      .select("id")
+      .maybeSingle();
+    fieldId = newField?.id;
+  }
 
-  const value = interpolateVariables(data.value, context.variables || {});
-
-  await supabase.from("contact_custom_fields").upsert(
-    {
-      contact_id: context.contactId,
-      field_id: fieldDef.id,
-      value,
-    },
-    { onConflict: "contact_id,field_id" }
-  );
+  if (fieldId) {
+    await supabase.from("contact_custom_fields").upsert(
+      {
+        contact_id: context.contactId,
+        field_id: fieldId,
+        value,
+      },
+      { onConflict: "contact_id,field_id" }
+    );
+  }
 }
 
 async function executeHttpRequest(
@@ -1137,6 +1170,7 @@ function interpolateVariables(
   text: string,
   variables: Record<string, unknown>
 ): string {
+  if (!text || typeof text !== "string") return "";
   // Supports dot paths ({{myvar.data.name}}) into object variables (e.g. parsed
   // httpRequest JSON responses). Unresolved paths leave the token literal.
   return text.replace(/\{\{(\w+(?:\.\w+)*)\}\}/g, (token, path: string) => {

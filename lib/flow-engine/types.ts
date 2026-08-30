@@ -155,7 +155,7 @@ export interface EnrollSequenceNodeData {
 }
 
 export interface FlowExecutionContext {
-  triggerId: string;
+  triggerId?: string;
   flowId: string;
   channelId: string;
   contactId: string;

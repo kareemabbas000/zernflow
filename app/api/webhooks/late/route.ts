@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { executeFlow } from "@/lib/flow-engine/engine";
+import { executeFlow, resumeSession } from "@/lib/flow-engine/engine";
 import { matchTrigger } from "@/lib/flow-engine/trigger-matcher";
 import { resolveWebhookSecret, verifyWebhookSignature } from "@/lib/zernio-webhook";
 import { upsertContactForSender } from "@/lib/inbox-sync";
@@ -329,6 +329,36 @@ async function processMessageEvent(
     );
 
     if (!handled) {
+      // 1. Check if contact has an active flow session waiting for input
+      const { data: waitingSession } = await supabase
+        .from("flow_sessions")
+        .select("*")
+        .eq("contact_id", contactId)
+        .eq("status", "active")
+        .eq("waiting_for_input", true)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (waitingSession) {
+        try {
+          await resumeSession(supabase, waitingSession, {
+            flowId: waitingSession.flow_id,
+            channelId: channel.id,
+            contactId,
+            conversationId,
+            workspaceId: channel.workspace_id,
+            incomingMessage,
+            lateConversationId: conv?.id || msg.conversationId,
+            lateAccountId: accountId,
+          });
+          return;
+        } catch (resumeErr) {
+          console.error("[late-webhook] resumeSession error:", resumeErr);
+        }
+      }
+
+      // 2. Check for trigger matches to start a new flow
       const trigger = await matchTrigger(supabase, {
         channelId: channel.id,
         workspaceId: channel.workspace_id,
@@ -336,7 +366,15 @@ async function processMessageEvent(
         message: incomingMessage,
         isFirstMessage: !contact.existed,
       });
+
       if (trigger) {
+        // Clear previous stale active sessions for this contact
+        await supabase
+          .from("flow_sessions")
+          .update({ status: "cancelled" })
+          .eq("contact_id", contactId)
+          .eq("status", "active");
+
         try {
           await executeFlow(supabase, {
             triggerId: trigger.id,
