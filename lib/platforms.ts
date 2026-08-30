@@ -142,8 +142,24 @@ export function isSupportedPlatform(value: unknown): value is Platform {
   );
 }
 
+export function normalizePlatform(raw: unknown): Platform | null {
+  if (!raw || typeof raw !== "string") return null;
+  const p = raw.toLowerCase().trim().replace(/[-_]/g, "");
+
+  if (p === "facebook" || p === "facebookpage" || p === "fb" || p === "meta") return "facebook";
+  if (p === "instagram" || p === "instagrambusiness" || p === "ig") return "instagram";
+  if (p === "whatsapp" || p === "whatsappbusiness" || p === "wa" || p === "waba") return "whatsapp";
+  if (p === "twitter" || p === "x" || p === "xtwitter") return "twitter";
+  if (p === "telegram" || p === "tg" || p === "telegrambot") return "telegram";
+  if (p === "bluesky" || p === "bsky") return "bluesky";
+  if (p === "reddit") return "reddit";
+
+  return isSupportedPlatform(raw) ? raw : null;
+}
+
 export function platformLabel(platform: string): string {
-  return isSupportedPlatform(platform)
-    ? PLATFORM_LABELS[platform]
+  const norm = normalizePlatform(platform);
+  return norm
+    ? PLATFORM_LABELS[norm]
     : platform.charAt(0).toUpperCase() + platform.slice(1);
 }

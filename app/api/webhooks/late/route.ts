@@ -8,7 +8,7 @@ import { upsertContactForSender } from "@/lib/inbox-sync";
 import { processComment } from "@/lib/comment-processor";
 import type { Database } from "@/lib/types/database";
 import { messagePreview } from "@/lib/message-preview";
-import { isSupportedPlatform, type Platform } from "@/lib/platforms";
+import { isSupportedPlatform, normalizePlatform, type Platform } from "@/lib/platforms";
 
 // ── Zernio API webhook payload ───────────────────────────────────────────────
 
@@ -146,7 +146,7 @@ async function handleWebhook(request: NextRequest) {
   const supabase = await createServiceClient();
 
   // Look up channel by late_account_id or zernio_account_id matching any account identifier
-  const targetPlatform = msg.platform || account.platform;
+  const normPlatform = normalizePlatform(msg.platform || account.platform);
   const accountId = account.id || (account as any).accountId || (account as any)._id;
 
   let channelQuery = supabase
@@ -155,8 +155,8 @@ async function handleWebhook(request: NextRequest) {
     .or(`late_account_id.eq.${accountId},zernio_account_id.eq.${accountId}`)
     .eq("is_active", true);
 
-  if (targetPlatform && isSupportedPlatform(targetPlatform)) {
-    channelQuery = channelQuery.eq("platform", targetPlatform as Platform);
+  if (normPlatform) {
+    channelQuery = channelQuery.eq("platform", normPlatform);
   }
 
   const { data: matchedChannels } = await channelQuery;
