@@ -258,7 +258,7 @@ async function importConversation({
     // Only increment when a genuinely newer inbound message has arrived
     newUnread = (existingConv.unread_count || 0) + 1;
   } else {
-    // Preserve the user's read state (do not reset to unread on sync)
+    // Permanently preserve the user's read state (once read, stays read)
     newUnread = existingConv.unread_count || 0;
   }
 

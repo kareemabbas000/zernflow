@@ -138,19 +138,21 @@ async function handleWebhook(request: NextRequest) {
 
   const { message: msg, account } = payload;
 
-  // Ignore outbound messages (sent by the bot itself) to prevent loops
-  if (msg.direction === "outbound") {
+  // Ignore outbound messages (sent by the bot or page itself) to prevent loops
+  if (msg.direction === "outbound" || msg.direction === "outgoing") {
     return NextResponse.json({ ok: true, skipped: true });
   }
 
   const supabase = await createServiceClient();
 
-  // Look up channel by late_account_id and matching platform
+  // Look up channel by late_account_id or zernio_account_id matching any account identifier
   const targetPlatform = msg.platform || account.platform;
+  const accountId = account.id || (account as any).accountId || (account as any)._id;
+
   let channelQuery = supabase
     .from("channels")
     .select("*")
-    .eq("late_account_id", account.id)
+    .or(`late_account_id.eq.${accountId},zernio_account_id.eq.${accountId}`)
     .eq("is_active", true);
 
   if (targetPlatform && isSupportedPlatform(targetPlatform)) {
@@ -165,7 +167,7 @@ async function handleWebhook(request: NextRequest) {
     (await supabase
       .from("channels")
       .select("*")
-      .eq("late_account_id", account.id)
+      .or(`late_account_id.eq.${accountId},zernio_account_id.eq.${accountId}`)
       .eq("is_active", true)
       .limit(1)
       .then((r) => r.data?.[0]));
@@ -222,6 +224,7 @@ async function processMessageEvent(
   channel: Database["public"]["Tables"]["channels"]["Row"],
 ) {
   const { message: msg, conversation: conv, account, metadata } = payload;
+  const accountId = account.id || (account as any).accountId || (account as any)._id || channel.zernio_account_id || channel.late_account_id;
 
   // ── Upsert contact ───────────────────────────────────────────────────────
 
@@ -245,48 +248,67 @@ async function processMessageEvent(
 
   const contactId = contact.contactId;
 
-  // ── Upsert conversation ──────────────────────────────────────────────────
+  // ── Upsert conversation with clean single unread increment ───────────────
 
   const preview = messagePreview(msg.text);
 
-  const { data: conversation } = await supabase
+  const { data: existingConv } = await supabase
     .from("conversations")
-    .upsert(
-      {
+    .select("id, unread_count, is_automation_paused")
+    .eq("channel_id", channel.id)
+    .eq("contact_id", contactId)
+    .maybeSingle();
+
+  let conversationId = existingConv?.id;
+  let isAutomationPaused = existingConv?.is_automation_paused || false;
+
+  if (existingConv) {
+    // Existing conversation: increment unread by 1 cleanly
+    const newUnread = (existingConv.unread_count || 0) + 1;
+    await supabase
+      .from("conversations")
+      .update({
+        last_message_at: new Date().toISOString(),
+        last_message_preview: preview,
+        unread_count: newUnread,
+        status: "open",
+        late_conversation_id: conv?.id || undefined,
+      })
+      .eq("id", existingConv.id);
+  } else {
+    // Brand new conversation starts with 1 unread message
+    const { data: newConv } = await supabase
+      .from("conversations")
+      .insert({
         workspace_id: channel.workspace_id,
         channel_id: channel.id,
         contact_id: contactId,
         platform: channel.platform,
-        late_conversation_id: conv.id,
+        late_conversation_id: conv?.id || null,
         status: "open",
         last_message_at: new Date().toISOString(),
         last_message_preview: preview,
         unread_count: 1,
-      },
-      { onConflict: "channel_id,contact_id" }
-    )
-    .select("id, is_automation_paused")
-    .single();
+      })
+      .select("id, is_automation_paused")
+      .single();
 
-  if (!conversation) {
-    console.error("Failed to upsert conversation for webhook message");
-    return;
+    if (newConv) {
+      conversationId = newConv.id;
+      isAutomationPaused = newConv.is_automation_paused || false;
+    }
   }
 
-  if (contact.existed) {
-    await supabase
-      .rpc("increment_unread", {
-        conv_id: conversation.id,
-        preview,
-      })
-      .then(() => {});
+  if (!conversationId) {
+    console.error("Failed to resolve conversation for webhook message");
+    return;
   }
 
   // Messages are stored by Zernio (source of truth) — no local insert needed.
 
   // ── Flow engine ───────────────────────────────────────────────────────────
 
-  if (!conversation.is_automation_paused) {
+  if (!isAutomationPaused) {
     const incomingMessage = {
       text: msg.text || undefined,
       postbackPayload: metadata?.postbackPayload || undefined,
@@ -310,7 +332,7 @@ async function processMessageEvent(
       const trigger = await matchTrigger(supabase, {
         channelId: channel.id,
         workspaceId: channel.workspace_id,
-        conversationId: conversation.id,
+        conversationId,
         message: incomingMessage,
         isFirstMessage: !contact.existed,
       });
@@ -321,11 +343,11 @@ async function processMessageEvent(
             flowId: trigger.flow_id,
             channelId: channel.id,
             contactId,
-            conversationId: conversation.id,
+            conversationId,
             workspaceId: channel.workspace_id,
             incomingMessage,
-            lateConversationId: conv.id,
-            lateAccountId: account.id,
+            lateConversationId: conv?.id || msg.conversationId,
+            lateAccountId: accountId,
           });
         } catch (err) {
           console.error("Flow execution error:", err);

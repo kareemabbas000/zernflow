@@ -194,10 +194,46 @@ export function GlobalLiveSyncProvider({
     }
   }, [workspaceId, triggerNotification]);
 
-  // Initial Sync & Interval Polling (runs globally across all tabs)
+  // Instant local fetch from Supabase on mount (<10ms)
+  useEffect(() => {
+    let isMounted = true;
+    const supabase = createClient();
+
+    async function loadInitialConversations() {
+      try {
+        const { data } = await supabase
+          .from("conversations")
+          .select("*, contacts(*)")
+          .eq("workspace_id", workspaceId)
+          .order("last_message_at", { ascending: false, nullsFirst: false })
+          .limit(80);
+
+        if (isMounted && data && data.length > 0) {
+          const totalUnread = data.reduce((acc, c) => acc + (c.unread_count || 0), 0);
+          setConversations(data as Conversation[]);
+          setUnreadCount(totalUnread);
+          const initialMap = new Map<string, { lastMsgAt: string | null; unread: number }>();
+          data.forEach((c) =>
+            initialMap.set(c.id, { lastMsgAt: c.last_message_at, unread: c.unread_count || 0 })
+          );
+          prevConversationsRef.current = initialMap;
+        }
+      } catch (err) {
+        console.warn("[global-sync] initial local query error:", err);
+      }
+    }
+
+    loadInitialConversations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [workspaceId]);
+
+  // Initial Sync & Background Polling
   useEffect(() => {
     syncNow();
-    const interval = setInterval(syncNow, 3500);
+    const interval = setInterval(syncNow, 6000);
     return () => clearInterval(interval);
   }, [syncNow]);
 

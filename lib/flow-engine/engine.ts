@@ -383,7 +383,13 @@ async function sendFirstMessageAsPrivateReply(
   context: FlowExecutionContext,
   lateAccountId: string
 ) {
-  const first = data.messages[0];
+  const rawList =
+    Array.isArray(data.messages) && data.messages.length > 0
+      ? data.messages
+      : (data as any).text
+        ? [{ text: (data as any).text, imageUrl: (data as any).imageUrl, mediaUrl: (data as any).mediaUrl }]
+        : [];
+  const first = rawList[0];
   if (!first) return;
 
   const text = interpolateVariables(
@@ -426,7 +432,7 @@ async function sendFirstMessageAsPrivateReply(
     return;
   }
 
-  if (data.messages.length > 1) {
+  if (rawList.length > 1) {
     console.warn(
       "Comment flow Send Message node had multiple messages; only the first was sent (one private reply per comment)."
     );
@@ -466,6 +472,23 @@ async function executeSendMessage(
     }
   }
 
+  const messageList =
+    Array.isArray(data.messages) && data.messages.length > 0
+      ? data.messages
+      : (data as any).text
+        ? [
+            {
+              text: (data as any).text,
+              buttons: (data as any).buttons,
+              quickReplies: (data as any).quickReplies,
+              imageUrl: (data as any).imageUrl,
+              mediaUrl: (data as any).mediaUrl,
+            },
+          ]
+        : [];
+
+  if (messageList.length === 0) return;
+
   // Resolve late_conversation_id from conversation if not in context
   let lateConversationId = context.lateConversationId;
   if (!lateConversationId) {
@@ -475,22 +498,51 @@ async function executeSendMessage(
       .eq("id", context.conversationId)
       .single();
 
-    if (!conversation?.late_conversation_id) {
-      // Comment-triggered flows have no DM conversation yet. Instagram allows
-      // exactly one private reply per comment, so deliver the first message via
-      // the private-reply endpoint instead of silently dropping the whole node
-      // (users build comment flows with plain Send Message nodes, not Private Reply).
-      if (context.variables?.comment_id && context.variables?.post_id && lateAccountId) {
-        await sendFirstMessageAsPrivateReply(supabase, zernio, data, context, lateAccountId);
-        return;
+    if (conversation?.late_conversation_id) {
+      lateConversationId = conversation.late_conversation_id;
+    } else if (context.variables?.comment_id && context.variables?.post_id && lateAccountId) {
+      await sendFirstMessageAsPrivateReply(supabase, zernio, data, context, lateAccountId);
+      return;
+    } else if (lateAccountId) {
+      // Try resolving via participant from contact
+      const { data: contact } = await supabase
+        .from("contacts")
+        .select("metadata")
+        .eq("id", context.contactId)
+        .single();
+      const meta = contact?.metadata as any;
+      const participantId = meta?.participantId || meta?.senderId || meta?.id;
+
+      if (participantId) {
+        try {
+          const newConvRes = await zernio.messages.createInboxConversation({
+            body: {
+              accountId: lateAccountId,
+              participantId,
+              message: messageList[0]?.text || "Hello",
+            } as any,
+          });
+          const createdConv = (newConvRes as any)?.data?.data || (newConvRes as any)?.data;
+          lateConversationId = createdConv?.id || createdConv?._id;
+          if (lateConversationId && context.conversationId) {
+            await supabase
+              .from("conversations")
+              .update({ late_conversation_id: lateConversationId })
+              .eq("id", context.conversationId);
+          }
+        } catch (convErr) {
+          console.warn("[flow-engine] createInboxConversation fallback error:", convErr);
+        }
       }
+    }
+
+    if (!lateConversationId) {
       console.error("No late_conversation_id found for conversation:", context.conversationId);
       return;
     }
-    lateConversationId = conversation.late_conversation_id;
   }
 
-  for (const msg of data.messages) {
+  for (const msg of messageList) {
     const adapted = adaptMessage(msg, context.platform!);
     const text = interpolateVariables(adapted.text, context.variables || {});
 
