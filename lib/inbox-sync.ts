@@ -80,6 +80,33 @@ export async function upsertContactForSender({
     return { contactId: existingContactChannel.contact_id, existed: true };
   }
 
+  // Check if contact with same display name already exists in this workspace
+  if (senderName && senderName.trim()) {
+    const { data: existingWorkspaceContact } = await supabase
+      .from("contacts")
+      .select("id")
+      .eq("workspace_id", channel.workspace_id)
+      .eq("display_name", senderName.trim())
+      .maybeSingle();
+
+    if (existingWorkspaceContact) {
+      await supabase.from("contact_channels").insert({
+        contact_id: existingWorkspaceContact.id,
+        channel_id: channel.id,
+        platform_sender_id: senderId,
+        platform_username: senderUsername ?? null,
+      });
+
+      if (stampExisting) {
+        await supabase
+          .from("contacts")
+          .update({ last_interaction_at: interactionAt })
+          .eq("id", existingWorkspaceContact.id);
+      }
+      return { contactId: existingWorkspaceContact.id, existed: true };
+    }
+  }
+
   const { data: newContact } = await supabase
     .from("contacts")
     .insert({

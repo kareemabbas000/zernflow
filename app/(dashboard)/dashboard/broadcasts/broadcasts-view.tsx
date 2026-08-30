@@ -20,6 +20,11 @@ import {
   Plug,
   MessageSquare,
   Sparkles,
+  ChevronRight,
+  ArrowRight,
+  UserCheck,
+  Check,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -96,16 +101,10 @@ export function BroadcastsView({
   broadcasts: Broadcast[];
   workspaceId: string;
 }) {
-  const [showCreate, setShowCreate] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [items, setItems] = useState(broadcasts);
-  const [selectedChannelId, setSelectedChannelId] = useState<string>("all");
-  const [channels, setChannels] = useState<Channel[]>([]);
-  const [segmentFilter, setSegmentFilter] = useState<SegmentFilter>(createEmptyFilter());
-  const [showSegmentFilter, setShowSegmentFilter] = useState(false);
+  const [items, setItems] = useState<Broadcast[]>(broadcasts);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [matchingContactsCount, setMatchingContactsCount] = useState<number | null>(null);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [channels, setChannels] = useState<Channel[]>([]);
 
   // Load connected channels
   useEffect(() => {
@@ -121,62 +120,49 @@ export function BroadcastsView({
     loadChannels();
   }, [workspaceId]);
 
-  // Estimate audience count
-  const estimateAudience = useCallback(async () => {
-    const supabase = createClient();
-    let query = supabase
-      .from("contacts")
-      .select("id", { count: "exact", head: true })
-      .eq("workspace_id", workspaceId);
-
-    const { count } = await query;
-    setMatchingContactsCount(count ?? 0);
-  }, [workspaceId]);
-
-  useEffect(() => {
-    estimateAudience();
-  }, [estimateAudience]);
-
-  async function handleCreate() {
-    if (!newName.trim() || creating) return;
-    setCreating(true);
-
-    try {
-      const supabase = createClient();
-      const filterToSave = showSegmentFilter ? segmentFilter : null;
-      const { data, error } = await supabase
-        .from("broadcasts")
-        .insert({
-          workspace_id: workspaceId,
-          name: newName.trim(),
-          status: "draft",
-          message_content: { text: "" },
-          segment_filter: filterToSave as unknown as Json,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      if (data) {
-        setItems((prev) => [data, ...prev]);
-        setNewName("");
-        setShowCreate(false);
-        setSelectedId(data.id);
-      }
-    } catch (err) {
-      console.error("Failed to create broadcast:", err);
-    } finally {
-      setCreating(false);
-    }
-  }
-
   const selectedBroadcast = selectedId
     ? items.find((b) => b.id === selectedId) ?? null
     : null;
 
-  if (selectedBroadcast) {
+  if (isCreatingNew) {
     return (
-      <BroadcastDetail
+      <BroadcastWizard
+        broadcast={null}
+        workspaceId={workspaceId}
+        channels={channels}
+        onBack={() => setIsCreatingNew(false)}
+        onSaved={(created) => {
+          setItems((prev) => [created, ...prev]);
+          setIsCreatingNew(false);
+          setSelectedId(created.id);
+        }}
+      />
+    );
+  }
+
+  if (selectedBroadcast) {
+    if (selectedBroadcast.status === "draft" || selectedBroadcast.status === "scheduled") {
+      return (
+        <BroadcastWizard
+          broadcast={selectedBroadcast}
+          workspaceId={workspaceId}
+          channels={channels}
+          onBack={() => setSelectedId(null)}
+          onSaved={(updated) => {
+            setItems((prev) =>
+              prev.map((b) => (b.id === updated.id ? updated : b))
+            );
+          }}
+          onDeleted={(id) => {
+            setItems((prev) => prev.filter((b) => b.id !== id));
+            setSelectedId(null);
+          }}
+        />
+      );
+    }
+
+    return (
+      <BroadcastReportView
         broadcast={selectedBroadcast}
         workspaceId={workspaceId}
         channels={channels}
@@ -184,11 +170,6 @@ export function BroadcastsView({
         onDeleted={(id) => {
           setItems((prev) => prev.filter((b) => b.id !== id));
           setSelectedId(null);
-        }}
-        onUpdate={(updated) => {
-          setItems((prev) =>
-            prev.map((b) => (b.id === updated.id ? updated : b))
-          );
         }}
       />
     );
@@ -205,160 +186,57 @@ export function BroadcastsView({
               Broadcasts
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Send mass messages and direct announcements to your omnichannel contacts
+              Send mass announcements and direct marketing campaigns to your audience
             </p>
           </div>
           <button
-            onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+            onClick={() => setIsCreatingNew(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all shadow-md shadow-primary/20"
           >
             <Plus className="h-4 w-4" />
             Create Broadcast
           </button>
         </div>
-
-        {/* Create Broadcast Modal */}
-        {showCreate && (
-          <div className="mt-6 rounded-xl border border-border bg-card p-6 shadow-sm">
-            <h3 className="text-base font-semibold">New Broadcast Campaign</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Configure campaign targeting and messaging options.
-            </p>
-
-            <div className="mt-4 space-y-4">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  Broadcast Name
-                </label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="e.g. Summer Promo, Product Launch, System Notice"
-                  className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  autoFocus
-                  onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-                />
-              </div>
-
-              {/* Target Channel Selection */}
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  Sending Channel
-                </label>
-                <select
-                  value={selectedChannelId}
-                  onChange={(e) => setSelectedChannelId(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="all">All Connected Channels (Workspace-wide)</option>
-                  {channels.map((ch) => (
-                    <option key={ch.id} value={ch.id}>
-                      {ch.display_name || ch.username || ch.platform} ({ch.platform})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Audience Preview */}
-              <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3.5 py-2 text-xs">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <Users className="h-4 w-4 text-primary" />
-                  Estimated Reach
-                </span>
-                <span className="font-semibold text-foreground">
-                  {matchingContactsCount !== null ? `${matchingContactsCount} Contacts` : "Calculating..."}
-                </span>
-              </div>
-
-              {/* Targeting Filter Toggle */}
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setShowSegmentFilter(!showSegmentFilter)}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
-                    showSegmentFilter
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-input text-muted-foreground hover:bg-accent hover:text-foreground"
-                  )}
-                >
-                  <Filter className="h-3.5 w-3.5" />
-                  Target Specific Audience Segment
-                  <ChevronDown
-                    className={cn(
-                      "h-3 w-3 transition-transform",
-                      showSegmentFilter && "rotate-180"
-                    )}
-                  />
-                </button>
-
-                {showSegmentFilter && (
-                  <div className="mt-3">
-                    <SegmentBuilder
-                      value={segmentFilter}
-                      onChange={setSegmentFilter}
-                      workspaceId={workspaceId}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  onClick={() => setShowCreate(false)}
-                  className="rounded-lg border border-input px-3.5 py-1.5 text-xs font-medium hover:bg-accent"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreate}
-                  disabled={!newName.trim() || creating}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                >
-                  {creating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                  Continue to Composer
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Broadcasts List */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto p-8">
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <Radio className="h-10 w-10 text-muted-foreground/40" />
-            <p className="mt-3 text-sm font-medium text-muted-foreground">
-              No broadcasts created yet
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-24 text-center">
+            <Radio className="h-12 w-12 text-muted-foreground/30" />
+            <h3 className="mt-4 text-base font-semibold text-foreground">No broadcasts yet</h3>
+            <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+              Create your first broadcast to message your contacts across Instagram, WhatsApp, and Facebook.
             </p>
-            <p className="mt-1 text-xs text-muted-foreground/70">
-              Create a broadcast to message multiple contacts across Instagram, WhatsApp, and Facebook.
-            </p>
+            <button
+              onClick={() => setIsCreatingNew(true)}
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New Broadcast Campaign
+            </button>
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((broadcast) => {
               const status = statusConfig[broadcast.status];
               const StatusIcon = status.icon;
-              const total = broadcast.total_recipients;
+              const isDraft = broadcast.status === "draft" || broadcast.status === "scheduled";
 
               return (
-                <button
+                <div
                   key={broadcast.id}
                   onClick={() => setSelectedId(broadcast.id)}
-                  className="flex w-full items-center gap-6 px-8 py-4 text-left transition-colors hover:bg-accent/50"
+                  className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-5 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer"
                 >
-                  {/* Status + Name */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="truncate text-sm font-medium">
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                         {broadcast.name}
                       </h3>
                       <span
                         className={cn(
-                          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium shrink-0",
                           status.className
                         )}
                       >
@@ -371,45 +249,22 @@ export function BroadcastsView({
                         {status.label}
                       </span>
                     </div>
-                    <div className="mt-1 flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {broadcast.scheduled_for
-                          ? formatDate(broadcast.scheduled_for)
-                          : "Immediate"}
-                      </span>
-                      <span>
-                        Created {formatDate(broadcast.created_at)}
-                      </span>
-                    </div>
+
+                    <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                      {(broadcast.message_content as any)?.text || "No message content"}
+                    </p>
                   </div>
 
-                  {/* Stats */}
-                  <div className="flex items-center gap-6">
-                    <div className="text-center">
-                      <p className="text-lg font-semibold">{total}</p>
-                      <p className="text-[10px] uppercase text-muted-foreground">
-                        Recipients
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-semibold text-green-600">
-                        {broadcast.sent}
-                      </p>
-                      <p className="text-[10px] uppercase text-muted-foreground">
-                        Sent
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-semibold text-red-600">
-                        {broadcast.failed}
-                      </p>
-                      <p className="text-[10px] uppercase text-muted-foreground">
-                        Failed
-                      </p>
-                    </div>
+                  <div className="mt-5 pt-3 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Users className="h-3.5 w-3.5" />
+                      {broadcast.total_recipients > 0
+                        ? `${broadcast.sent}/${broadcast.total_recipients} sent`
+                        : "Draft"}
+                    </span>
+                    <span>{formatDate(broadcast.created_at)}</span>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -419,100 +274,135 @@ export function BroadcastsView({
   );
 }
 
-function BroadcastDetail({
+// ── Multi-Step Broadcast Wizard ─────────────────────────────────────────────
+
+function BroadcastWizard({
   broadcast,
   workspaceId,
   channels,
   onBack,
-  onUpdate,
+  onSaved,
   onDeleted,
 }: {
-  broadcast: Broadcast;
+  broadcast: Broadcast | null;
   workspaceId: string;
   channels: Channel[];
   onBack: () => void;
-  onUpdate: (updated: Broadcast) => void;
-  onDeleted: (id: string) => void;
+  onSaved: (saved: Broadcast) => void;
+  onDeleted?: (id: string) => void;
 }) {
-  const messageContent = broadcast.message_content as { text?: string } | null;
-  const [messageText, setMessageText] = useState(messageContent?.text || "");
-  const [sending, setSending] = useState(false);
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [name, setName] = useState(broadcast?.name || "");
+  const [channelId, setChannelId] = useState<string>("all");
+  const [targetType, setTargetType] = useState<"all" | "filter">(
+    broadcast?.segment_filter ? "filter" : "all"
+  );
+  const [segmentFilter, setSegmentFilter] = useState<SegmentFilter>(
+    (broadcast?.segment_filter as unknown as SegmentFilter) || createEmptyFilter()
+  );
+  const [messageText, setMessageText] = useState(
+    (broadcast?.message_content as any)?.text || ""
+  );
+
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [recipients, setRecipients] = useState<RecipientRow[]>([]);
-  const [loadingRecipients, setLoadingRecipients] = useState(false);
+  const [estimatedReach, setEstimatedReach] = useState<number | null>(null);
 
-  const isDraft = broadcast.status === "draft" || broadcast.status === "scheduled";
-  const status = statusConfig[broadcast.status];
-  const StatusIcon = status.icon;
+  // Estimate Audience Reach
+  const estimateAudience = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      let query = supabase
+        .from("contacts")
+        .select("id", { count: "exact", head: true })
+        .eq("workspace_id", workspaceId);
 
-  // Load recipient delivery rows
-  useEffect(() => {
-    async function loadRecipients() {
-      setLoadingRecipients(true);
-      try {
-        const supabase = createClient();
-        const { data } = await supabase
-          .from("broadcast_recipients")
-          .select("id, status, sent_at, error_message, contacts(display_name, phone_number, avatar_url)")
-          .eq("broadcast_id", broadcast.id)
-          .order("sent_at", { ascending: false, nullsFirst: false })
-          .limit(50);
-
-        if (data) setRecipients(data as unknown as RecipientRow[]);
-      } catch (err) {
-        console.warn("Failed to load recipients:", err);
-      } finally {
-        setLoadingRecipients(false);
+      if (targetType === "all") {
+        const { count } = await query;
+        setEstimatedReach(count ?? 0);
+      } else {
+        const { count } = await query;
+        setEstimatedReach(count ?? 0);
       }
+    } catch {
+      setEstimatedReach(0);
+    }
+  }, [workspaceId, targetType]);
+
+  useEffect(() => {
+    estimateAudience();
+  }, [estimateAudience]);
+
+  async function handleSaveDraft(silent = false) {
+    if (!name.trim()) {
+      setError("Please provide a campaign name");
+      return null;
     }
 
-    if (broadcast.status !== "draft") {
-      loadRecipients();
-    }
-  }, [broadcast.id, broadcast.status]);
-
-  async function handleSave() {
     setSaving(true);
     setError(null);
     try {
       const supabase = createClient();
-      const newContent = { text: messageText.trim() };
-      const { data, error: err } = await supabase
-        .from("broadcasts")
-        .update({ message_content: newContent as unknown as Json })
-        .eq("id", broadcast.id)
-        .select()
-        .single();
+      const filterToSave = targetType === "filter" ? segmentFilter : null;
+      const payload = {
+        workspace_id: workspaceId,
+        name: name.trim(),
+        status: "draft" as BroadcastStatus,
+        message_content: { text: messageText.trim() } as unknown as Json,
+        segment_filter: filterToSave as unknown as Json,
+      };
 
-      if (err) throw err;
-      if (data) {
-        onUpdate(data);
-        setSuccess("Draft saved successfully");
+      let savedBroadcast: Broadcast;
+
+      if (broadcast?.id) {
+        const { data, error: err } = await supabase
+          .from("broadcasts")
+          .update(payload)
+          .eq("id", broadcast.id)
+          .select()
+          .single();
+        if (err) throw err;
+        savedBroadcast = data;
+      } else {
+        const { data, error: err } = await supabase
+          .from("broadcasts")
+          .insert(payload)
+          .select()
+          .single();
+        if (err) throw err;
+        savedBroadcast = data;
+      }
+
+      if (!silent) {
+        setSuccess("Campaign draft saved successfully");
         setTimeout(() => setSuccess(null), 3000);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save");
+      onSaved(savedBroadcast);
+      return savedBroadcast;
+    } catch (err: any) {
+      setError(err?.message || "Failed to save draft");
+      return null;
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleSend() {
+  async function handleSendBroadcast() {
     if (!messageText.trim()) {
-      setError("Message cannot be empty");
+      setError("Please write a message to broadcast");
+      setCurrentStep(3);
       return;
     }
 
     setSending(true);
     setError(null);
-    setSuccess(null);
-
     try {
-      const res = await fetch(`/api/v1/broadcasts/${broadcast.id}/send`, {
+      const saved = await handleSaveDraft(true);
+      if (!saved) throw new Error("Could not save campaign before sending");
+
+      const res = await fetch(`/api/v1/broadcasts/${saved.id}/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -521,90 +411,461 @@ function BroadcastDetail({
       });
 
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send broadcast");
 
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to send broadcast");
-      }
-
-      setSuccess(`Dispatched to ${data.totalRecipients} recipients`);
-
-      onUpdate({
-        ...broadcast,
+      onSaved({
+        ...saved,
         status: "sending",
         total_recipients: data.totalRecipients,
-        message_content: { text: messageText.trim() } as unknown as Json,
       });
-
-      // Poll for completion
-      setTimeout(async () => {
-        const supabase = createClient();
-        const { data: updated } = await supabase
-          .from("broadcasts")
-          .select("*")
-          .eq("id", broadcast.id)
-          .single();
-        if (updated) onUpdate(updated);
-      }, 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send");
+    } catch (err: any) {
+      setError(err?.message || "Failed to send broadcast");
     } finally {
       setSending(false);
     }
   }
 
+  const steps = [
+    { num: 1, title: "Campaign Setup" },
+    { num: 2, title: "Audience Target" },
+    { num: 3, title: "Message Content" },
+    { num: 4, title: "Review & Send" },
+  ];
+
+  return (
+    <div className="flex h-full flex-col bg-background">
+      {/* Top Wizard Navigation Bar */}
+      <div className="border-b border-border px-8 py-4 bg-card/60 backdrop-blur-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onBack}
+              className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              title="Back to Broadcasts"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">
+                {broadcast ? `Edit: ${name || "Untitled Broadcast"}` : "Create New Broadcast"}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Step {currentStep} of 4 • {steps[currentStep - 1].title}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleSaveDraft(false)}
+              disabled={saving}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-input px-3.5 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
+            >
+              {saving && <Loader2 className="h-3 w-3 animate-spin" />}
+              Save Draft
+            </button>
+          </div>
+        </div>
+
+        {/* Stepper progress indicator */}
+        <div className="mt-4 flex items-center justify-between max-w-2xl mx-auto">
+          {steps.map((s, idx) => (
+            <div key={s.num} className="flex items-center flex-1 last:flex-none">
+              <button
+                type="button"
+                onClick={() => setCurrentStep(s.num)}
+                className="flex items-center gap-2 group cursor-pointer focus:outline-none"
+              >
+                <div
+                  className={cn(
+                    "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all",
+                    currentStep === s.num
+                      ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
+                      : currentStep > s.num
+                      ? "bg-primary/20 text-primary"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {currentStep > s.num ? <Check className="h-3.5 w-3.5" /> : s.num}
+                </div>
+                <span
+                  className={cn(
+                    "text-xs font-medium hidden sm:inline transition-colors",
+                    currentStep === s.num
+                      ? "text-foreground font-semibold"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {s.title}
+                </span>
+              </button>
+              {idx < steps.length - 1 && (
+                <div
+                  className={cn(
+                    "h-0.5 flex-1 mx-3 rounded-full transition-colors",
+                    currentStep > idx + 1 ? "bg-primary" : "bg-muted"
+                  )}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Wizard Content Body */}
+      <div className="flex-1 overflow-auto p-8">
+        <div className="mx-auto max-w-2xl">
+          {error && (
+            <div className="mb-6 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-6 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-4 text-xs text-green-700 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              {success}
+            </div>
+          )}
+
+          {/* STEP 1: Campaign Setup */}
+          {currentStep === 1 && (
+            <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+              <div>
+                <h3 className="text-base font-semibold">1. Campaign Details</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Give your broadcast campaign a descriptive name and choose the dispatch channel.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-medium text-foreground">
+                    Campaign Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. VIP Summer Discount, Product Feature Update"
+                    className="mt-1 w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-foreground">Sending Channel</label>
+                  <select
+                    value={channelId}
+                    onChange={(e) => setChannelId(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="all">Omnichannel Broadcast (All Connected Channels)</option>
+                    {channels.map((ch) => (
+                      <option key={ch.id} value={ch.id}>
+                        {ch.display_name || ch.username || ch.platform} ({ch.platform})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: Audience Targeting */}
+          {currentStep === 2 && (
+            <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+              <div>
+                <h3 className="text-base font-semibold">2. Audience Targeting</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Choose who receives this broadcast. Send to all contacts or narrow down by tags and custom fields.
+                </p>
+              </div>
+
+              {/* Target options selector */}
+              <div className="grid grid-cols-2 gap-4">
+                <div
+                  onClick={() => setTargetType("all")}
+                  className={cn(
+                    "cursor-pointer rounded-xl border p-4 text-left transition-all",
+                    targetType === "all"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                      : "border-border hover:border-border/80 bg-background"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <UserCheck className="h-5 w-5 text-primary" />
+                    {targetType === "all" && <Check className="h-4 w-4 text-primary" />}
+                  </div>
+                  <h4 className="mt-2 text-sm font-semibold">All Contacts</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Send to all subscribed contacts in your workspace without filters.
+                  </p>
+                </div>
+
+                <div
+                  onClick={() => setTargetType("filter")}
+                  className={cn(
+                    "cursor-pointer rounded-xl border p-4 text-left transition-all",
+                    targetType === "filter"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                      : "border-border hover:border-border/80 bg-background"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <Filter className="h-5 w-5 text-primary" />
+                    {targetType === "filter" && <Check className="h-4 w-4 text-primary" />}
+                  </div>
+                  <h4 className="mt-2 text-sm font-semibold">Target Audience Segment</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Filter by specific tags, custom fields, or interaction history.
+                  </p>
+                </div>
+              </div>
+
+              {/* Segment Filter builder if selected */}
+              {targetType === "filter" && (
+                <div className="pt-2 border-t border-border/60">
+                  <SegmentBuilder
+                    value={segmentFilter}
+                    onChange={setSegmentFilter}
+                    workspaceId={workspaceId}
+                  />
+                </div>
+              )}
+
+              {/* Estimated reach badge */}
+              <div className="flex items-center justify-between rounded-xl bg-muted/40 p-4 text-xs">
+                <span className="flex items-center gap-2 font-medium text-foreground">
+                  <Users className="h-4 w-4 text-primary" />
+                  Estimated Audience Reach
+                </span>
+                <span className="font-bold text-sm text-primary">
+                  {estimatedReach !== null ? `${estimatedReach} Contacts` : "Calculating..."}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: Message Content */}
+          {currentStep === 3 && (
+            <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-semibold">3. Message Composer</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Craft your broadcast copy with dynamic personalization tags.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setMessageText((prev: string) => `${prev} {{display_name}}`)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+                  >
+                    <Sparkles className="h-3 w-3 text-primary" />
+                    + Name
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMessageText((prev: string) => `${prev} {{email}}`)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+                  >
+                    + Email
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <textarea
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="Type your broadcast announcement message here..."
+                  rows={6}
+                  className="w-full rounded-xl border border-input bg-background p-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  autoFocus
+                />
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Supports dynamic personalization tags</span>
+                  <span>{messageText.length} characters</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: Review & Dispatch */}
+          {currentStep === 4 && (
+            <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+              <div>
+                <h3 className="text-base font-semibold">4. Review & Dispatch</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Review your campaign summary before triggering mass delivery.
+                </p>
+              </div>
+
+              <div className="space-y-4 text-sm divide-y divide-border/60">
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-muted-foreground">Campaign Name</span>
+                  <span className="font-semibold text-foreground">{name || "Untitled"}</span>
+                </div>
+                <div className="flex items-center justify-between pt-3">
+                  <span className="text-muted-foreground">Target Audience</span>
+                  <span className="font-semibold text-foreground">
+                    {targetType === "all" ? "All Workspace Contacts" : "Segment Filtered"} (
+                    {estimatedReach} recipients)
+                  </span>
+                </div>
+                <div className="pt-3">
+                  <span className="text-muted-foreground block mb-1.5">Message Preview</span>
+                  <div className="rounded-xl bg-muted/40 p-4 text-xs font-mono text-foreground whitespace-pre-wrap">
+                    {messageText || "[No message content provided]"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Wizard Footer Controls */}
+          <div className="mt-8 flex items-center justify-between border-t border-border pt-6">
+            <div>
+              {currentStep > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep((prev) => prev - 1)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-input px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent transition-colors"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              {currentStep < 4 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (currentStep === 1 && !name.trim()) {
+                      setError("Please provide a campaign name");
+                      return;
+                    }
+                    setError(null);
+                    setCurrentStep((prev) => prev + 1);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+                >
+                  Next Step
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSendBroadcast}
+                  disabled={sending || !messageText.trim()}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-xs font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-all shadow-md shadow-primary/20"
+                >
+                  {sending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  {sending ? "Dispatching Broadcast..." : "Send Broadcast Now"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Sent Broadcast Delivery Report ──────────────────────────────────────────
+
+function BroadcastReportView({
+  broadcast,
+  workspaceId,
+  channels,
+  onBack,
+  onDeleted,
+}: {
+  broadcast: Broadcast;
+  workspaceId: string;
+  channels: Channel[];
+  onBack: () => void;
+  onDeleted: (id: string) => void;
+}) {
+  const [recipients, setRecipients] = useState<RecipientRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const status = statusConfig[broadcast.status];
+  const StatusIcon = status.icon;
+
+  useEffect(() => {
+    async function loadRecipients() {
+      setLoading(true);
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("broadcast_recipients")
+          .select("id, status, sent_at, error_message, contacts(display_name, phone_number, avatar_url)")
+          .eq("broadcast_id", broadcast.id)
+          .order("sent_at", { ascending: false, nullsFirst: false })
+          .limit(100);
+
+        if (data) setRecipients(data as unknown as RecipientRow[]);
+      } catch (err) {
+        console.warn("Failed to load recipients:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadRecipients();
+  }, [broadcast.id]);
+
   async function handleDelete() {
-    setDeleting(true);
     try {
-      const res = await fetch(`/api/v1/broadcasts/${broadcast.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete broadcast");
-      onDeleted(broadcast.id);
+      const res = await fetch(`/api/v1/broadcasts/${broadcast.id}`, { method: "DELETE" });
+      if (res.ok) onDeleted(broadcast.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete");
-      setDeleting(false);
+      console.error("Delete error:", err);
     }
   }
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Header */}
+    <div className="flex h-full flex-col bg-background">
       <div className="border-b border-border px-8 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={onBack}
-              className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold">{broadcast.name}</h1>
+                <h1 className="text-xl font-bold text-foreground">{broadcast.name}</h1>
                 <span
                   className={cn(
                     "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
                     status.className
                   )}
                 >
-                  <StatusIcon
-                    className={cn(
-                      "h-3.5 w-3.5",
-                      broadcast.status === "sending" && "animate-spin"
-                    )}
-                  />
+                  <StatusIcon className={cn("h-3.5 w-3.5", broadcast.status === "sending" && "animate-spin")} />
                   {status.label}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Created {formatDate(broadcast.created_at)}
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Dispatched {formatDate(broadcast.created_at)}
               </p>
             </div>
           </div>
 
           <button
             onClick={() => setConfirmDelete(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-900/20 transition-colors"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Delete
@@ -612,163 +873,88 @@ function BroadcastDetail({
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto px-8 py-6">
-        <div className="mx-auto max-w-3xl space-y-6">
-          {/* Stats row */}
-          {broadcast.total_recipients > 0 && (
-            <div className="grid grid-cols-3 gap-4">
-              <div className="rounded-xl border border-border bg-card p-4 text-center">
-                <p className="text-2xl font-bold">{broadcast.total_recipients}</p>
-                <p className="text-xs text-muted-foreground">Total Recipients</p>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-4 text-center">
-                <p className="text-2xl font-bold text-green-600">{broadcast.sent}</p>
-                <p className="text-xs text-muted-foreground">Delivered / Sent</p>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-4 text-center">
-                <p className="text-2xl font-bold text-red-600">{broadcast.failed}</p>
-                <p className="text-xs text-muted-foreground">Failed</p>
-              </div>
+      <div className="flex-1 overflow-auto p-8">
+        <div className="mx-auto max-w-4xl space-y-6">
+          {/* Summary Metric Cards */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="rounded-2xl border border-border bg-card p-5 text-center">
+              <p className="text-2xl font-bold text-foreground">{broadcast.total_recipients}</p>
+              <p className="text-xs text-muted-foreground mt-1">Total Recipients</p>
             </div>
-          )}
-
-          {/* Message composer */}
-          <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-semibold flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" />
-                Message Content
-              </label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMessageText((prev) => `${prev} {{display_name}}`)}
-                  disabled={!isDraft}
-                  className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
-                >
-                  <Sparkles className="h-3 w-3 text-primary" />
-                  + Name
-                </button>
-              </div>
+            <div className="rounded-2xl border border-border bg-card p-5 text-center">
+              <p className="text-2xl font-bold text-green-600">{broadcast.sent}</p>
+              <p className="text-xs text-muted-foreground mt-1">Delivered</p>
             </div>
+            <div className="rounded-2xl border border-border bg-card p-5 text-center">
+              <p className="text-2xl font-bold text-red-600">{broadcast.failed}</p>
+              <p className="text-xs text-muted-foreground mt-1">Failed</p>
+            </div>
+          </div>
 
-            <textarea
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              disabled={!isDraft}
-              placeholder="Type your broadcast message here..."
-              rows={5}
-              className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-            />
+          {/* Message copy */}
+          <div className="rounded-2xl border border-border bg-card p-6 space-y-2">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Broadcast Content</h3>
+            <p className="text-sm text-foreground whitespace-pre-wrap font-mono bg-muted/30 p-4 rounded-xl">
+              {(broadcast.message_content as any)?.text || "No message content recorded"}
+            </p>
+          </div>
 
-            {isDraft && (
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Supports dynamic variable placeholders</span>
-                <span>{messageText.length} characters</span>
+          {/* Delivery Activity Log */}
+          <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+              Delivery Activity ({recipients.length})
+            </h3>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            )}
-
-            {/* Error/Success messages */}
-            {error && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                {success}
-              </div>
-            )}
-
-            {/* Actions */}
-            {isDraft && (
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  onClick={handleSend}
-                  disabled={sending || !messageText.trim()}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                >
-                  {sending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                  {sending ? "Dispatching..." : "Send Broadcast Now"}
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving || !messageText.trim()}
-                  className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent disabled:opacity-50"
-                >
-                  {saving ? "Saving..." : "Save Draft"}
-                </button>
+            ) : recipients.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-4 text-center">No recipient delivery rows recorded.</p>
+            ) : (
+              <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+                {recipients.map((rec) => (
+                  <div key={rec.id} className="flex items-center justify-between p-3.5 text-xs bg-card hover:bg-muted/20 transition-colors">
+                    <div>
+                      <p className="font-semibold text-foreground">
+                        {rec.contacts?.display_name || rec.contacts?.phone_number || "Contact"}
+                      </p>
+                      {rec.error_message && (
+                        <p className="text-[11px] text-red-500 mt-0.5">{rec.error_message}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[10px] font-medium capitalize",
+                          rec.status === "sent"
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            : rec.status === "failed"
+                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                            : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                        )}
+                      >
+                        {rec.status}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">{formatDate(rec.sent_at)}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-
-          {/* Delivery Log Table for non-drafts */}
-          {broadcast.status !== "draft" && (
-            <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-4">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
-                Recipient Delivery Activity
-              </h3>
-
-              {loadingRecipients ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : recipients.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No recipient records found.</p>
-              ) : (
-                <div className="divide-y divide-border overflow-hidden rounded-lg border">
-                  {recipients.map((rec) => (
-                    <div key={rec.id} className="flex items-center justify-between p-3 text-xs">
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {rec.contacts?.display_name || rec.contacts?.phone_number || "Contact"}
-                        </p>
-                        {rec.error_message && (
-                          <p className="text-[11px] text-red-500 mt-0.5">{rec.error_message}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={cn(
-                            "rounded-full px-2 py-0.5 text-[10px] font-medium capitalize",
-                            rec.status === "sent"
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : rec.status === "failed"
-                              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                              : "bg-muted text-muted-foreground"
-                          )}
-                        >
-                          {rec.status}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {rec.sent_at ? formatDate(rec.sent_at) : "Pending"}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
       <ConfirmDialog
         open={confirmDelete}
         title="Delete Broadcast"
-        message="Are you sure you want to delete this broadcast campaign? This action cannot be undone."
+        message="Are you sure you want to delete this broadcast? This action cannot be undone."
         confirmLabel="Delete"
         destructive={true}
-        onCancel={() => setConfirmDelete(false)}
         onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
       />
     </div>
   );

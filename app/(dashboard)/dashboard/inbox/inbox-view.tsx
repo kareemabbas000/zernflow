@@ -30,6 +30,9 @@ type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
 };
 type Message = Database["public"]["Tables"]["messages"]["Row"];
 
+// Client-side in-memory message store for 0ms instant thread switching
+const messageMemoryCache = new Map<string, Message[]>();
+
 export function InboxView({
   conversations: initialConversations,
   workspaceId,
@@ -65,10 +68,16 @@ export function InboxView({
     }
   }, [globalConversations]);
 
-  // Handle conversation selection with instant 0ms optimistic read marking
+  // Handle conversation selection with instant 0ms optimistic read marking and memory cache hydration
   const handleSelectConversation = useCallback(
     (conv: Conversation) => {
       setSelected(conv);
+      // 0ms instant message hydration from client cache
+      const cached = messageMemoryCache.get(conv.id);
+      if (cached && cached.length > 0) {
+        setMessages(cached);
+      }
+
       if (conv.unread_count > 0) {
         markConversationAsRead(conv.id);
       }
@@ -96,33 +105,38 @@ export function InboxView({
     }
   }, [conversations, selected]);
 
-  // Load messages when a conversation is selected
+  // Load messages when a conversation is selected (with SWR caching)
   useEffect(() => {
     if (!selected) {
       setMessages([]);
       return;
     }
 
-    async function loadMessages() {
+    const convId = selected.id;
+    const cached = messageMemoryCache.get(convId);
+    if (cached && cached.length > 0) {
+      setMessages(cached);
+      setLoadingMessages(false);
+    } else {
       setLoadingMessages(true);
+    }
+
+    async function loadMessages() {
       try {
-        const res = await fetch(`/api/v1/messages?conversationId=${selected!.id}`);
+        const res = await fetch(`/api/v1/messages?conversationId=${convId}`);
         if (res.ok) {
-          const data = await res.json();
+          const data: Message[] = await res.json();
+          messageMemoryCache.set(convId, data ?? []);
           setMessages(data ?? []);
-        } else {
-          setMessages([]);
         }
       } catch (err) {
         console.error("Failed to load messages:", err);
-        setMessages([]);
       } finally {
         setLoadingMessages(false);
       }
 
-      // Mark as read immediately in 0ms
-      if (selected!.unread_count > 0) {
-        markConversationAsRead(selected!.id);
+      if (selected?.unread_count && selected.unread_count > 0) {
+        markConversationAsRead(convId);
       }
     }
 
@@ -231,7 +245,12 @@ export function InboxView({
                 Connect Channels
               </Link>
             </div>
-          ) : loadingMessages && selected ? (
+          ) : !selected ? (
+            <div className="flex h-full flex-col items-center justify-center px-6 text-center text-muted-foreground">
+              <MessageSquare className="h-10 w-10 opacity-30 mb-2" />
+              <p className="text-sm font-medium">Select a conversation to start messaging</p>
+            </div>
+          ) : loadingMessages && messages.length === 0 ? (
             <div className="flex h-full items-center justify-center">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>

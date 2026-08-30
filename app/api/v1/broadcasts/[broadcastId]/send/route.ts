@@ -352,13 +352,13 @@ async function resolveContacts(
   workspaceId: string,
   filter: SegmentFilter | null
 ): Promise<string[]> {
-  // No filter = all subscribed contacts
+  // No filter = all active subscribed contacts in workspace
   if (!filter || !filter.groups?.length) {
     const { data } = await supabase
       .from("contacts")
       .select("id")
       .eq("workspace_id", workspaceId)
-      .eq("is_subscribed", true)
+      .neq("is_subscribed", false)
       .limit(10000);
     return (data ?? []).map((c) => c.id);
   }
@@ -368,7 +368,7 @@ async function resolveContacts(
     .from("contacts")
     .select("id")
     .eq("workspace_id", workspaceId)
-    .eq("is_subscribed", true)
+    .neq("is_subscribed", false)
     .limit(10000);
 
   if (!allContacts?.length) return [];
