@@ -267,7 +267,23 @@ export function GlobalLiveSyncProvider({
                 notifiedKeysRef.current.add(key);
                 triggerNotification(typed);
               }
-              syncNow();
+
+              // Atomically update React state in 0ms without triggering extra syncNow HTTP calls
+              setConversations((prev) => {
+                const exists = prev.some((c) => c.id === typed.id);
+                const nextList = exists
+                  ? prev.map((c) => (c.id === typed.id ? typed : c))
+                  : [typed, ...prev];
+                const sorted = [...nextList].sort((a, b) => {
+                  const aTime = new Date(a.last_message_at || a.created_at).getTime();
+                  const bTime = new Date(b.last_message_at || b.created_at).getTime();
+                  if (bTime !== aTime) return bTime - aTime;
+                  return a.id.localeCompare(b.id);
+                });
+                const total = sorted.reduce((acc, c) => acc + (c.unread_count || 0), 0);
+                setUnreadCount(total);
+                return sorted;
+              });
             }
           }
         }

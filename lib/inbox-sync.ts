@@ -254,11 +254,9 @@ async function importConversation({
   let newUnread = 0;
   if (!existingConv) {
     newUnread = typeof conv.unreadCount === "number" ? conv.unreadCount : 0;
-  } else if (isNewer && (conv.unreadCount ?? 0) > 0) {
-    // Only increment when a genuinely newer inbound message has arrived
-    newUnread = (existingConv.unread_count || 0) + 1;
   } else {
-    // Permanently preserve the user's read state (once read, stays read)
+    // For existing conversations, strictly preserve the database unread count.
+    // Real-time increments are handled exclusively by incoming message webhooks.
     newUnread = existingConv.unread_count || 0;
   }
 
