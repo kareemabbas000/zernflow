@@ -1,8 +1,9 @@
 import { logger } from "@/lib/logger";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createZernioClient } from "@/lib/zernio-client";
 import { messagePreview } from "@/lib/message-preview";
+import { deleteAttachment } from "@/lib/storage";
 
 /**
  * GET /api/v1/messages?conversationId=...
@@ -271,5 +272,24 @@ export async function POST(request: NextRequest) {
       { error: `Failed to send message: ${error instanceof Error ? error.message : String(error)}` },
       { status: 500 }
     );
+  } finally {
+    // Fire-and-forget deletion of temporary media bridge files after 60 seconds
+    if (attachments && attachments.length > 0) {
+      after(async () => {
+        // Give WhatsApp/Telegram enough time to download from the public URL
+        await new Promise((resolve) => setTimeout(resolve, 60000));
+        
+        for (const att of attachments) {
+          if (att.path) {
+            try {
+              await deleteAttachment(att.path);
+              logger.info(`Deleted temporary attachment: ${att.path}`);
+            } catch (err) {
+              logger.error(`Failed to delete temporary attachment ${att.path}:`, err);
+            }
+          }
+        }
+      });
+    }
   }
 }

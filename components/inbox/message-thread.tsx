@@ -20,6 +20,7 @@ import {
   Check,
   CheckCheck,
   AlertCircle,
+  Mic,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadAttachment } from "@/lib/storage";
@@ -185,7 +186,7 @@ export function MessageThread({
   const [assigning, setAssigning] = useState(false);
   const [members, setMembers] = useState<{user_id: string, users: {full_name: string | null}}[]>([]);
   
-  const [attachments, setAttachments] = useState<{url: string, type: string, name: string}[]>([]);
+  const [attachments, setAttachments] = useState<{url: string, type: string, name: string, path?: string}[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -193,18 +194,26 @@ export function MessageThread({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files.length || !conversation?.workspace_id) return;
     
     setUploadingFiles(true);
     try {
-      const newAttachments: {url: string, type: string, name: string}[] = [];
+      const newAttachments: {url: string, type: string, name: string, path?: string}[] = [];
       for (let i = 0; i < e.target.files.length; i++) {
         const file = e.target.files[i];
-        const { url } = await uploadAttachment(conversation.workspace_id, conversation.id, file);
+        const { url, path } = await uploadAttachment(conversation.workspace_id, conversation.id, file);
         newAttachments.push({
           url,
+          path,
           type: file.type.startsWith("image/") ? "image" : "document",
           name: file.name
         });
@@ -221,6 +230,64 @@ export function MessageThread({
   const removeAttachment = (index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        stream.getTracks().forEach((track) => track.stop());
+        
+        // Construct a File object from the Blob
+        const file = new File([audioBlob], `voice_note_${Date.now()}.webm`, { type: "audio/webm" });
+        
+        // Upload the voice note
+        setUploadingFiles(true);
+        try {
+          if (!conversation?.workspace_id) throw new Error("Missing workspace");
+          const { url, path } = await uploadAttachment(conversation.workspace_id, conversation.id, file);
+          setAttachments((prev) => [
+            ...prev,
+            { url, path, type: "audio", name: "Voice Note" }
+          ]);
+        } catch (err) {
+          alert("Failed to upload voice note.");
+        } finally {
+          setUploadingFiles(false);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      alert("Could not access microphone.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    }
+  };
+
 
   // Fetch workspace members for assignment
   useEffect(() => {
@@ -701,15 +768,35 @@ export function MessageThread({
                   </>
                 )}
               </div>
+              
+              <div className="ml-1 flex items-center">
+                {isRecording ? (
+                  <div className="flex items-center gap-2 rounded-full bg-red-100 px-3 py-1 dark:bg-red-900/30">
+                    <div className="h-2 w-2 animate-pulse rounded-full bg-red-500"></div>
+                    <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                      {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, "0")}
+                    </span>
+                    <button
+                      onClick={stopRecording}
+                      className="ml-1 rounded-full bg-red-200 p-0.5 text-red-700 hover:bg-red-300 dark:bg-red-800 dark:text-red-200"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground" 
+                    title="Record voice note"
+                    onClick={startRecording}
+                    disabled={uploadingFiles}
+                  >
+                    <Mic className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
 
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Saved replies">
-                <Zap className="h-4 w-4" />
-              </Button>
-              <div className="ml-2 h-4 w-px bg-border"></div>
-              <Button variant="ghost" size="sm" className="ml-2 h-8 gap-1.5 text-primary hover:text-primary hover:bg-primary/10" title="Draft with AI">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span className="text-xs font-semibold">AI Reply</span>
-              </Button>
             </div>
             
             <Button
