@@ -169,8 +169,18 @@ export const useInboxStore = create<InboxState>()(
     addMessage: (conversationId, message) => {
       set((state) => {
         const existing = state.messagesByConversation[conversationId] ?? [];
-        // Deduplicate by ID
-        if (existing.some((m) => m.id === message.id)) return state;
+        // Deduplicate by ID and platform_message_id
+        if (
+          existing.some(
+            (m) =>
+              m.id === message.id ||
+              (m.platform_message_id &&
+                message.platform_message_id &&
+                m.platform_message_id === message.platform_message_id)
+          )
+        ) {
+          return state;
+        }
         return {
           messagesByConversation: {
             ...state.messagesByConversation,

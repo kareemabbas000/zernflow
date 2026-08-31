@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { createZernioClient, getPlatformZernioClient } from "@/lib/zernio-client";
@@ -108,7 +109,7 @@ export async function DELETE(
 
     return NextResponse.json({ ok: true, success: true });
   } catch (err) {
-    console.error("[channels/delete] Unexpected error:", err);
+    logger.error("[channels/delete] Unexpected error:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to disconnect channel." },
       { status: 500 }

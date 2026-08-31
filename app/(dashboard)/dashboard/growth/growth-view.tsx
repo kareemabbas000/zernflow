@@ -367,7 +367,7 @@ export function GrowthView({
                   {channels.map((ch) => (
                     <option key={ch.id} value={ch.id}>
                       {ch.display_name || ch.username || ch.late_account_id} (
-                      {PLATFORM_LABELS[ch.platform]})
+                      {PLATFORM_LABELS[ch.platform as keyof typeof PLATFORM_LABELS] || ch.platform})
                     </option>
                   ))}
                 </select>
@@ -597,7 +597,7 @@ export function GrowthView({
                             <span className="text-xs text-muted-foreground">
                               {channel.display_name ||
                                 channel.username ||
-                                PLATFORM_LABELS[channel.platform]}
+                                PLATFORM_LABELS[channel.platform as keyof typeof PLATFORM_LABELS] || channel.platform}
                             </span>
                           )}
 

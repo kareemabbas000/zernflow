@@ -81,6 +81,11 @@ const statusConfig: Record<
     icon: XCircle,
     className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   },
+  failed: {
+    label: "Failed",
+    icon: XCircle,
+    className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  },
 };
 
 function formatDate(dateStr: string | null): string {
@@ -219,7 +224,7 @@ export function BroadcastsView({
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((broadcast) => {
-              const status = statusConfig[broadcast.status];
+              const status = statusConfig[broadcast.status as BroadcastStatus] || statusConfig.draft;
               const StatusIcon = status.icon;
               const isDraft = broadcast.status === "draft" || broadcast.status === "scheduled";
 
@@ -807,7 +812,7 @@ function BroadcastReportView({
   const [recipients, setRecipients] = useState<RecipientRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const status = statusConfig[broadcast.status];
+  const status = statusConfig[broadcast.status as BroadcastStatus] || statusConfig.draft;
   const StatusIcon = status.icon;
 
   useEffect(() => {

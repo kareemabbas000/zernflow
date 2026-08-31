@@ -15,6 +15,7 @@ import {
 import { ConversationList } from "@/components/inbox/conversation-list";
 import { MessageThread } from "@/components/inbox/message-thread";
 import { ContactPanel } from "@/components/inbox/contact-panel";
+import { Skeleton } from "@/components/ui/skeleton";
 import { createClient } from "@/lib/supabase/client";
 import { soundManager } from "@/lib/sound-notifications";
 import { useInboxStore, selectSelectedConversation, selectCurrentMessages } from "@/lib/stores/inbox-store";
@@ -135,20 +136,15 @@ export function InboxView({
     }
   }
 
-  // ── Mobile: Show conversation list OR thread (not both) ────────
-  const showList = !isMobile || !selectedId;
-  const showThread = !isMobile || !!selectedId;
-
   return (
-    <div className="relative flex h-full overflow-hidden">
+    <div className="relative flex h-full overflow-hidden bg-background">
       {/* Left panel: Conversation list */}
-      {showList && (
-        <div
-          className={cn(
-            "flex flex-col border-r border-border bg-background",
-            isMobile ? "w-full" : "w-80 flex-shrink-0"
-          )}
-        >
+      <div
+        className={cn(
+          "flex flex-col border-r border-border bg-background transition-transform duration-300 ease-in-out absolute inset-0 z-10 md:relative md:w-80 md:translate-x-0 md:flex-shrink-0",
+          isMobile && selectedId ? "-translate-x-full" : "translate-x-0"
+        )}
+      >
           {/* Top Controls */}
           <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 bg-muted/20 text-xs shrink-0">
             <div className="flex items-center gap-2">
@@ -197,26 +193,36 @@ export function InboxView({
             />
           </div>
         </div>
-      )}
 
       {/* Center panel: Message thread */}
-      {showThread && (
-        <div className="flex min-h-0 flex-1 flex-col">
-          {/* Mobile: Back button */}
-          {isMobile && selectedId && (
-            <div className="flex items-center border-b border-border px-2 py-1 shrink-0">
-              <button
-                onClick={() => selectConversation(null)}
-                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                Back
-              </button>
-            </div>
-          )}
+      <div 
+        className={cn(
+          "flex min-h-0 flex-1 flex-col bg-background transition-transform duration-300 ease-in-out absolute inset-0 z-20 md:relative md:translate-x-0",
+          isMobile ? (selectedId && !contactPanelOpen ? "translate-x-0" : selectedId && contactPanelOpen ? "-translate-x-full" : "translate-x-full") : ""
+        )}
+      >
+        {/* Mobile: Back button */}
+        {isMobile && selectedId && (
+          <div className="flex items-center justify-between border-b border-border px-2 py-1 shrink-0 bg-muted/10">
+            <button
+              onClick={() => selectConversation(null)}
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
+            <button
+              onClick={() => setContactPanelOpen(true)}
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            >
+              <User className="h-4 w-4" />
+              Contact
+            </button>
+          </div>
+        )}
 
-          {/* Desktop: Contact panel toggle */}
-          {!isMobile && selectedConversation && !contactPanelOpen && (
+        {/* Desktop: Contact panel toggle */}
+        {!isMobile && selectedConversation && !contactPanelOpen && (
             <div className="flex shrink-0 justify-end border-b border-border px-2 py-1">
               <button
                 onClick={() => setContactPanelOpen(true)}
@@ -260,8 +266,22 @@ export function InboxView({
                 </p>
               </div>
             ) : messagesLoading && messages.length === 0 ? (
-              <div className="flex h-full items-center justify-center">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <div className="flex h-full flex-col p-4 space-y-4">
+                <div className="flex justify-start">
+                  <Skeleton className="h-10 w-2/3 rounded-2xl rounded-tl-md" />
+                </div>
+                <div className="flex justify-end">
+                  <Skeleton className="h-10 w-1/2 rounded-2xl rounded-tr-md bg-primary/20" />
+                </div>
+                <div className="flex justify-start">
+                  <Skeleton className="h-16 w-3/4 rounded-2xl rounded-tl-md" />
+                </div>
+                <div className="flex justify-start">
+                  <Skeleton className="h-8 w-1/3 rounded-2xl rounded-tl-md" />
+                </div>
+                <div className="flex justify-end">
+                  <Skeleton className="h-12 w-2/3 rounded-2xl rounded-tr-md bg-primary/20" />
+                </div>
               </div>
             ) : (
               <MessageThread
@@ -270,19 +290,24 @@ export function InboxView({
               />
             )}
           </div>
-        </div>
-      )}
+      </div>
 
-      {/* Right panel: Contact info (hidden on mobile) */}
-      {!isMobile &&
-        contactPanelOpen &&
-        selectedConversation?.contact_id && (
+      {/* Right panel: Contact info */}
+      <div
+        className={cn(
+          "bg-background transition-transform duration-300 ease-in-out absolute inset-0 z-30 md:relative md:w-84 md:shrink-0 md:translate-x-0",
+          isMobile ? (contactPanelOpen && selectedId ? "translate-x-0" : "translate-x-full") : (!contactPanelOpen ? "hidden" : "block")
+        )}
+      >
+        {selectedConversation?.contact_id && (
           <ContactPanel
             contactId={selectedConversation.contact_id}
             workspaceId={workspaceId}
             onClose={() => setContactPanelOpen(false)}
+            isMobile={isMobile}
           />
         )}
+      </div>
     </div>
   );
 }

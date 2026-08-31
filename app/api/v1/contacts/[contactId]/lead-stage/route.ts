@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
@@ -31,7 +32,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, contact: data });
   } catch (err) {
-    console.error("[api/v1/contacts/[id]/lead-stage] Error:", err);
+    logger.error("[api/v1/contacts/[id]/lead-stage] Error:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to update lead stage" },
       { status: 500 }

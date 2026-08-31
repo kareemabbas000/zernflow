@@ -13,6 +13,8 @@ import {
   Clock,
   Activity,
   AlertTriangle,
+  Wrench,
+  Zap,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -90,6 +92,37 @@ export default async function AdminOverviewPage() {
             Platform Config
           </Link>
         </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Link href="/admin/workspaces?action=create" className="group rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition-colors flex items-start gap-3">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Building2 className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold group-hover:text-primary transition-colors">Create Workspace</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Provision a new tenant environment</p>
+          </div>
+        </Link>
+        <Link href="/admin/users?action=invite" className="group rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition-colors flex items-start gap-3">
+          <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 flex items-center justify-center shrink-0">
+            <Users className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold group-hover:text-primary transition-colors">Invite User</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Send a platform registration link</p>
+          </div>
+        </Link>
+        <Link href="/admin/settings?action=maintenance" className="group rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition-colors flex items-start gap-3">
+          <div className="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-950/50 flex items-center justify-center shrink-0">
+            <Wrench className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold group-hover:text-primary transition-colors">Maintenance Mode</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Toggle platform-wide maintenance</p>
+          </div>
+        </Link>
       </div>
 
       {/* KPI Cards */}

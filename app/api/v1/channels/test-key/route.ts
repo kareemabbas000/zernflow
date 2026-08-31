@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createZernioClient } from "@/lib/zernio-client";
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
         events: ["message.received", "comment.received"],
       });
     } catch (err) {
-      console.error("[test-key] webhook auto-registration failed:", err);
+      logger.error("[test-key] webhook auto-registration failed:", err);
     }
 
     // Auto-sync channels
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
         is_active: true,
       });
       if (insertErr) {
-        console.error("[test-key] channel insert failed:", insertErr);
+        logger.error("[test-key] channel insert failed:", insertErr);
       }
     }
 
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
         channels: activeChannels ?? [],
       });
     } catch (err) {
-      console.error("[test-key] inbox backfill failed:", err);
+      logger.error("[test-key] inbox backfill failed:", err);
     }
   }
 

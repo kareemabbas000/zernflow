@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { FlowLoadError, resumeSession } from "@/lib/flow-engine/engine";
@@ -97,7 +98,7 @@ export async function GET(request: NextRequest) {
         .eq("status", "processing")
         .is("claimed_at", null);
       if (stampError) {
-        console.error(
+        logger.error(
           `Failed to stamp claimed_at on unaged job ${job.id}:`,
           stampError
         );
@@ -141,7 +142,7 @@ export async function GET(request: NextRequest) {
       // Unknown outcome: the UPDATE may have committed with only the response
       // lost. Skip; if it did commit, the stale-claim reclaim above picks the
       // job up again once claimed_at ages past the cutoff.
-      console.error(`Failed to claim job ${job.id}:`, claimError);
+      logger.error(`Failed to claim job ${job.id}:`, claimError);
       continue;
     }
     if (!claimed || claimed.length === 0) continue; // Claim lost to another run
@@ -238,7 +239,7 @@ async function failJobAndSettleSession({
     if (sessionError || !session) {
       // Unknown state: do not cancel blind (the session may be healthily
       // waiting at a later node). Log so a possible strand stays visible.
-      console.error(
+      logger.error(
         `Could not load session ${sessionId} to settle after job ${job.id} exhausted retries; session may be left active:`,
         sessionError
       );
@@ -254,7 +255,7 @@ async function failJobAndSettleSession({
         });
         if (parked) return;
       } catch (err) {
-        console.error(
+        logger.error(
           `Could not verify session ${sessionId} state after job ${job.id} exhausted retries; session may be left active:`,
           err
         );
@@ -264,7 +265,7 @@ async function failJobAndSettleSession({
       // mid-traversal (see SessionRecheckError). Do not cancel blind; the
       // job is already failed, so log the possible strand instead.
       if (wasSessionWrittenRecently(session.updated_at)) {
-        console.error(
+        logger.error(
           `Session ${sessionId} was written recently after job ${job.id} exhausted retries; skipping cancel, session may be left active`
         );
         return;
@@ -282,7 +283,7 @@ async function failJobAndSettleSession({
     // active with no pending job. Requeuing would not help: the retry hits the
     // stale-node guard in processJob and completes without cancelling. Log it
     // so the strand is visible.
-    console.error(
+    logger.error(
       `Failed to settle session ${sessionId} after job ${job.id} exhausted retries; session left active:`,
       settleError
     );
@@ -316,7 +317,7 @@ async function settleBroadcastRecipientAsFailed({
     .in("status", ["pending", "sending"])
     .select();
   if (error) {
-    console.error(
+    logger.error(
       `Failed to settle broadcast recipient ${payload.recipientId} after job ${job.id} exhausted retries; recipient may be left unfinished:`,
       error
     );
@@ -479,7 +480,7 @@ async function processJob(
             }) and the session cancel also failed: ${cancelError.message}`
           );
         }
-        console.error(
+        logger.error(
           `Failed to resume flow session ${payload.sessionId} (flow ${session.flow_id}), session cancelled:`,
           err
         );

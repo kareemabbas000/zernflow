@@ -131,7 +131,7 @@ export default async function SequencesPage() {
                   </p>
                 )}
                 <p className="mt-4 text-xs text-muted-foreground">
-                  Updated {formatDate(sequence.updated_at)}
+                  Updated {formatDate(sequence.updated_at || sequence.created_at || "")}
                 </p>
               </Link>
             );

@@ -51,7 +51,11 @@ export default async function TeamPage() {
       currentUserId={user.id}
       currentUserRole={role}
       members={memberDetails}
-      pendingInvites={pendingInvites ?? []}
+      pendingInvites={(pendingInvites ?? []).map((invite) => ({
+        ...invite,
+        created_at: invite.created_at ?? "",
+        expires_at: invite.expires_at ?? "",
+      }))}
     />
   );
 }

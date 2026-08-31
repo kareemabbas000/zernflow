@@ -36,7 +36,7 @@ export default async function InvitePage({
     );
   }
 
-  const isExpired = new Date(invite.expires_at) < new Date();
+  const isExpired = invite.expires_at ? new Date(invite.expires_at) < new Date() : false;
   const isAlreadyAccepted = invite.status !== "pending";
 
   if (isExpired) {

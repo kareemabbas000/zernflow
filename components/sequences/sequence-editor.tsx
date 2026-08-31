@@ -107,7 +107,7 @@ export function SequenceEditor({ sequence }: SequenceEditorProps) {
   const updateStep = useCallback(
     (index: number, data: Partial<SequenceStep>) => {
       const updated = [...steps];
-      updated[index] = { ...updated[index], ...data };
+      updated[index] = { ...updated[index], ...data } as SequenceStep;
       setSteps(updated);
     },
     [steps]

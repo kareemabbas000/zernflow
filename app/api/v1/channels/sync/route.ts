@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
@@ -163,7 +164,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (insertErr) {
-          console.error("[channels/sync] channel insert failed:", insertErr);
+          logger.error("[channels/sync] channel insert failed:", insertErr);
           failed.push(`${account.platform}: ${insertErr.message}`);
           continue;
         }
@@ -208,7 +209,7 @@ export async function POST(request: NextRequest) {
         events: ["message.received", "comment.received"],
       });
     } catch (err) {
-      console.error("[channels/sync] webhook auto-registration failed:", err);
+      logger.error("[channels/sync] webhook auto-registration failed:", err);
     }
 
     // 6. Backfill conversations
@@ -228,7 +229,7 @@ export async function POST(request: NextRequest) {
       });
       conversationsImported = imported;
     } catch (err) {
-      console.error("[channels/sync] inbox backfill failed:", err);
+      logger.error("[channels/sync] inbox backfill failed:", err);
     }
 
     // 7. Return updated channel list
@@ -250,7 +251,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Failed to sync channels:", error);
+    logger.error("Failed to sync channels:", error);
     return NextResponse.json(
       { error: `Failed to sync channels: ${error instanceof Error ? error.message : String(error)}` },
       { status: 500 }

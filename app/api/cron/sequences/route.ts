@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { processSequenceSteps } from "@/lib/sequence-processor";
 
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     const result = await processSequenceSteps();
     return NextResponse.json(result);
   } catch (err) {
-    console.error("Sequence cron failed:", err);
+    logger.error("Sequence cron failed:", err);
     return NextResponse.json(
       { error: "Internal error" },
       { status: 500 }

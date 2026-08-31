@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { resolveContacts, type SegmentFilter } from "@/lib/audience";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -165,7 +166,7 @@ export async function POST(
       .select("id");
 
     if (insertErr) {
-      console.error("Failed to insert broadcast recipients:", insertErr);
+      logger.error("Failed to insert broadcast recipients:", insertErr);
       return NextResponse.json(
         { error: `Failed to create recipients: ${insertErr.message}` },
         { status: 500 }
@@ -325,6 +326,6 @@ async function deliverBroadcastDirectly(
       })
       .eq("id", broadcastId);
   } catch (err) {
-    console.error("[Broadcast] Direct delivery error:", err);
+    logger.error("[Broadcast] Direct delivery error:", err);
   }
 }

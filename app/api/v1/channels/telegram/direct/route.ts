@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (channelErr) {
-      console.error("[telegram/direct] Channel upsert error:", channelErr);
+      logger.error("[telegram/direct] Channel upsert error:", channelErr);
       return NextResponse.json(
         { error: `Failed to save Telegram channel: ${channelErr.message}` },
         { status: 500 }
@@ -180,7 +181,7 @@ export async function POST(request: NextRequest) {
       message: `Successfully connected Telegram channel "${displayName}".`,
     });
   } catch (error) {
-    console.error("[telegram/direct] Error:", error);
+    logger.error("[telegram/direct] Error:", error);
     return NextResponse.json(
       {
         error:

@@ -48,10 +48,12 @@ interface ToastNotification {
 
 interface RealtimeContextValue {
   workspaceId: string;
+  connectionStatus: "connected" | "reconnecting" | "disconnected";
 }
 
 const RealtimeContext = createContext<RealtimeContextValue>({
   workspaceId: "",
+  connectionStatus: "disconnected",
 });
 
 export function useRealtime() {
@@ -101,6 +103,7 @@ export function GlobalLiveSyncProvider({
   const router = useRouter();
   const pathname = usePathname();
   const [activeToast, setActiveToast] = React.useState<ToastNotification | null>(null);
+  const [connectionStatus, setConnectionStatus] = React.useState<"connected" | "reconnecting" | "disconnected">("disconnected");
 
   const soundEnabled = useUIStore((s) => s.soundEnabled);
   const upsertConversation = useInboxStore((s) => s.upsertConversation);
@@ -269,6 +272,7 @@ export function GlobalLiveSyncProvider({
           event: "INSERT",
           schema: "public",
           table: "messages",
+          filter: `workspace_id=eq.${workspaceId}`,
         },
         (payload) => {
           const message =
@@ -278,43 +282,21 @@ export function GlobalLiveSyncProvider({
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setConnectionStatus("connected");
+        } else if (status === "TIMED_OUT" || status === "CHANNEL_ERROR" || status === "CLOSED") {
+          setConnectionStatus("disconnected");
+          // Simple reconnection backoff could be handled here or relied on Supabase's internal reconnect
+          // If disconnected, it will try to reconnect automatically (status changes to 'reconnecting' internally sometimes)
+          // Just setting disconnected for now, as Supabase client will keep retrying.
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [workspaceId, upsertConversation, addMessage, triggerNotification]);
-
-  // ── 3. Resilience: single fallback poll every 30s (not 3s/6s!) ─────────
-  // This is a safety net for when Realtime reconnects after a network blip.
-
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const supabase = createClient();
-        const [ { data }, { data: counts } ] = await Promise.all([
-          supabase
-            .from("conversations")
-            .select("*, contacts(*)")
-            .eq("workspace_id", workspaceId)
-            .order("last_message_at", {
-              ascending: false,
-              nullsFirst: false,
-            })
-            .limit(200),
-          (supabase as any).rpc("get_workspace_unread_counts", { ws_id: workspaceId })
-        ]);
-
-        if (data && data.length > 0) {
-          setConversations(data as Conversation[], counts as { all: number; by_platform: Record<string, number> });
-        }
-      } catch {
-        // Non-fatal
-      }
-    }, 30_000); // 30 seconds — 5x less than before even as fallback
-
-    return () => clearInterval(interval);
-  }, [workspaceId, setConversations]);
 
   // ── Toast click handler ────────────────────────────────────────────────
 
@@ -327,7 +309,7 @@ export function GlobalLiveSyncProvider({
   );
 
   return (
-    <RealtimeContext.Provider value={{ workspaceId }}>
+    <RealtimeContext.Provider value={{ workspaceId, connectionStatus }}>
       {children}
 
       {/* Global Floating Toast */}
@@ -381,6 +363,14 @@ export function GlobalLiveSyncProvider({
           >
             <X className="h-4 w-4" />
           </button>
+        </div>
+      )}
+
+      {/* Connection Status Indicator */}
+      {connectionStatus !== "connected" && (
+        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full border border-border bg-card/90 px-3 py-1.5 shadow-sm text-xs font-medium backdrop-blur-md">
+          <span className={`h-2 w-2 rounded-full animate-pulse ${connectionStatus === "reconnecting" ? "bg-amber-500" : "bg-red-500"}`} />
+          {connectionStatus === "reconnecting" ? "Reconnecting..." : "Offline (Reconnecting)"}
         </div>
       )}
     </RealtimeContext.Provider>

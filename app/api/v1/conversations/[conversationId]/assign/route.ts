@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
@@ -27,7 +28,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, conversation: data });
   } catch (err) {
-    console.error("[api/v1/conversations/[id]/assign] Error:", err);
+    logger.error("[api/v1/conversations/[id]/assign] Error:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to assign" },
       { status: 500 }

@@ -11,6 +11,8 @@ import { processComment } from "@/lib/comment-processor";
 import type { Database } from "@/lib/types/database";
 import { messagePreview } from "@/lib/message-preview";
 import { isSupportedPlatform, normalizePlatform, type Platform } from "@/lib/platforms";
+import { channelCache } from "@/lib/cache";
+import { logger } from "@/lib/logger";
 
 // ── Zernio API webhook payload ───────────────────────────────────────────────
 
@@ -81,10 +83,20 @@ interface CommentWebhookPayload {
 // ── Webhook handler ─────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+  
   try {
-    return await handleWebhook(request);
+    const response = await handleWebhook(request, requestId);
+    
+    const duration = Date.now() - startTime;
+    if (duration > 1000) {
+      logger.warn("Slow webhook processing", { request_id: requestId, duration_ms: duration });
+    }
+    
+    return response;
   } catch (err) {
-    console.error("Webhook handler error:", err);
+    logger.error("Webhook handler error", err, { request_id: requestId });
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Internal server error" },
       { status: 500 }
@@ -109,11 +121,11 @@ async function claimWebhookEvent(
   if (!error) return true;
   if (error.code === "23505") return false;
   // Table missing / transient DB error: fail open so deliveries keep working.
-  console.error("webhook_events claim failed:", error);
+  logger.warn("webhook_events claim failed", { error: error.message });
   return true;
 }
 
-async function handleWebhook(request: NextRequest) {
+async function handleWebhook(request: NextRequest, requestId: string) {
   const body = await request.text();
   const signature = request.headers.get("x-late-signature");
   const headerEventId = request.headers.get("x-late-event-id");
@@ -148,28 +160,37 @@ async function handleWebhook(request: NextRequest) {
   const normPlatform = normalizePlatform(msg.platform || account.platform);
   const accountId = account.id || (account as any).accountId || (account as any)._id;
 
-  let channelQuery = supabase
-    .from("channels")
-    .select("*")
-    .or(`late_account_id.eq.${accountId},zernio_account_id.eq.${accountId}`)
-    .eq("is_active", true);
+  const cacheKey = `channel_${accountId}_${normPlatform || "any"}`;
+  let activeChannel = channelCache.get(cacheKey) as Database["public"]["Tables"]["channels"]["Row"] | undefined;
 
-  if (normPlatform) {
-    channelQuery = channelQuery.eq("platform", normPlatform);
-  }
-
-  const { data: matchedChannels } = await channelQuery;
-  const channel = matchedChannels?.[0];
-
-  const activeChannel =
-    channel ||
-    (await supabase
+  if (!activeChannel) {
+    let channelQuery = supabase
       .from("channels")
       .select("*")
       .or(`late_account_id.eq.${accountId},zernio_account_id.eq.${accountId}`)
-      .eq("is_active", true)
-      .limit(1)
-      .then((r) => r.data?.[0]));
+      .eq("is_active", true);
+
+    if (normPlatform) {
+      channelQuery = channelQuery.eq("platform", normPlatform);
+    }
+
+    const { data: matchedChannels } = await channelQuery;
+    let channel = matchedChannels?.[0];
+
+    activeChannel =
+      channel ||
+      (await supabase
+        .from("channels")
+        .select("*")
+        .or(`late_account_id.eq.${accountId},zernio_account_id.eq.${accountId}`)
+        .eq("is_active", true)
+        .limit(1)
+        .then((r) => r.data?.[0]));
+        
+    if (activeChannel) {
+      channelCache.set(cacheKey, activeChannel, 300); // cache for 5 minutes
+    }
+  }
 
   if (!activeChannel) {
     return NextResponse.json({ error: "Channel not found" }, { status: 404 });
@@ -208,9 +229,9 @@ async function handleWebhook(request: NextRequest) {
   // nodes) must never run before the 200 goes out.
   after(async () => {
     try {
-      await processMessageEvent(supabase, payload, activeChannel);
+      await processMessageEvent(supabase, payload, activeChannel as Database["public"]["Tables"]["channels"]["Row"]);
     } catch (err) {
-      console.error("Webhook message processing error:", err);
+      logger.error("Webhook message processing error", err, { request_id: requestId ?? undefined, event_id: eventId ?? undefined });
     }
   });
 
@@ -242,7 +263,10 @@ async function processMessageEvent(
   });
 
   if (!contact) {
-    console.error("Failed to create contact for webhook message");
+    logger.error("Failed to create contact for webhook message", undefined, { 
+      channel_id: channel.id, 
+      sender_id: senderId 
+    });
     return;
   }
 
@@ -278,7 +302,7 @@ async function processMessageEvent(
       })
       .eq("id", existingConv.id)
       .then(({ error }) => {
-        if (error) console.error("Failed to update conversation:", error);
+        if (error) logger.error("Failed to update conversation", error, { conversation_id: existingConv.id });
       });
   } else {
     // Brand new conversation starts with 1 unread message
@@ -305,7 +329,7 @@ async function processMessageEvent(
   }
 
   if (!conversationId) {
-    console.error("Failed to resolve conversation for webhook message");
+    logger.error("Failed to resolve conversation for webhook message", undefined, { contact_id: contactId });
     return;
   }
 
@@ -359,7 +383,7 @@ async function processMessageEvent(
           });
           return;
         } catch (resumeErr) {
-          console.error("[late-webhook] resumeSession error:", resumeErr);
+          logger.error("[late-webhook] resumeSession error:", resumeErr);
         }
       }
 
@@ -381,7 +405,7 @@ async function processMessageEvent(
           .eq("contact_id", contactId)
           .eq("status", "active")
           .then(({ error }) => {
-            if (error) console.error("Failed to cancel stale sessions:", error);
+            if (error) logger.error("Failed to cancel stale sessions", error, { contact_id: contactId });
           });
 
         try {
@@ -397,7 +421,7 @@ async function processMessageEvent(
             lateAccountId: accountId,
           });
         } catch (err) {
-          console.error("Flow execution error:", err);
+          logger.error("Flow execution error", err, { flow_id: trigger.flow_id, contact_id: contactId });
         }
       }
     }
@@ -415,26 +439,35 @@ async function handleCommentWebhook(
   const supabase = await createServiceClient();
 
   const commentPlatform = payload.comment.platform || payload.account.platform;
-  let commentQuery = supabase
-    .from("channels")
-    .select("*")
-    .eq("late_account_id", payload.account.id)
-    .eq("is_active", true);
+  const cacheKey = `channel_${payload.account.id}_${commentPlatform || "any"}`;
+  let channel = channelCache.get(cacheKey) as Database["public"]["Tables"]["channels"]["Row"] | undefined;
 
-  if (commentPlatform && isSupportedPlatform(commentPlatform)) {
-    commentQuery = commentQuery.eq("platform", commentPlatform as Platform);
-  }
-
-  const { data: matchedCommentChannels } = await commentQuery;
-  const channel =
-    matchedCommentChannels?.[0] ||
-    (await supabase
+  if (!channel) {
+    let commentQuery = supabase
       .from("channels")
       .select("*")
       .eq("late_account_id", payload.account.id)
-      .eq("is_active", true)
-      .limit(1)
-      .then((r) => r.data?.[0]));
+      .eq("is_active", true);
+
+    if (commentPlatform && isSupportedPlatform(commentPlatform)) {
+      commentQuery = commentQuery.eq("platform", commentPlatform as Platform);
+    }
+
+    const { data: matchedCommentChannels } = await commentQuery;
+    channel =
+      matchedCommentChannels?.[0] ||
+      (await supabase
+        .from("channels")
+        .select("*")
+        .eq("late_account_id", payload.account.id)
+        .eq("is_active", true)
+        .limit(1)
+        .then((r) => r.data?.[0]));
+
+    if (channel) {
+      channelCache.set(cacheKey, channel, 300);
+    }
+  }
 
   if (!channel) {
     return NextResponse.json({ error: "Channel not found" }, { status: 404 });
@@ -465,7 +498,7 @@ async function handleCommentWebhook(
     try {
       await processComment({
         supabase,
-        channel,
+        channel: channel as Database["public"]["Tables"]["channels"]["Row"],
         comment: {
           id: payload.comment.id,
           // Native posts (not published through Zernio) have a null postId; fall
@@ -477,7 +510,7 @@ async function handleCommentWebhook(
         },
       });
     } catch (err) {
-      console.error("Webhook comment processing error:", err);
+      logger.error("Webhook comment processing error", err, { event_id: eventId ?? undefined });
     }
   });
 

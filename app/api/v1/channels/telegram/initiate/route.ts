@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
       workspaceId: workspace.id,
     });
   } catch (error) {
-    console.error("[telegram/initiate] Error:", error);
+    logger.error("[telegram/initiate] Error:", error);
     return NextResponse.json(
       {
         error:

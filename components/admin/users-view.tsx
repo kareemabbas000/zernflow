@@ -21,6 +21,7 @@ import {
   KeyRound,
   Edit3,
   X,
+  VenetianMask,
 } from "lucide-react";
 import {
   toggleUserStatus,
@@ -400,6 +401,21 @@ export function UsersView({
                       {/* Root Actions */}
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Impersonate */}
+                          <button
+                            onClick={() => {
+                              setFeedback({
+                                message: `Generating impersonation session for ${u.email}...`,
+                                type: "success"
+                              });
+                              setTimeout(() => setFeedback(null), 3000);
+                            }}
+                            className="p-1.5 rounded-lg border border-input text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/10 transition-colors"
+                            title="Impersonate User"
+                          >
+                            <VenetianMask className="h-3.5 w-3.5" />
+                          </button>
+
                           {/* Edit Profile */}
                           <button
                             onClick={() => openEditModal(u)}

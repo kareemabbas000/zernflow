@@ -16,8 +16,13 @@ import {
   Zap,
   Sparkles,
   Image as ImageIcon,
+  X,
+  Check,
+  CheckCheck,
+  AlertCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { uploadAttachment } from "@/lib/storage";
 import { useInboxStore } from "@/lib/stores/inbox-store";
 import { cn } from "@/lib/utils";
 import { PlatformIcon } from "@/components/platform-icon";
@@ -59,7 +64,7 @@ function shouldShowDateSeparator(
   return currentDate !== previousDate;
 }
 
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message, onRetry }: { message: Message; onRetry?: (msg: Message) => void }) {
   const isInbound = message.direction === "inbound";
   const isBot = message.sent_by_flow_id !== null;
 
@@ -88,10 +93,20 @@ function MessageBubble({ message }: { message: Message }) {
           )}
         >
           {message.text && <p className="whitespace-pre-wrap">{message.text}</p>}
-          {message.attachments && (
-            <div className="mt-1">
-              <Paperclip className="inline h-3 w-3" />
-              <span className="ml-1 text-xs opacity-70">Attachment</span>
+          {message.attachments && Array.isArray(message.attachments) && message.attachments.length > 0 && (
+            <div className="mt-2 flex flex-col gap-1">
+              {message.attachments.map((att: any, i: number) => (
+                att.type === "image" ? (
+                  <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="block max-w-[200px] overflow-hidden rounded-md border border-border/50">
+                    <img src={att.url} alt="Attachment" className="h-auto w-full object-cover" />
+                  </a>
+                ) : (
+                  <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md bg-background/50 px-2 py-1.5 text-xs hover:bg-background/80 transition-colors">
+                    <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{att.name || "Attachment"}</span>
+                  </a>
+                )
+              ))}
             </div>
           )}
         </div>
@@ -103,15 +118,22 @@ function MessageBubble({ message }: { message: Message }) {
         >
           {isBot && <Bot className="h-3 w-3" />}
           <span>{formatMessageTime(message.created_at)}</span>
-          {!isInbound && message.status !== "sent" && (
-            <span className="capitalize">
-              {message.status === "delivered"
-                ? "Delivered"
-                : message.status === "failed"
-                ? "Failed"
-                : message.status === "pending"
-                ? "Sending..."
-                : ""}
+          {!isInbound && (
+            <span className="ml-1 flex items-center">
+              {message.status === "pending" && <Clock className="h-3 w-3" />}
+              {message.status === "sent" && <Check className="h-3.5 w-3.5 text-muted-foreground" />}
+              {message.status === "delivered" && <CheckCheck className="h-3.5 w-3.5 text-blue-500" />}
+              {message.status === "failed" && (
+                <div className="flex items-center gap-1 text-red-500">
+                  <AlertCircle className="h-3 w-3" />
+                  <span className="text-[10px]">Failed</span>
+                  {onRetry && (
+                    <button onClick={() => onRetry(message)} className="ml-1 hover:underline">
+                      Retry
+                    </button>
+                  )}
+                </div>
+              )}
             </span>
           )}
         </div>
@@ -162,9 +184,43 @@ export function MessageThread({
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
   const [assigning, setAssigning] = useState(false);
   const [members, setMembers] = useState<{user_id: string, users: {full_name: string | null}}[]>([]);
+  
+  const [attachments, setAttachments] = useState<{url: string, type: string, name: string}[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files.length || !conversation?.workspace_id) return;
+    
+    setUploadingFiles(true);
+    try {
+      const newAttachments: {url: string, type: string, name: string}[] = [];
+      for (let i = 0; i < e.target.files.length; i++) {
+        const file = e.target.files[i];
+        const { url } = await uploadAttachment(conversation.workspace_id, conversation.id, file);
+        newAttachments.push({
+          url,
+          type: file.type.startsWith("image/") ? "image" : "document",
+          name: file.name
+        });
+      }
+      setAttachments((prev) => [...prev, ...newAttachments]);
+    } catch (err) {
+      alert("Failed to upload attachment");
+    } finally {
+      setUploadingFiles(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // Fetch workspace members for assignment
   useEffect(() => {
@@ -291,20 +347,23 @@ export function MessageThread({
   // ── No more polling! Messages arrive via Supabase Realtime → store ────
 
   async function handleSend() {
-    if (!input.trim() || !conversation || sending) return;
+    if ((!input.trim() && attachments.length === 0) || !conversation || sending || uploadingFiles) return;
 
     const text = input.trim();
     setInput("");
+    const attachmentsToSend = [...attachments];
+    setAttachments([]);
     setSending(true);
 
     // Optimistic update via store
     const optimisticId = `optimistic-${Date.now()}`;
     const optimisticMessage: Message = {
       id: optimisticId,
+      workspace_id: conversation.workspace_id,
       conversation_id: conversation.id,
       direction: "outbound",
       text,
-      attachments: null,
+      attachments: attachmentsToSend.length > 0 ? attachmentsToSend : null,
       quick_reply_payload: null,
       postback_payload: null,
       callback_data: null,
@@ -322,7 +381,7 @@ export function MessageThread({
       const res = await fetch("/api/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: conversation.id, text, isInternal }),
+        body: JSON.stringify({ conversationId: conversation.id, text, isInternal, attachments: attachmentsToSend }),
       });
 
       if (!res.ok) {
@@ -339,6 +398,45 @@ export function MessageThread({
       setSending(false);
     }
   }
+
+  const handleRetry = async (failedMsg: Message) => {
+    if (!conversation) return;
+    
+    // Convert back to pending state visually, though we might just create a new optimistic message
+    // Since it's already in the store, we can just hit the API again.
+    // Wait, the API takes `text` and `attachments`.
+    
+    // First remove the failed message and create a new pending one so it goes to bottom
+    const newOptimisticId = `optimistic-${Date.now()}`;
+    const newOptimisticMessage = { ...failedMsg, id: newOptimisticId, status: "pending" as const, created_at: new Date().toISOString() };
+    
+    // Use the store to remove the old and add the new
+    setMessages(conversation.id, messages.filter(m => m.id !== failedMsg.id));
+    sendMessageToStore(conversation.id, newOptimisticMessage);
+    
+    try {
+      const res = await fetch("/api/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          conversationId: conversation.id, 
+          text: failedMsg.text, 
+          isInternal: failedMsg.is_internal, 
+          attachments: failedMsg.attachments 
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Retry failed (${res.status})`);
+      }
+
+      const confirmedMessage: Message = await res.json();
+      confirmMessage(conversation.id, newOptimisticId, confirmedMessage);
+    } catch (err) {
+      console.error("Failed to retry message:", err);
+      failMessage(conversation.id, newOptimisticId);
+    }
+  };
 
   if (!conversation) {
     return (
@@ -486,7 +584,7 @@ export function MessageThread({
                   <div className="h-px flex-1 bg-border" />
                 </div>
               )}
-              <MessageBubble message={message} />
+              <MessageBubble message={message} onRetry={handleRetry} />
             </div>
           ))}
           <div ref={messagesEndRef} />
@@ -497,6 +595,26 @@ export function MessageThread({
       <div className="border-t border-border bg-background p-3 sm:p-4 shrink-0">
         <div className="mx-auto max-w-3xl rounded-xl border border-input bg-card shadow-sm focus-within:ring-1 focus-within:ring-primary/30 transition-all">
           <div className="px-3 py-2">
+            {attachments.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {attachments.map((att, i) => (
+                  <div key={i} className="relative flex items-center gap-2 rounded-md border border-border bg-muted/50 p-1.5 pr-2 text-xs">
+                    {att.type === "image" ? (
+                      <ImageIcon className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Paperclip className="h-4 w-4 text-primary" />
+                    )}
+                    <span className="max-w-[120px] truncate">{att.name}</span>
+                    <button
+                      onClick={() => removeAttachment(i)}
+                      className="ml-1 rounded-full p-0.5 hover:bg-background transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <textarea
               ref={textareaRef}
               value={input}
@@ -526,12 +644,64 @@ export function MessageThread({
                 Internal Note {isInternal ? "On" : "Off"}
               </button>
               <div className="ml-2 h-4 w-px bg-border"></div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Attach file or image">
-                <Paperclip className="h-4 w-4" />
+              
+              <input
+                type="file"
+                multiple
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileSelect}
+                accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+              />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-muted-foreground" 
+                title="Attach file or image"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingFiles}
+              >
+                {uploadingFiles ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Insert emoji">
-                <Smile className="h-4 w-4" />
-              </Button>
+              
+              <div className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={cn("h-8 w-8 text-muted-foreground", showEmojiPicker && "bg-muted text-foreground")} 
+                  title="Insert emoji"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                >
+                  <Smile className="h-4 w-4" />
+                </Button>
+                
+                {showEmojiPicker && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
+                    <div className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-xl border border-border bg-popover p-2 shadow-lg animate-in slide-in-from-bottom-2 fade-in">
+                      <div className="grid grid-cols-6 gap-1">
+                        {["😀","😂","🥰","😎","🤔","🙄","😭","😡","👍","👎","👏","🙌","🙏","🔥","✨","🎉","❤️","💔","💯","✔️","❌","👀","😅","😊"].map(emoji => (
+                          <button
+                            key={emoji}
+                            className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted text-lg transition-colors"
+                            onClick={() => {
+                              setInput(prev => prev + emoji);
+                              setShowEmojiPicker(false);
+                              if (textareaRef.current) {
+                                textareaRef.current.focus();
+                                autoResize();
+                              }
+                            }}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Saved replies">
                 <Zap className="h-4 w-4" />
               </Button>
@@ -544,7 +714,7 @@ export function MessageThread({
             
             <Button
               onClick={handleSend}
-              disabled={!input.trim() || sending}
+              disabled={(!input.trim() && attachments.length === 0) || sending || uploadingFiles}
               size="sm"
               className={cn("h-8 gap-1.5 rounded-lg px-4 font-semibold shadow-none", isInternal ? "bg-yellow-500 hover:bg-yellow-600 text-white" : "")}
             >

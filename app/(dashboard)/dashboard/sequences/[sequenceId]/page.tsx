@@ -53,7 +53,7 @@ export default async function SequenceDetailPage({
                 "Unknown",
               currentStepIndex: e.current_step_index,
               status: e.status as "active" | "completed" | "cancelled",
-              enrolledAt: e.enrolled_at,
+              enrolledAt: e.enrolled_at || "",
             }))
           }
         />

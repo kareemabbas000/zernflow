@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { BUILDER_TRIGGER_TYPES, buildDesiredTriggers } from "@/lib/flow-triggers";
@@ -86,7 +87,7 @@ export async function POST(
   if (desiredTriggers.length > 0) {
     const { error: insertError } = await supabase.from("triggers").insert(desiredTriggers);
     if (insertError) {
-      console.error("[publish] Failed to sync triggers from flow nodes:", insertError);
+      logger.error("[publish] Failed to sync triggers from flow nodes:", insertError);
     }
   }
 

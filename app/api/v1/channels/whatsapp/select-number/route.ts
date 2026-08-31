@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { validateOAuthState } from "@/lib/auth-state";
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (channelErr) {
-      console.error("[whatsapp/select-number] Database channel upsert error:", channelErr);
+      logger.error("[whatsapp/select-number] Database channel upsert error:", channelErr);
       return NextResponse.json(
         { error: `Failed to save WhatsApp channel: ${channelErr.message}` },
         { status: 500 }
@@ -185,7 +186,7 @@ export async function POST(request: NextRequest) {
       message: `Successfully connected WhatsApp Business number "${displayName}".`,
     });
   } catch (error) {
-    console.error("[whatsapp/select-number] Error:", error);
+    logger.error("[whatsapp/select-number] Error:", error);
     return NextResponse.json(
       {
         error:

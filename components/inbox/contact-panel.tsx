@@ -29,6 +29,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { PlatformIcon } from "@/components/platform-icon";
 import { useContactsStore } from "@/lib/stores/contacts-store";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Database, Platform } from "@/lib/types/database";
 
 type TagRow = Database["public"]["Tables"]["tags"]["Row"];
@@ -49,10 +50,12 @@ export function ContactPanel({
   contactId,
   workspaceId,
   onClose,
+  isMobile = false,
 }: {
   contactId: string | null;
   workspaceId: string;
   onClose: () => void;
+  isMobile?: boolean;
 }) {
   const {
     activeContactDetails: details,
@@ -335,10 +338,18 @@ export function ContactPanel({
   const phone = (details?.contact.metadata as Record<string, any>)?.phone || null;
 
   return (
-    <div className="flex h-full w-84 flex-col border-l border-border bg-card shadow-sm select-none shrink-0">
+    <div className={cn("flex h-full flex-col border-l border-border bg-card shadow-sm select-none shrink-0", isMobile ? "w-full" : "w-84")}>
       {/* Header */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4 bg-muted/20">
         <div className="flex items-center gap-2">
+          {isMobile && (
+            <button
+              onClick={onClose}
+              className="mr-1 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          )}
           <User className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold text-foreground">Contact CRM</h3>
         </div>
@@ -360,8 +371,19 @@ export function ContactPanel({
       </div>
 
       {loading ? (
-        <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <div className="flex flex-1 flex-col items-center p-5 space-y-6 bg-card">
+          <Skeleton className="h-16 w-16 rounded-full" />
+          <div className="space-y-2 w-full flex flex-col items-center">
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-3 w-1/3" />
+          </div>
+          <Skeleton className="h-10 w-full rounded-xl" />
+          <Skeleton className="h-10 w-full rounded-xl" />
+          <div className="w-full space-y-3 mt-4">
+            <Skeleton className="h-3 w-1/4" />
+            <Skeleton className="h-12 w-full rounded-lg" />
+            <Skeleton className="h-12 w-full rounded-lg" />
+          </div>
         </div>
       ) : details ? (
         <div className="flex-1 overflow-y-auto divide-y divide-border/60">

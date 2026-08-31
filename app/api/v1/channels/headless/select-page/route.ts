@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (channelErr) {
-      console.error("[headless/select-page] Database channel upsert error:", channelErr);
+      logger.error("[headless/select-page] Database channel upsert error:", channelErr);
       return NextResponse.json(
         { error: `Failed to save channel: ${channelErr.message}` },
         { status: 500 }
@@ -212,7 +213,7 @@ export async function POST(request: NextRequest) {
       message: `Successfully connected Facebook Page "${displayName}".`,
     });
   } catch (error) {
-    console.error("[headless/select-page] Error:", error);
+    logger.error("[headless/select-page] Error:", error);
     return NextResponse.json(
       {
         error:

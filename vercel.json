@@ -1,3 +1,21 @@
 {
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/health",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/usage-sync",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "functions": {
+    "app/api/webhooks/late/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/v1/messages/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }

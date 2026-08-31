@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (channelErr) {
-        console.error("[telegram/status] Channel upsert error:", channelErr);
+        logger.error("[telegram/status] Channel upsert error:", channelErr);
       }
 
       // Auto-register webhook
@@ -185,7 +186,7 @@ export async function POST(request: NextRequest) {
       expiresIn: data?.expiresIn,
     });
   } catch (error) {
-    console.error("[telegram/status] Error:", error);
+    logger.error("[telegram/status] Error:", error);
     return NextResponse.json(
       {
         error:

@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
       workspaceId: workspace.id,
     });
   } catch (error) {
-    console.error("[channels/connect] Connection error:", error);
+    logger.error("[channels/connect] Connection error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to initiate channel connection." },
       { status: 500 }

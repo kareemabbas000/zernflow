@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { resolveContacts, type SegmentFilter } from "@/lib/audience";
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ count: contactIds.length });
   } catch (error: any) {
-    console.error("Audience check error:", error);
+    logger.error("Audience check error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to calculate audience" },
       { status: 500 }

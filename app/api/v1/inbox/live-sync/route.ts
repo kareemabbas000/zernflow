@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getPlatformZernioClient, createZernioClient } from "@/lib/zernio-client";
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
       conversations: conversations ?? [],
     });
   } catch (err) {
-    console.error("[inbox/live-sync] Error:", err);
+    logger.error("[inbox/live-sync] Error:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to sync inbox" },
       { status: 500 }

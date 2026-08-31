@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
       globalUnreadCounts: counts,
     });
   } catch (err) {
-    console.error("[api/v1/inbox/conversations] Error:", err);
+    logger.error("[api/v1/inbox/conversations] Error:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to load conversations" },
       { status: 500 }

@@ -12,9 +12,12 @@ import {
   Sliders,
   ArrowLeft,
   ShieldAlert,
-  LogOut,
   Moon,
   Sun,
+  CreditCard,
+  Flag,
+  Activity,
+  LogOut,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -32,6 +35,9 @@ const adminNavigation = [
   { name: "Users", href: "/admin/users", icon: Users },
   { name: "Workspaces", href: "/admin/workspaces", icon: Building2 },
   { name: "Connected Channels", href: "/admin/channels", icon: Plug },
+  { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard },
+  { name: "Feature Flags", href: "/admin/feature-flags", icon: Flag },
+  { name: "System Health", href: "/admin/system", icon: Activity },
   { name: "Audit Logs", href: "/admin/audit-logs", icon: FileText },
   { name: "Platform Settings", href: "/admin/settings", icon: Sliders },
 ];

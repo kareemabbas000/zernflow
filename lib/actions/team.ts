@@ -143,7 +143,7 @@ export async function acceptInvite(inviteId: string) {
     return { error: "This invite is no longer valid" };
   }
 
-  if (new Date(invite.expires_at) < new Date()) {
+  if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
     return { error: "This invite has expired" };
   }
 
