@@ -1,6 +1,8 @@
 import { getWorkspace } from "@/lib/workspace";
 import { Sidebar } from "@/components/sidebar";
 import { GlobalLiveSyncProvider } from "@/components/providers/global-live-sync-provider";
+import { ResponsiveLayoutWrapper } from "@/components/responsive-layout-wrapper";
+import { CommandPalette } from "@/components/command-palette";
 
 export default async function DashboardLayout({
   children,
@@ -39,7 +41,8 @@ export default async function DashboardLayout({
 
   return (
     <GlobalLiveSyncProvider workspaceId={workspace.id}>
-      <div className="flex h-screen">
+      <ResponsiveLayoutWrapper>
+        <CommandPalette />
         <Sidebar
           workspace={workspace}
           user={user}
@@ -47,7 +50,7 @@ export default async function DashboardLayout({
           isSuperAdmin={isSuperAdmin}
         />
         <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
-      </div>
+      </ResponsiveLayoutWrapper>
     </GlobalLiveSyncProvider>
   );
 }

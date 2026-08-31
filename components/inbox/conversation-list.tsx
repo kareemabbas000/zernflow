@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Search, MessageSquare } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useInboxStore, selectFilteredConversations, selectUnreadByPlatform } from "@/lib/stores/inbox-store";
 import { cn } from "@/lib/utils";
 import { PlatformIcon } from "@/components/platform-icon";
 import type { Database, Platform, ConversationStatus } from "@/lib/types/database";
@@ -29,7 +29,7 @@ function formatTime(dateStr: string | null): string {
 }
 
 export function ConversationList({
-  conversations: initialConversations,
+  conversations: _initialConversations,
   workspaceId,
   selectedId,
   onSelect,
@@ -39,44 +39,23 @@ export function ConversationList({
   selectedId: string | null;
   onSelect: (conversation: Conversation) => void;
 }) {
-  const [conversations, setConversations] = useState(initialConversations);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<ConversationStatus | "all">("open");
+  // ── Store-powered state ─────────────────────────────────────────
+  const filters = useInboxStore((s) => s.filters);
+  const setFilters = useInboxStore((s) => s.setFilters);
+  const filtered = useInboxStore(selectFilteredConversations);
+  const unreadByPlatform = useInboxStore(selectUnreadByPlatform);
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
-  useEffect(() => {
-    setConversations(initialConversations);
-  }, [initialConversations]);
-
-  const [platformFilter, setPlatformFilter] = useState<Platform | "all">("all");
-
-  const unreadByPlatform = conversations.reduce<Record<string, number>>((acc, conv) => {
-    if (conv.unread_count > 0) {
-      acc.all = (acc.all || 0) + conv.unread_count;
-      acc[conv.platform] = (acc[conv.platform] || 0) + conv.unread_count;
-    }
-    return acc;
-  }, {});
-
-  const filtered = conversations.filter((c) => {
-    if (statusFilter !== "all" && c.status !== statusFilter) return false;
-    if (platformFilter !== "all" && c.platform !== platformFilter) return false;
-    if (search) {
-      const name = c.contacts?.display_name?.toLowerCase() ?? "";
-      const preview = c.last_message_preview?.toLowerCase() ?? "";
-      const q = search.toLowerCase();
-      if (!name.includes(q) && !preview.includes(q)) return false;
-    }
-    return true;
-  });
 
   return (
     <div className="flex h-full flex-col border-r border-border bg-background">
       {/* Header */}
-      <div className="flex h-14 items-center justify-between border-b border-border px-4 bg-muted/20">
+      <div className="flex h-14 items-center justify-between border-b border-border px-4 bg-muted/20 shrink-0">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-bold text-foreground tracking-tight">Live Inbox</h2>
+          <h2 className="text-sm font-bold text-foreground tracking-tight">
+            Live Inbox
+          </h2>
           {unreadByPlatform.all ? (
             <span className="flex h-5 items-center justify-center rounded-full bg-rose-500 px-2 text-[10px] font-black text-white shadow-sm shadow-rose-500/30 animate-pulse">
               {unreadByPlatform.all} unread
@@ -85,23 +64,38 @@ export function ConversationList({
         </div>
         <span className="text-xs font-semibold text-muted-foreground">
           {unreadByPlatform.all ? (
-            <span className="text-rose-600 dark:text-rose-400 font-bold">{unreadByPlatform.all} unread message{unreadByPlatform.all !== 1 ? "s" : ""}</span>
+            <span className="text-rose-600 dark:text-rose-400 font-bold">
+              {unreadByPlatform.all} unread message
+              {unreadByPlatform.all !== 1 ? "s" : ""}
+            </span>
           ) : (
             `${filtered.length} conversation${filtered.length !== 1 ? "s" : ""}`
           )}
         </span>
       </div>
 
-      {/* Platform Tabs with Unread Count Badges (clean scrolling with no visible scrollbar) */}
-      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border px-3 py-2 bg-background/50 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        {(["all", "instagram", "facebook", "whatsapp", "twitter", "telegram"] as const).map((plat) => {
-          const count = plat === "all" ? unreadByPlatform.all : unreadByPlatform[plat];
-          const isSelected = platformFilter === plat;
+      {/* Platform Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border px-3 py-2 bg-background/50 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0">
+        {(
+          [
+            "all",
+            "instagram",
+            "facebook",
+            "whatsapp",
+            "twitter",
+            "telegram",
+          ] as const
+        ).map((plat) => {
+          const count =
+            plat === "all"
+              ? unreadByPlatform.all
+              : unreadByPlatform[plat];
+          const isSelected = filters.platform === plat;
 
           return (
             <button
               key={plat}
-              onClick={() => setPlatformFilter(plat)}
+              onClick={() => setFilters({ platform: plat })}
               className={cn(
                 "flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
                 isSelected
@@ -109,7 +103,13 @@ export function ConversationList({
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
-              {plat !== "all" && <PlatformIcon platform={plat} className="h-3 w-3" size={12} />}
+              {plat !== "all" && (
+                <PlatformIcon
+                  platform={plat}
+                  className="h-3 w-3"
+                  size={12}
+                />
+              )}
               <span className="capitalize">{plat}</span>
               {count ? (
                 <span
@@ -129,28 +129,28 @@ export function ConversationList({
       </div>
 
       {/* Search */}
-      <div className="p-3 pb-2">
+      <div className="p-3 pb-2 shrink-0">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search conversations..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-input bg-background/80 py-2 pl-9 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            value={filters.search}
+            onChange={(e) => setFilters({ search: e.target.value })}
+            className="w-full rounded-xl border border-input bg-background/80 py-2 pl-9 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
           />
         </div>
       </div>
 
       {/* Status filter */}
-      <div className="flex gap-1 px-3 pb-2">
+      <div className="flex gap-1 px-3 pb-2 shrink-0">
         {(["all", "open", "closed", "snoozed"] as const).map((status) => (
           <button
             key={status}
-            onClick={() => setStatusFilter(status)}
+            onClick={() => setFilters({ status })}
             className={cn(
               "rounded-md px-2.5 py-1 text-[11px] font-semibold capitalize transition-colors",
-              statusFilter === status
+              filters.status === status
                 ? "bg-muted text-foreground font-bold shadow-xs border border-border"
                 : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
             )}
@@ -167,8 +167,12 @@ export function ConversationList({
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/60 text-muted-foreground/60 mb-3">
               <MessageSquare className="h-6 w-6" />
             </div>
-            <p className="text-sm font-semibold text-foreground">No conversations found</p>
-            <p className="text-xs text-muted-foreground mt-1">Messages from your connected channels will stream here instantly.</p>
+            <p className="text-sm font-semibold text-foreground">
+              No conversations found
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Messages from your connected channels will stream here instantly.
+            </p>
           </div>
         ) : (
           filtered.map((conversation) => {
@@ -198,7 +202,8 @@ export function ConversationList({
                     />
                   ) : (
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary text-sm font-bold ring-1 ring-primary/20">
-                      {conversation.contacts?.display_name?.[0]?.toUpperCase() ?? "?"}
+                      {conversation.contacts?.display_name?.[0]?.toUpperCase() ??
+                        "?"}
                     </div>
                   )}
                   <div className="absolute -bottom-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 border-background bg-background shadow-xs">
@@ -220,7 +225,9 @@ export function ConversationList({
                       <p
                         className={cn(
                           "truncate text-xs",
-                          isUnread ? "font-bold text-foreground" : "font-semibold text-foreground/80"
+                          isUnread
+                            ? "font-bold text-foreground"
+                            : "font-semibold text-foreground/80"
                         )}
                       >
                         {conversation.contacts?.display_name ?? "Customer"}
@@ -230,10 +237,14 @@ export function ConversationList({
                       suppressHydrationWarning
                       className={cn(
                         "flex-shrink-0 text-[10px]",
-                        isUnread ? "font-bold text-rose-600 dark:text-rose-400" : "text-muted-foreground"
+                        isUnread
+                          ? "font-bold text-rose-600 dark:text-rose-400"
+                          : "text-muted-foreground"
                       )}
                     >
-                      {mounted ? formatTime(conversation.last_message_at) : ""}
+                      {mounted
+                        ? formatTime(conversation.last_message_at)
+                        : ""}
                     </span>
                   </div>
 
@@ -241,7 +252,9 @@ export function ConversationList({
                     <p
                       className={cn(
                         "truncate text-xs leading-relaxed",
-                        isUnread ? "font-semibold text-foreground" : "text-muted-foreground"
+                        isUnread
+                          ? "font-semibold text-foreground"
+                          : "text-muted-foreground"
                       )}
                     >
                       {conversation.last_message_preview ?? "New message"}

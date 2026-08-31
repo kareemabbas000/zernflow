@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -10,17 +10,15 @@ import {
   Volume2,
   VolumeX,
   Bell,
-  BellRing,
-  Sparkles,
-  ExternalLink,
-  X,
+  ArrowLeft,
 } from "lucide-react";
 import { ConversationList } from "@/components/inbox/conversation-list";
 import { MessageThread } from "@/components/inbox/message-thread";
 import { ContactPanel } from "@/components/inbox/contact-panel";
 import { createClient } from "@/lib/supabase/client";
 import { soundManager } from "@/lib/sound-notifications";
-import { PlatformIcon } from "@/components/platform-icon";
+import { useInboxStore, selectSelectedConversation, selectCurrentMessages } from "@/lib/stores/inbox-store";
+import { useUIStore, selectIsMobile } from "@/lib/stores/ui-store";
 import { useGlobalLiveSync } from "@/components/providers/global-live-sync-provider";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/lib/types/database";
@@ -29,9 +27,6 @@ type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
   contacts: Database["public"]["Tables"]["contacts"]["Row"] | null;
 };
 type Message = Database["public"]["Tables"]["messages"]["Row"];
-
-// Client-side in-memory message store for 0ms instant thread switching
-const messageMemoryCache = new Map<string, Message[]>();
 
 export function InboxView({
   conversations: initialConversations,
@@ -44,104 +39,88 @@ export function InboxView({
   const searchParams = useSearchParams();
   const targetConvId = searchParams.get("conversationId");
 
+  // ── Store state ─────────────────────────────────────────────────
   const {
-    conversations: globalConversations,
     soundEnabled,
     setSoundEnabled,
-    syncNow: globalSyncNow,
     markConversationAsRead,
   } = useGlobalLiveSync();
 
-  const [conversations, setConversations] = useState<Conversation[]>(
-    globalConversations.length > 0 ? globalConversations : initialConversations
-  );
-  const [selected, setSelected] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loadingMessages, setLoadingMessages] = useState(false);
-  const [showContactPanel, setShowContactPanel] = useState(true);
-  const [syncing, setSyncing] = useState(false);
+  const conversations = useInboxStore((s) => s.conversations);
+  const selectedId = useInboxStore((s) => s.selectedConversationId);
+  const selectedConversation = useInboxStore(selectSelectedConversation);
+  const messages = useInboxStore(selectCurrentMessages);
+  const messagesLoading = useInboxStore((s) => s.messagesLoading);
+  const selectConversation = useInboxStore((s) => s.selectConversation);
+  const setConversations = useInboxStore((s) => s.setConversations);
+  const setMessages = useInboxStore((s) => s.setMessages);
+  const setMessagesLoading = useInboxStore((s) => s.setMessagesLoading);
+  const conversationsLoaded = useInboxStore((s) => s.conversationsLoaded);
 
-  // Keep in sync with global real-time state
+  const isMobile = useUIStore(selectIsMobile);
+  const contactPanelOpen = useUIStore((s) => s.contactPanelOpen);
+  const setContactPanelOpen = useUIStore((s) => s.setContactPanelOpen);
+
+  // Seed store from server-rendered data if store is empty
   useEffect(() => {
-    if (globalConversations.length > 0) {
-      setConversations(globalConversations);
+    if (!conversationsLoaded && initialConversations.length > 0) {
+      setConversations(initialConversations);
     }
-  }, [globalConversations]);
+  }, [initialConversations, conversationsLoaded, setConversations]);
 
-  // Handle conversation selection with instant 0ms optimistic read marking and memory cache hydration
+  // Use live conversations, fall back to initial if store hasn't loaded yet
+  const displayConversations =
+    conversations.length > 0 ? conversations : initialConversations;
+
+  // Handle conversation selection with optimistic read marking
   const handleSelectConversation = useCallback(
     (conv: Conversation) => {
-      setSelected(conv);
-      // 0ms instant message hydration from client cache
-      const cached = messageMemoryCache.get(conv.id);
-      if (cached && cached.length > 0) {
-        setMessages(cached);
-      }
-
+      selectConversation(conv.id);
       if (conv.unread_count > 0) {
         markConversationAsRead(conv.id);
       }
     },
-    [markConversationAsRead]
+    [selectConversation, markConversationAsRead]
   );
 
   // Handle URL param selection (e.g. clicked from toast or notification)
   useEffect(() => {
-    if (targetConvId && conversations.length > 0) {
-      const match = conversations.find((c) => c.id === targetConvId);
-      if (match && selected?.id !== match.id) {
+    if (targetConvId && displayConversations.length > 0) {
+      const match = displayConversations.find((c) => c.id === targetConvId);
+      if (match && selectedId !== match.id) {
         handleSelectConversation(match);
       }
     }
-  }, [targetConvId, conversations, selected?.id, handleSelectConversation]);
+  }, [targetConvId, displayConversations, selectedId, handleSelectConversation]);
 
-  // If current selected conversation had a new message, refresh it
+  // Load messages when a conversation is selected
   useEffect(() => {
-    if (selected) {
-      const match = conversations.find((c) => c.id === selected.id);
-      if (match && match.last_message_at !== selected.last_message_at) {
-        setSelected(match);
-      }
-    }
-  }, [conversations, selected]);
+    if (!selectedId) return;
 
-  // Load messages when a conversation is selected (with SWR caching)
-  useEffect(() => {
-    if (!selected) {
-      setMessages([]);
-      return;
-    }
-
-    const convId = selected.id;
-    const cached = messageMemoryCache.get(convId);
-    if (cached && cached.length > 0) {
-      setMessages(cached);
-      setLoadingMessages(false);
+    // Check if we already have messages in the store
+    const existing = useInboxStore.getState().messagesByConversation[selectedId];
+    if (existing && existing.length > 0) {
+      // Already have cached messages — no loading state needed
     } else {
-      setLoadingMessages(true);
+      setMessagesLoading(true);
     }
 
     async function loadMessages() {
       try {
-        const res = await fetch(`/api/v1/messages?conversationId=${convId}`);
+        const res = await fetch(`/api/v1/messages?conversationId=${selectedId}`);
         if (res.ok) {
           const data: Message[] = await res.json();
-          messageMemoryCache.set(convId, data ?? []);
-          setMessages(data ?? []);
+          setMessages(selectedId!, data ?? []);
         }
       } catch (err) {
         console.error("Failed to load messages:", err);
       } finally {
-        setLoadingMessages(false);
-      }
-
-      if (selected?.unread_count && selected.unread_count > 0) {
-        markConversationAsRead(convId);
+        setMessagesLoading(false);
       }
     }
 
     loadMessages();
-  }, [selected?.id, selected?.last_message_at, markConversationAsRead]);
+  }, [selectedId, setMessages, setMessagesLoading]);
 
   // Request browser desktop notification permission
   function handleEnableNotifications() {
@@ -156,121 +135,154 @@ export function InboxView({
     }
   }
 
-  // Handle manual sync button
-  async function handleManualSync() {
-    setSyncing(true);
-    try {
-      await globalSyncNow();
-    } finally {
-      setSyncing(false);
-    }
-  }
+  // ── Mobile: Show conversation list OR thread (not both) ────────
+  const showList = !isMobile || !selectedId;
+  const showThread = !isMobile || !!selectedId;
 
   return (
     <div className="relative flex h-full overflow-hidden">
-
       {/* Left panel: Conversation list */}
-      <div className="w-80 flex-shrink-0 flex flex-col border-r border-border bg-background">
-        {/* Top Controls: Sound & Notification Bar */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 bg-muted/20 text-xs">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSoundEnabled(!soundEnabled)}
-              className={cn(
-                "flex items-center gap-1 px-2 py-1 rounded-md transition-colors",
-                soundEnabled ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-muted"
-              )}
-              title={soundEnabled ? "Mute message chimes" : "Enable message chimes"}
-            >
-              {soundEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
-              <span className="text-[11px] font-medium">{soundEnabled ? "Sound On" : "Muted"}</span>
-            </button>
+      {showList && (
+        <div
+          className={cn(
+            "flex flex-col border-r border-border bg-background",
+            isMobile ? "w-full" : "w-80 flex-shrink-0"
+          )}
+        >
+          {/* Top Controls */}
+          <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 bg-muted/20 text-xs shrink-0">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className={cn(
+                  "flex items-center gap-1 px-2 py-1 rounded-md transition-colors",
+                  soundEnabled
+                    ? "text-primary hover:bg-primary/10"
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+                title={
+                  soundEnabled
+                    ? "Mute message chimes"
+                    : "Enable message chimes"
+                }
+              >
+                {soundEnabled ? (
+                  <Volume2 className="h-3.5 w-3.5" />
+                ) : (
+                  <VolumeX className="h-3.5 w-3.5" />
+                )}
+                <span className="text-[11px] font-medium hidden sm:inline">
+                  {soundEnabled ? "Sound On" : "Muted"}
+                </span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleEnableNotifications}
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                title="Enable desktop notifications"
+              >
+                <Bell className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handleEnableNotifications}
-              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              title="Enable desktop notifications"
-            >
-              <Bell className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={handleManualSync}
-              disabled={syncing}
-              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              title="Refresh inbox"
-            >
-              <RefreshCw className={cn("h-3.5 w-3.5", syncing && "animate-spin text-primary")} />
-            </button>
+          <div className="flex-1 min-h-0">
+            <ConversationList
+              conversations={displayConversations}
+              workspaceId={workspaceId}
+              selectedId={selectedId}
+              onSelect={handleSelectConversation}
+            />
           </div>
         </div>
-
-        <div className="flex-1 min-h-0">
-          <ConversationList
-            conversations={conversations}
-            workspaceId={workspaceId}
-            selectedId={selected?.id ?? null}
-            onSelect={handleSelectConversation}
-          />
-        </div>
-      </div>
+      )}
 
       {/* Center panel: Message thread */}
-      <div className="flex min-h-0 flex-1 flex-col">
-        {selected && !showContactPanel && (
-          <div className="flex shrink-0 justify-end border-b border-border px-2 py-1">
-            <button
-              onClick={() => setShowContactPanel(true)}
-              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-              aria-label="Show contact info"
-            >
-              <User className="h-3.5 w-3.5" />
-              Contact info
-            </button>
-          </div>
-        )}
-        <div className="min-h-0 flex-1">
-          {conversations.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-              <MessageSquare className="h-10 w-10 text-muted-foreground/40" />
-              <h3 className="mt-3 text-base font-semibold text-foreground">Live Inbox Ready</h3>
-              <p className="mt-1 max-w-xs text-xs text-muted-foreground leading-relaxed">
-                Connect your social channels. Inbound customer messages from Facebook, Instagram, WhatsApp, X, and Telegram appear here in real-time.
-              </p>
-              <Link
-                href="/dashboard/channels"
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all shadow-md shadow-primary/20"
+      {showThread && (
+        <div className="flex min-h-0 flex-1 flex-col">
+          {/* Mobile: Back button */}
+          {isMobile && selectedId && (
+            <div className="flex items-center border-b border-border px-2 py-1 shrink-0">
+              <button
+                onClick={() => selectConversation(null)}
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               >
-                Connect Channels
-              </Link>
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Back
+              </button>
             </div>
-          ) : !selected ? (
-            <div className="flex h-full flex-col items-center justify-center px-6 text-center text-muted-foreground">
-              <MessageSquare className="h-10 w-10 opacity-30 mb-2" />
-              <p className="text-sm font-medium">Select a conversation to start messaging</p>
-            </div>
-          ) : loadingMessages && messages.length === 0 ? (
-            <div className="flex h-full items-center justify-center">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            </div>
-          ) : (
-            <MessageThread
-              conversation={selected}
-              messages={messages}
-            />
           )}
-        </div>
-      </div>
 
-      {/* Right panel: Contact info */}
-      {showContactPanel && selected?.contact_id && (
-        <ContactPanel
-          contactId={selected.contact_id}
-          workspaceId={workspaceId}
-          onClose={() => setShowContactPanel(false)}
-        />
+          {/* Desktop: Contact panel toggle */}
+          {!isMobile && selectedConversation && !contactPanelOpen && (
+            <div className="flex shrink-0 justify-end border-b border-border px-2 py-1">
+              <button
+                onClick={() => setContactPanelOpen(true)}
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                aria-label="Show contact info"
+              >
+                <User className="h-3.5 w-3.5" />
+                Contact info
+              </button>
+            </div>
+          )}
+
+          <div className="min-h-0 flex-1">
+            {displayConversations.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/60 mb-4">
+                  <MessageSquare className="h-8 w-8 text-muted-foreground/40" />
+                </div>
+                <h3 className="text-base font-semibold text-foreground">
+                  Live Inbox Ready
+                </h3>
+                <p className="mt-1 max-w-xs text-xs text-muted-foreground leading-relaxed">
+                  Connect your social channels. Inbound customer messages from
+                  Facebook, Instagram, WhatsApp, X, and Telegram appear here in
+                  real-time.
+                </p>
+                <Link
+                  href="/dashboard/channels"
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all shadow-md shadow-primary/20"
+                >
+                  Connect Channels
+                </Link>
+              </div>
+            ) : !selectedConversation ? (
+              <div className="flex h-full flex-col items-center justify-center px-6 text-center text-muted-foreground">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/60 mb-4">
+                  <MessageSquare className="h-8 w-8 opacity-30" />
+                </div>
+                <p className="text-sm font-medium">
+                  Select a conversation to start messaging
+                </p>
+              </div>
+            ) : messagesLoading && messages.length === 0 ? (
+              <div className="flex h-full items-center justify-center">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            ) : (
+              <MessageThread
+                conversation={selectedConversation}
+                messages={messages}
+              />
+            )}
+          </div>
+        </div>
       )}
+
+      {/* Right panel: Contact info (hidden on mobile) */}
+      {!isMobile &&
+        contactPanelOpen &&
+        selectedConversation?.contact_id && (
+          <ContactPanel
+            contactId={selectedConversation.contact_id}
+            workspaceId={workspaceId}
+            onClose={() => setContactPanelOpen(false)}
+          />
+        )}
     </div>
   );
 }

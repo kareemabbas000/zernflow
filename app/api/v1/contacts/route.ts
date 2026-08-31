@@ -24,36 +24,35 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "50", 10);
   const offset = parseInt(searchParams.get("offset") || "0", 10);
 
-  let query = supabase
+  const { data: matchedIds, error: searchError } = await (supabase as any).rpc("search_workspace_contacts", {
+    ws_id: membership.workspace_id,
+    search_query: search || null,
+    tag_name: tag || null,
+    req_is_subscribed: subscribed === "true" ? true : subscribed === "false" ? false : null,
+    max_limit: limit,
+    row_offset: offset,
+  });
+
+  if (searchError) return NextResponse.json({ error: searchError.message }, { status: 500 });
+
+  if (!matchedIds || matchedIds.length === 0) {
+    return NextResponse.json({ contacts: [], total: 0 });
+  }
+
+  const totalCount = matchedIds[0].total_count;
+  const ids = matchedIds.map((row: { contact_id: string }) => row.contact_id);
+
+  const { data: contacts, error } = await supabase
     .from("contacts")
-    .select("*, contact_tags(tag_id, tags(id, name, color)), contact_channels(platform_sender_id, channel_id, channels(platform))", { count: "exact" })
-    .eq("workspace_id", membership.workspace_id)
-    .order("last_interaction_at", { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  if (search) {
-    query = query.or(`display_name.ilike.%${search}%,email.ilike.%${search}%`);
-  }
-
-  if (subscribed === "true") {
-    query = query.eq("is_subscribed", true);
-  } else if (subscribed === "false") {
-    query = query.eq("is_subscribed", false);
-  }
-
-  const { data: contacts, error, count } = await query;
+    .select("*, contact_tags(tag_id, tags(id, name, color)), contact_channels(platform_sender_id, channel_id, channels(platform))")
+    .in("id", ids);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Filter by tag in-memory (Supabase doesn't easily filter through join)
-  let filtered = contacts || [];
-  if (tag) {
-    filtered = filtered.filter((c) =>
-      (c.contact_tags as Array<{ tags: { name: string } | null }>)?.some(
-        (ct) => ct.tags?.name === tag
-      )
-    );
-  }
+  // Re-sort correctly because .in() loses order
+  const sorted = ids
+    .map((id: string) => contacts?.find(c => c.id === id))
+    .filter(Boolean);
 
-  return NextResponse.json({ contacts: filtered, total: count });
+  return NextResponse.json({ contacts: sorted, total: totalCount });
 }

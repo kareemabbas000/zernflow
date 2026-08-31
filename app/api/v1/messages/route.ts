@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { conversationId, text } = body;
+  const { conversationId, text, isInternal } = body;
 
   if (!conversationId || !text) {
     return NextResponse.json(
@@ -188,7 +188,43 @@ export async function POST(request: NextRequest) {
     .eq("id", conversation.workspace_id)
     .single();
 
-  // Send via Zernio SDK
+  // If this is an internal note, skip Zernio and insert directly
+  if (isInternal) {
+    try {
+      const newMessage: any = {
+        conversation_id: conversationId,
+        direction: "outbound",
+        text,
+        sent_by_user_id: user.id,
+        status: "sent",
+        is_internal: true,
+      };
+      
+      const { data: insertedMsg, error: insertError } = await (supabase as any)
+        .from("messages")
+        .insert(newMessage)
+        .select()
+        .single();
+        
+      if (insertError) throw insertError;
+      
+      // Update conversation's last message info
+      await supabase
+        .from("conversations")
+        .update({
+          last_message_at: new Date().toISOString(),
+          last_message_preview: `[Internal Note] ${messagePreview(text)}`,
+        })
+        .eq("id", conversationId);
+        
+      return NextResponse.json(insertedMsg, { status: 201 });
+    } catch (error) {
+      console.error("Failed to save internal note:", error);
+      return NextResponse.json({ error: "Failed to save internal note" }, { status: 500 });
+    }
+  }
+
+  // Send via Zernio SDK for external messages
   try {
     const zernio = createZernioClient(workspace?.late_api_key_encrypted);
     const res = await zernio.messages.sendInboxMessage({
@@ -222,6 +258,7 @@ export async function POST(request: NextRequest) {
         sent_by_node_id: null,
         sent_by_user_id: user.id,
         status: "sent",
+        is_internal: false,
         created_at: new Date().toISOString(),
       },
       { status: 201 }

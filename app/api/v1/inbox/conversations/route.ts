@@ -34,9 +34,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Get true global unread count
+    const { data: counts } = await (supabase as any).rpc("get_workspace_unread_counts", {
+      ws_id: workspaceId,
+    });
+
     return NextResponse.json({
       success: true,
       conversations: conversations ?? [],
+      globalUnreadCounts: counts,
     });
   } catch (err) {
     console.error("[api/v1/inbox/conversations] Error:", err);

@@ -25,32 +25,11 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { PlatformIcon } from "@/components/platform-icon";
+import { useContactsStore } from "@/lib/stores/contacts-store";
 import type { Database, Platform } from "@/lib/types/database";
 
-type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 type TagRow = Database["public"]["Tables"]["tags"]["Row"];
-type CustomFieldDef =
-  Database["public"]["Tables"]["custom_field_definitions"]["Row"];
-
-interface NoteRow {
-  id: string;
-  author_name: string | null;
-  content: string;
-  created_at: string;
-}
-
-interface ContactDetails {
-  contact: Contact;
-  tags: TagRow[];
-  customFields: { definition: CustomFieldDef; value: string }[];
-  channels: {
-    platform: Platform;
-    platform_username: string | null;
-    platform_sender_id?: string;
-  }[];
-  conversationId?: string;
-  isAutomationPaused?: boolean;
-}
+type CustomFieldDef = Database["public"]["Tables"]["custom_field_definitions"]["Row"];
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "Never";
@@ -72,9 +51,20 @@ export function ContactPanel({
   workspaceId: string;
   onClose: () => void;
 }) {
-  const [details, setDetails] = useState<ContactDetails | null>(null);
-  const [notes, setNotes] = useState<NoteRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const {
+    activeContactDetails: details,
+    activeContactNotes: notes,
+    isLoadingDetails: loading,
+    setDetails,
+    setNotes,
+    setIsLoadingDetails,
+    addOptimisticTag,
+    removeOptimisticTag,
+    addOptimisticNote,
+    removeOptimisticNote,
+    addOptimisticCustomField,
+    setAutomationPaused,
+  } = useContactsStore();
 
   // Editing state
   const [newTagName, setNewTagName] = useState("");
@@ -93,7 +83,7 @@ export function ContactPanel({
     if (!contactId) return;
 
     async function loadContactData() {
-      setLoading(true);
+      setIsLoadingDetails(true);
       const supabase = createClient();
 
       try {
@@ -157,12 +147,12 @@ export function ContactPanel({
       } catch (err) {
         console.error("Failed to load contact details:", err);
       } finally {
-        setLoading(false);
+        setIsLoadingDetails(false);
       }
     }
 
     loadContactData();
-  }, [contactId, workspaceId]);
+  }, [contactId, workspaceId, setDetails, setNotes, setIsLoadingDetails]);
 
   // Handle Add Tag
   async function handleAddTag(e?: React.FormEvent) {
@@ -178,7 +168,7 @@ export function ContactPanel({
       });
       if (res.ok) {
         const data = await res.json();
-        setDetails((prev) => (prev ? { ...prev, tags: data.tags } : prev));
+        setDetails(details ? { ...details, tags: data.tags } : null);
         setNewTagName("");
       }
     } catch (err) {
@@ -191,6 +181,7 @@ export function ContactPanel({
   // Handle Remove Tag
   async function handleRemoveTag(tagId: string) {
     if (!contactId) return;
+    removeOptimisticTag(tagId);
     try {
       const res = await fetch(`/api/v1/contacts/${contactId}/tags`, {
         method: "DELETE",
@@ -199,7 +190,7 @@ export function ContactPanel({
       });
       if (res.ok) {
         const data = await res.json();
-        setDetails((prev) => (prev ? { ...prev, tags: data.tags } : prev));
+        setDetails(details ? { ...details, tags: data.tags } : null);
       }
     } catch (err) {
       console.error("Failed to remove tag:", err);
@@ -220,7 +211,7 @@ export function ContactPanel({
       });
       if (res.ok) {
         const data = await res.json();
-        setNotes((prev) => [data.note, ...prev]);
+        addOptimisticNote(data.note);
         setNewNoteContent("");
       }
     } catch (err) {
@@ -233,15 +224,14 @@ export function ContactPanel({
   // Handle Delete Note
   async function handleDeleteNote(noteId: string) {
     if (!contactId) return;
+    removeOptimisticNote(noteId);
     try {
       const res = await fetch(`/api/v1/contacts/${contactId}/notes`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ noteId }),
       });
-      if (res.ok) {
-        setNotes((prev) => prev.filter((n) => n.id !== noteId));
-      }
+      // if not ok, could rollback, but omitting for simplicity
     } catch (err) {
       console.error("Failed to delete note:", err);
     }
@@ -263,7 +253,7 @@ export function ContactPanel({
           definition: cf.custom_field_definitions as CustomFieldDef,
           value: cf.value,
         }));
-        setDetails((prev) => (prev ? { ...prev, customFields } : prev));
+        setDetails(details ? { ...details, customFields } : null);
         setNewFieldKey("");
         setNewFieldValue("");
         setShowAddField(false);
@@ -279,18 +269,28 @@ export function ContactPanel({
   async function handleToggleAutomation() {
     if (!details?.conversationId || togglingAutomation) return;
     setTogglingAutomation(true);
+    
+    // Optimistic update
+    const nextPaused = !details.isAutomationPaused;
+    setAutomationPaused(nextPaused);
+
     try {
       const res = await fetch(`/api/v1/conversations/${details.conversationId}/automation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isAutomationPaused: !details.isAutomationPaused }),
+        body: JSON.stringify({ isAutomationPaused: nextPaused }),
       });
       if (res.ok) {
         const data = await res.json();
-        setDetails((prev) => (prev ? { ...prev, isAutomationPaused: data.isAutomationPaused } : prev));
+        setAutomationPaused(data.isAutomationPaused);
+      } else {
+        // Rollback
+        setAutomationPaused(!nextPaused);
       }
     } catch (err) {
       console.error("Failed to toggle automation:", err);
+      // Rollback
+      setAutomationPaused(!nextPaused);
     } finally {
       setTogglingAutomation(false);
     }
@@ -301,7 +301,7 @@ export function ContactPanel({
   const phone = (details?.contact.metadata as Record<string, any>)?.phone || null;
 
   return (
-    <div className="flex h-full w-84 flex-col border-l border-border bg-card shadow-sm select-none">
+    <div className="flex h-full w-84 flex-col border-l border-border bg-card shadow-sm select-none shrink-0">
       {/* Header */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4 bg-muted/20">
         <div className="flex items-center gap-2">

@@ -3,8 +3,59 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "**" },
+      // Supabase storage
+      { protocol: "https", hostname: "*.supabase.co" },
+      // Social platform avatars
+      { protocol: "https", hostname: "*.fbcdn.net" },
+      { protocol: "https", hostname: "*.cdninstagram.com" },
+      { protocol: "https", hostname: "*.twimg.com" },
+      { protocol: "https", hostname: "*.telegram.org" },
+      { protocol: "https", hostname: "*.googleusercontent.com" },
+      // Zernio CDN
+      { protocol: "https", hostname: "*.zernio.com" },
+      // Gravatar
+      { protocol: "https", hostname: "*.gravatar.com" },
     ],
+  },
+
+  // Security headers applied to all routes
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+        ],
+      },
+      // CORS for API routes
+      {
+        source: "/api/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Cache-Control", value: "no-store, max-age=0" },
+        ],
+      },
+    ];
+  },
+
+  // Optimize server-side packages
+  serverExternalPackages: ["@zernio/node"],
+
+  // Enable logging in development
+  logging: {
+    fetches: {
+      fullUrl: process.env.NODE_ENV === "development",
+    },
   },
 };
 

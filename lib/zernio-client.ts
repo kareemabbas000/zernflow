@@ -10,16 +10,15 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type { Zernio };
 
-const DEFAULT_PLATFORM_KEY = "sk_c416f7cface10315cf689dffdf701cfdb32a86435af0ca1535b2d53abce3f52d";
-
 /**
  * Creates a Zernio SDK client instance with the given API key.
+ * Falls back to the platform-level ZERNIO_API_KEY env var.
  */
 export function createZernioClient(apiKey?: string | null): Zernio {
-  const key = apiKey?.trim() || process.env.ZERNIO_API_KEY?.trim() || DEFAULT_PLATFORM_KEY;
+  const key = apiKey?.trim() || process.env.ZERNIO_API_KEY?.trim();
   if (!key) {
     throw new Error(
-      "Zernio API key is not configured. Please set ZERNIO_API_KEY in your environment variables."
+      "Zernio API key is not configured. Set ZERNIO_API_KEY in your environment variables or configure a per-workspace key in Settings."
     );
   }
   return new Zernio({ apiKey: key });
@@ -29,7 +28,13 @@ export function createZernioClient(apiKey?: string | null): Zernio {
  * Returns the platform-level Zernio client.
  */
 export function getPlatformZernioClient(): Zernio {
-  return createZernioClient(process.env.ZERNIO_API_KEY || DEFAULT_PLATFORM_KEY);
+  const key = process.env.ZERNIO_API_KEY?.trim();
+  if (!key) {
+    throw new Error(
+      "Platform ZERNIO_API_KEY is not configured. This key is required for platform-level operations."
+    );
+  }
+  return createZernioClient(key);
 }
 
 /**
@@ -54,8 +59,7 @@ export async function ensureWorkspaceZernioProfile(
   // Use platform API key first, fall back to legacy per-workspace key if present
   const apiKey =
     process.env.ZERNIO_API_KEY ||
-    workspace.late_api_key_encrypted ||
-    DEFAULT_PLATFORM_KEY;
+    workspace.late_api_key_encrypted;
 
   const zernio = createZernioClient(apiKey);
 
