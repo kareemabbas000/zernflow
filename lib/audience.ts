@@ -91,39 +91,24 @@ async function evaluateRule(
 
   switch (rule.field) {
     case "has_tag": {
-      // Find tag by name
-      const { data: tag } = await supabase
-        .from("tags")
-        .select("id")
-        .eq("workspace_id", workspaceId)
-        .eq("name", rule.value)
-        .single();
-
-      if (!tag) return new Set();
+      if (!rule.value) return new Set();
 
       const { data: tagged } = await supabase
         .from("contact_tags")
         .select("contact_id")
-        .eq("tag_id", tag.id)
+        .eq("tag_id", rule.value)
         .in("contact_id", contactIds);
 
       return new Set((tagged ?? []).map((t) => t.contact_id));
     }
 
     case "missing_tag": {
-      const { data: tag } = await supabase
-        .from("tags")
-        .select("id")
-        .eq("workspace_id", workspaceId)
-        .eq("name", rule.value)
-        .single();
-
-      if (!tag) return new Set(contactIds); // Tag doesn't exist, all contacts "miss" it
+      if (!rule.value) return new Set(contactIds);
 
       const { data: tagged } = await supabase
         .from("contact_tags")
         .select("contact_id")
-        .eq("tag_id", tag.id)
+        .eq("tag_id", rule.value)
         .in("contact_id", contactIds);
 
       const taggedSet = new Set((tagged ?? []).map((t) => t.contact_id));
