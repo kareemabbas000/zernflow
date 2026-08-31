@@ -234,7 +234,11 @@ export function MessageThread({
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      
+      // Safari/iOS doesn't support audio/webm, so we let the browser pick its default format
+      const options = MediaRecorder.isTypeSupported("audio/webm") ? { mimeType: "audio/webm" } : undefined;
+      const mediaRecorder = new MediaRecorder(stream, options);
+      
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -245,11 +249,15 @@ export function MessageThread({
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        // Determine the actual mime type the browser used
+        const mimeType = mediaRecorder.mimeType || "audio/webm";
+        const extension = mimeType.includes("mp4") ? "mp4" : mimeType.includes("ogg") ? "ogg" : "webm";
+        
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         stream.getTracks().forEach((track) => track.stop());
         
         // Construct a File object from the Blob
-        const file = new File([audioBlob], `voice_note_${Date.now()}.webm`, { type: "audio/webm" });
+        const file = new File([audioBlob], `voice_note_${Date.now()}.${extension}`, { type: mimeType });
         
         // Upload the voice note
         setUploadingFiles(true);
