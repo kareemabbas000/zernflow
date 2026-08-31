@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo } from "react";
 import { Search, MessageSquare } from "lucide-react";
 import { useInboxStore, selectFilteredConversations, selectUnreadByPlatform } from "@/lib/stores/inbox-store";
 import { cn } from "@/lib/utils";
@@ -46,7 +46,7 @@ export function ConversationList({
   const unreadByPlatform = useInboxStore(selectUnreadByPlatform);
 
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useLayoutEffect(() => { setMounted(true); }, []);
 
   return (
     <div className="flex h-full flex-col border-r border-border bg-background">

@@ -2,7 +2,7 @@
 
 import { useUIStore, selectIsMobile } from "@/lib/stores/ui-store";
 import { cn } from "@/lib/utils";
-import React, { useEffect, useState } from "react";
+import React, { useLayoutEffect, useState } from "react";
 
 export function ResponsiveLayoutWrapper({
   children,
@@ -12,7 +12,7 @@ export function ResponsiveLayoutWrapper({
   const isMobile = useUIStore(selectIsMobile);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setMounted(true);
   }, []);
 
