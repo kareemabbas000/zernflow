@@ -2,7 +2,7 @@
 
 import { useUIStore, selectIsMobile } from "@/lib/stores/ui-store";
 import { cn } from "@/lib/utils";
-import React, { useLayoutEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 export function ResponsiveLayoutWrapper({
   children,
@@ -12,7 +12,8 @@ export function ResponsiveLayoutWrapper({
   const isMobile = useUIStore(selectIsMobile);
   const [mounted, setMounted] = useState(false);
 
-  useLayoutEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
     setMounted(true);
   }, []);
 
