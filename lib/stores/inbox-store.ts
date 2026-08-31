@@ -281,6 +281,8 @@ export const selectCurrentMessages = (state: InboxState): Message[] => {
 
 export const selectFilteredConversations = (state: InboxState): Conversation[] => {
   const { status, platform, search } = state.filters;
+  // Performance optimization: we don't want to return a new array reference every render
+  // but Zustand handles this fairly well. 
   return state.conversations.filter((c) => {
     if (status !== "all" && c.status !== status) return false;
     if (platform !== "all" && c.platform !== platform) return false;
@@ -294,11 +296,8 @@ export const selectFilteredConversations = (state: InboxState): Conversation[] =
   });
 };
 
-export const selectUnreadByPlatform = (
-  state: InboxState
-): Record<string, number> => {
-  return { ...state.unreadByPlatform, all: state.unreadCount };
-};
+export const selectUnreadByPlatform = (state: InboxState) => state.unreadByPlatform;
+export const selectUnreadAll = (state: InboxState) => state.unreadCount;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

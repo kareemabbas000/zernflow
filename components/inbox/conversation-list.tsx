@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Search, MessageSquare } from "lucide-react";
-import { useInboxStore, selectFilteredConversations, selectUnreadByPlatform } from "@/lib/stores/inbox-store";
+import {
+  useInboxStore,
+  selectFilteredConversations,
+  selectUnreadByPlatform,
+  selectUnreadAll,
+} from "@/lib/stores/inbox-store";
 import { cn } from "@/lib/utils";
 import { PlatformIcon } from "@/components/platform-icon";
 import type { Database, Platform, ConversationStatus } from "@/lib/types/database";
@@ -44,6 +49,7 @@ export function ConversationList({
   const setFilters = useInboxStore((s) => s.setFilters);
   const filtered = useInboxStore(selectFilteredConversations);
   const unreadByPlatform = useInboxStore(selectUnreadByPlatform);
+  const unreadAll = useInboxStore(selectUnreadAll);
 
   const [mounted, setMounted] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -54,20 +60,20 @@ export function ConversationList({
       {/* Header */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4 bg-muted/20 shrink-0">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-bold text-foreground tracking-tight">
+          <h2 className="text-sm font-extrabold text-foreground tracking-tight">
             Live Inbox
           </h2>
-          {unreadByPlatform.all ? (
+          {unreadAll ? (
             <span className="flex h-5 items-center justify-center rounded-full bg-rose-500 px-2 text-[10px] font-black text-white shadow-sm shadow-rose-500/30 animate-pulse">
-              {unreadByPlatform.all} unread
+              {unreadAll} unread
             </span>
           ) : null}
         </div>
         <span className="text-xs font-semibold text-muted-foreground">
-          {unreadByPlatform.all ? (
+          {unreadAll > 0 ? (
             <span className="text-rose-600 dark:text-rose-400 font-bold">
-              {unreadByPlatform.all} unread message
-              {unreadByPlatform.all !== 1 ? "s" : ""}
+              {unreadAll} unread message
+              {unreadAll !== 1 ? "s" : ""}
             </span>
           ) : (
             `${filtered.length} conversation${filtered.length !== 1 ? "s" : ""}`
@@ -75,8 +81,8 @@ export function ConversationList({
         </span>
       </div>
 
-      {/* Platform Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border px-3 py-2 bg-background/50 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0">
+      {/* Tabs */}
+      <div className="flex gap-4 border-b border-sidebar-border px-4">
         {(
           [
             "all",
@@ -89,8 +95,8 @@ export function ConversationList({
         ).map((plat) => {
           const count =
             plat === "all"
-              ? unreadByPlatform.all
-              : unreadByPlatform[plat];
+              ? unreadAll
+              : unreadByPlatform[plat] || 0;
           const isSelected = filters.platform === plat;
 
           return (
