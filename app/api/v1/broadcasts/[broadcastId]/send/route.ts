@@ -314,3 +314,17 @@ async function deliverBroadcastDirectly(
         failedCount++;
       }
     }
+
+    // Update broadcast summary stats
+    await supabase
+      .from("broadcasts")
+      .update({
+        status: "completed",
+        sent: sentCount,
+        failed: failedCount,
+      })
+      .eq("id", broadcastId);
+  } catch (err) {
+    console.error("[Broadcast] Direct delivery error:", err);
+  }
+}
