@@ -140,10 +140,7 @@ async function handleWebhook(request: NextRequest) {
 
   const { message: msg, account } = payload;
 
-  // Ignore outbound messages (sent by the bot or page itself) to prevent loops
-  if (msg.direction === "outbound" || msg.direction === "outgoing") {
-    return NextResponse.json({ ok: true, skipped: true });
-  }
+  const isOutbound = msg.direction === "outbound" || msg.direction === "outgoing";
 
   const supabase = await createServiceClient();
 
@@ -227,6 +224,7 @@ async function processMessageEvent(
 ) {
   const { message: msg, conversation: conv, account, metadata } = payload;
   const accountId = account.id || (account as any).accountId || (account as any)._id || channel.zernio_account_id || channel.late_account_id;
+  const isOutbound = msg.direction === "outbound" || msg.direction === "outgoing";
 
   // ── Upsert contact ───────────────────────────────────────────────────────
 
@@ -256,17 +254,18 @@ async function processMessageEvent(
 
   const { data: existingConv } = await supabase
     .from("conversations")
-    .select("id, unread_count, is_automation_paused")
+    .select("id, unread_count, is_automation_paused, is_muted")
     .eq("channel_id", channel.id)
     .eq("contact_id", contactId)
     .maybeSingle();
 
   let conversationId = existingConv?.id;
   let isAutomationPaused = existingConv?.is_automation_paused || false;
+  let isMuted = existingConv?.is_muted || false;
 
   if (existingConv) {
-    // Existing conversation: increment unread by 1 cleanly
-    const newUnread = (existingConv.unread_count || 0) + 1;
+    // Existing conversation: increment unread by 1 cleanly unless outbound or muted
+    const newUnread = isOutbound || isMuted ? 0 : (existingConv.unread_count || 0) + 1;
     // Fire and forget
     supabase
       .from("conversations")
@@ -294,7 +293,7 @@ async function processMessageEvent(
         status: "open",
         last_message_at: new Date().toISOString(),
         last_message_preview: preview,
-        unread_count: 1,
+        unread_count: isOutbound ? 0 : 1,
       })
       .select("id, is_automation_paused")
       .single();
@@ -313,8 +312,8 @@ async function processMessageEvent(
   // Messages are stored by Zernio (source of truth) — no local insert needed.
 
   // ── Flow engine ───────────────────────────────────────────────────────────
-
-  if (!isAutomationPaused) {
+  // We ONLY trigger the Flow Engine for inbound messages to prevent loops
+  if (!isOutbound && !isAutomationPaused) {
     const incomingMessage = {
       text: msg.text || undefined,
       postbackPayload: metadata?.postbackPayload || undefined,

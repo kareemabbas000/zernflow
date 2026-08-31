@@ -239,6 +239,19 @@ export function GlobalLiveSyncProvider({
                 triggerNotification(typed);
               }
               notifiedKeysRef.current.add(key);
+              
+              // If this conversation is currently open, instantly refetch the messages thread
+              const { selectedConversationId, setMessages } = useInboxStore.getState();
+              if (selectedConversationId === typed.id && !isInitialLoadRef.current) {
+                fetch(`/api/v1/messages?conversationId=${typed.id}`)
+                  .then((res) => res.json())
+                  .then((data) => {
+                    if (Array.isArray(data)) {
+                      setMessages(typed.id, data);
+                    }
+                  })
+                  .catch((err) => console.error("[realtime] failed to fetch updated thread:", err));
+              }
             }
           } else if (payload.eventType === "DELETE") {
             const deleted =

@@ -18,12 +18,14 @@ import type { Database, Platform, ConversationStatus } from "@/lib/types/databas
 
 type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
   contacts: Database["public"]["Tables"]["contacts"]["Row"] | null;
+  channels?: { id: string; display_name: string; platform: string; is_active: boolean };
 };
 type Message = Database["public"]["Tables"]["messages"]["Row"];
 
 interface InboxFilters {
   status: ConversationStatus | "all";
   platform: Platform | "all";
+  channelId: string | "all";
   search: string;
 }
 
@@ -69,7 +71,7 @@ export const useInboxStore = create<InboxState>()(
     selectedConversationId: null,
     unreadCount: 0,
     unreadByPlatform: {},
-    filters: { status: "open", platform: "all", search: "" },
+    filters: { status: "open", platform: "all", channelId: "all", search: "" },
     conversationsLoaded: false,
 
     messagesByConversation: {},

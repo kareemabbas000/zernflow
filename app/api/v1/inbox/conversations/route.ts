@@ -25,8 +25,9 @@ export async function GET(request: NextRequest) {
 
     const { data: conversations, error } = await supabase
       .from("conversations")
-      .select("*, contacts(*)")
+      .select("*, contacts(*), channels!inner(id, display_name, platform, is_active)")
       .eq("workspace_id", workspaceId)
+      .eq("channels.is_active", true)
       .order("last_message_at", { ascending: false, nullsFirst: false })
       .limit(50);
 

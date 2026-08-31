@@ -784,6 +784,7 @@ export interface Database {
           last_message_preview: string | null;
           unread_count: number;
           is_automation_paused: boolean;
+          is_muted: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -800,6 +801,7 @@ export interface Database {
           last_message_preview?: string | null;
           unread_count?: number;
           is_automation_paused?: boolean;
+          is_muted?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -811,6 +813,7 @@ export interface Database {
           last_message_preview?: string | null;
           unread_count?: number;
           is_automation_paused?: boolean;
+          is_muted?: boolean;
           updated_at?: string;
         };
         Relationships: [

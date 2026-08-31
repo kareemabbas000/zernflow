@@ -31,6 +31,7 @@ export interface ContactDetails {
   }[];
   conversationId?: string;
   isAutomationPaused?: boolean;
+  isMuted?: boolean;
 }
 
 interface ContactsState {
@@ -53,6 +54,7 @@ interface ContactsState {
   removeOptimisticNote: (noteId: string) => void;
   addOptimisticCustomField: (definition: CustomFieldDef, value: string) => void;
   setAutomationPaused: (paused: boolean) => void;
+  setMuted: (muted: boolean) => void;
 }
 
 export const useContactsStore = create<ContactsState>((set, get) => ({
@@ -127,6 +129,17 @@ export const useContactsStore = create<ContactsState>((set, get) => ({
         activeContactDetails: {
           ...state.activeContactDetails,
           isAutomationPaused: paused,
+        },
+      };
+    }),
+
+  setMuted: (muted) =>
+    set((state) => {
+      if (!state.activeContactDetails) return state;
+      return {
+        activeContactDetails: {
+          ...state.activeContactDetails,
+          isMuted: muted,
         },
       };
     }),

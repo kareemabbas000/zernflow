@@ -9,6 +9,9 @@ import {
   Tag,
   User,
   Hash,
+  Bell,
+  BellOff,
+  ArrowLeft,
   ExternalLink,
   Plus,
   Loader2,
@@ -72,6 +75,7 @@ export function ContactPanel({
   const [newNoteContent, setNewNoteContent] = useState("");
   const [addingNote, setAddingNote] = useState(false);
   const [togglingAutomation, setTogglingAutomation] = useState(false);
+  const [togglingMute, setTogglingMute] = useState(false);
 
   // Field editing
   const [newFieldKey, setNewFieldKey] = useState("");
@@ -104,7 +108,7 @@ export function ContactPanel({
               .eq("contact_id", contactId!),
             supabase
               .from("conversations")
-              .select("id, is_automation_paused")
+              .select("id, is_automation_paused, is_muted")
               .eq("contact_id", contactId!)
               .eq("workspace_id", workspaceId)
               .order("last_message_at", { ascending: false })
@@ -140,6 +144,7 @@ export function ContactPanel({
             channels,
             conversationId: convRes.data?.id,
             isAutomationPaused: convRes.data?.is_automation_paused || false,
+            isMuted: convRes.data?.is_muted || false,
           });
 
           setNotes(notesRes.notes || []);
@@ -296,6 +301,35 @@ export function ContactPanel({
     }
   }
 
+  // Handle Toggle Mute (Silent)
+  async function handleToggleMute() {
+    if (!details?.conversationId || togglingMute) return;
+    setTogglingMute(true);
+    
+    const { setMuted } = useContactsStore.getState();
+    const nextMuted = !details.isMuted;
+    setMuted(nextMuted);
+
+    try {
+      const res = await fetch(`/api/v1/conversations/${details.conversationId}/mute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isMuted: nextMuted }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMuted(data.isMuted);
+      } else {
+        setMuted(!nextMuted);
+      }
+    } catch (err) {
+      console.error("Failed to toggle mute:", err);
+      setMuted(!nextMuted);
+    } finally {
+      setTogglingMute(false);
+    }
+  }
+
   if (!contactId) return null;
 
   const phone = (details?.contact.metadata as Record<string, any>)?.phone || null;
@@ -378,6 +412,31 @@ export function ContactPanel({
                     <Bot className="h-3.5 w-3.5" />
                   )}
                   {details.isAutomationPaused ? "Human Takeover (Bot Paused)" : "Bot Automation Active"}
+                </button>
+              </div>
+            )}
+
+            {/* Mute conversation switch */}
+            {details.conversationId && (
+              <div className="mt-2 w-full">
+                <button
+                  onClick={handleToggleMute}
+                  disabled={togglingMute}
+                  className={cn(
+                    "w-full flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-semibold transition-all border",
+                    details.isMuted
+                      ? "bg-muted border-border text-muted-foreground"
+                      : "bg-background border-border text-foreground hover:bg-muted/50"
+                  )}
+                >
+                  {togglingMute ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : details.isMuted ? (
+                    <BellOff className="h-3.5 w-3.5" />
+                  ) : (
+                    <Bell className="h-3.5 w-3.5" />
+                  )}
+                  {details.isMuted ? "Conversation Muted" : "Mute Notifications"}
                 </button>
               </div>
             )}

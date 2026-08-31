@@ -77,11 +77,15 @@ export async function DELETE(
       }
     }
 
-    // 4. Delete the local channel row from Supabase
+    // 4. Soft-delete the local channel row (maintain CRM history)
     const serviceClient = await createServiceClient();
     const { error: deleteErr } = await serviceClient
       .from("channels")
-      .delete()
+      .update({
+        is_active: false,
+        status: "disconnected",
+        disconnected_at: new Date().toISOString()
+      })
       .eq("id", channelId);
 
     if (deleteErr) {

@@ -14,6 +14,7 @@ import type { Database, Platform, ConversationStatus } from "@/lib/types/databas
 
 type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
   contacts: Database["public"]["Tables"]["contacts"]["Row"] | null;
+  channels?: { id: string; display_name: string; platform: string; is_active: boolean };
 };
 
 function formatTime(dateStr: string | null): string {
@@ -49,10 +50,11 @@ export function ConversationList({
   const setFilters = useInboxStore((s) => s.setFilters);
   const allConversations = useInboxStore(selectConversations);
   const filtered = useMemo(() => {
-    const { status, platform, search } = filters;
+    const { status, platform, channelId, search } = filters;
     return allConversations.filter((c) => {
       if (status !== "all" && c.status !== status) return false;
       if (platform !== "all" && c.platform !== platform) return false;
+      if (channelId !== "all" && c.channel_id !== channelId) return false;
       if (search) {
         const q = search.toLowerCase();
         const name = c.contacts?.display_name?.toLowerCase() ?? "";
@@ -163,22 +165,41 @@ export function ConversationList({
         </div>
       </div>
 
-      {/* Status filter */}
-      <div className="flex gap-1 px-3 pb-2 shrink-0">
-        {(["all", "open", "closed", "snoozed"] as const).map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilters({ status })}
-            className={cn(
-              "rounded-md px-2.5 py-1 text-[11px] font-semibold capitalize transition-colors",
-              filters.status === status
-                ? "bg-muted text-foreground font-bold shadow-xs border border-border"
-                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-            )}
-          >
-            {status}
-          </button>
-        ))}
+      {/* Status & Channel filter */}
+      <div className="flex items-center justify-between px-3 pb-2 shrink-0 gap-2 overflow-hidden">
+        <div className="flex gap-1">
+          {(["all", "open", "closed", "snoozed"] as const).map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilters({ status })}
+              className={cn(
+                "rounded-md px-2.5 py-1 text-[11px] font-semibold capitalize transition-colors",
+                filters.status === status
+                  ? "bg-muted text-foreground font-bold shadow-xs border border-border"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              )}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+        
+        <select 
+          value={filters.channelId}
+          onChange={(e) => setFilters({ channelId: e.target.value })}
+          className="text-[10px] rounded-md border border-input bg-background/50 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50 text-muted-foreground max-w-[120px] truncate"
+        >
+          <option value="all">All Channels</option>
+          {Array.from(
+            new Map(
+              allConversations
+                .filter(c => c.channels?.display_name)
+                .map(c => [c.channel_id, c.channels?.display_name])
+            ).entries()
+          ).map(([id, name]) => (
+            <option key={id} value={id}>{name}</option>
+          ))}
+        </select>
       </div>
 
       {/* Conversation list */}
@@ -243,16 +264,23 @@ export function ConversationList({
                       {isUnread && (
                         <span className="h-2 w-2 shrink-0 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50" />
                       )}
-                      <p
-                        className={cn(
-                          "truncate text-xs",
-                          isUnread
-                            ? "font-bold text-foreground"
-                            : "font-semibold text-foreground/80"
+                      <div className="flex flex-col min-w-0">
+                        <p
+                          className={cn(
+                            "truncate text-xs",
+                            isUnread
+                              ? "font-bold text-foreground"
+                              : "font-semibold text-foreground/80"
+                          )}
+                        >
+                          {conversation.contacts?.display_name ?? "Customer"}
+                        </p>
+                        {conversation.channels?.display_name && (
+                          <span className="text-[9px] text-muted-foreground truncate leading-tight">
+                            via {conversation.channels.display_name}
+                          </span>
                         )}
-                      >
-                        {conversation.contacts?.display_name ?? "Customer"}
-                      </p>
+                      </div>
                     </div>
                     <span
                       suppressHydrationWarning
