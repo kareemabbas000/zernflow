@@ -274,27 +274,14 @@ export const selectSelectedConversation = (state: InboxState): Conversation | nu
   );
 };
 
+const EMPTY_MESSAGES: Message[] = [];
 export const selectCurrentMessages = (state: InboxState): Message[] => {
-  if (!state.selectedConversationId) return [];
-  return state.messagesByConversation[state.selectedConversationId] ?? [];
+  if (!state.selectedConversationId) return EMPTY_MESSAGES;
+  return state.messagesByConversation[state.selectedConversationId] ?? EMPTY_MESSAGES;
 };
 
-export const selectFilteredConversations = (state: InboxState): Conversation[] => {
-  const { status, platform, search } = state.filters;
-  // Performance optimization: we don't want to return a new array reference every render
-  // but Zustand handles this fairly well. 
-  return state.conversations.filter((c) => {
-    if (status !== "all" && c.status !== status) return false;
-    if (platform !== "all" && c.platform !== platform) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      const name = c.contacts?.display_name?.toLowerCase() ?? "";
-      const preview = c.last_message_preview?.toLowerCase() ?? "";
-      if (!name.includes(q) && !preview.includes(q)) return false;
-    }
-    return true;
-  });
-};
+// selectFilteredConversations removed to prevent infinite render loops in useSyncExternalStore
+// Filter logic moved to the component using useMemo.
 
 export const selectUnreadByPlatform = (state: InboxState) => state.unreadByPlatform;
 export const selectUnreadAll = (state: InboxState) => state.unreadCount;

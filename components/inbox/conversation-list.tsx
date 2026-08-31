@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Search, MessageSquare } from "lucide-react";
 import {
   useInboxStore,
-  selectFilteredConversations,
+  selectConversations,
   selectUnreadByPlatform,
   selectUnreadAll,
 } from "@/lib/stores/inbox-store";
@@ -47,7 +47,21 @@ export function ConversationList({
   // ── Store-powered state ─────────────────────────────────────────
   const filters = useInboxStore((s) => s.filters);
   const setFilters = useInboxStore((s) => s.setFilters);
-  const filtered = useInboxStore(selectFilteredConversations);
+  const allConversations = useInboxStore(selectConversations);
+  const filtered = useMemo(() => {
+    const { status, platform, search } = filters;
+    return allConversations.filter((c) => {
+      if (status !== "all" && c.status !== status) return false;
+      if (platform !== "all" && c.platform !== platform) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        const name = c.contacts?.display_name?.toLowerCase() ?? "";
+        const preview = c.last_message_preview?.toLowerCase() ?? "";
+        if (!name.includes(q) && !preview.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [allConversations, filters]);
   const unreadByPlatform = useInboxStore(selectUnreadByPlatform);
   const unreadAll = useInboxStore(selectUnreadAll);
 
