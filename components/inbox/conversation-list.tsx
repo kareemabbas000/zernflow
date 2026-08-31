@@ -95,8 +95,8 @@ export function ConversationList({
         </span>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-4 border-b border-sidebar-border px-4">
+      {/* Platform Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border px-3 py-2 bg-background/50 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0">
         {(
           [
             "all",
