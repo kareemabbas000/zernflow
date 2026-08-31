@@ -230,10 +230,18 @@ export async function POST(request: NextRequest) {
   // Send via Zernio SDK for external messages
   try {
     const zernio = createZernioClient(workspace?.late_api_key_encrypted);
-    const zernioAttachments = attachments ? attachments.map(({ path, ...rest }: any) => rest) : undefined;
+    const firstAttachment = attachments?.[0];
     const res = await zernio.messages.sendInboxMessage({
       path: { conversationId: conversation.late_conversation_id },
-      body: { accountId, message: text, attachments: zernioAttachments },
+      body: { 
+        accountId, 
+        message: text || undefined, 
+        ...(firstAttachment && {
+          attachmentUrl: firstAttachment.url,
+          attachmentType: firstAttachment.type,
+          attachmentName: firstAttachment.name,
+        })
+      },
     });
 
     const messageId = (res.data as any)?.data?.messageId ?? (res.data as any)?.messageId ?? null;
