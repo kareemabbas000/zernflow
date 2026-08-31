@@ -9,7 +9,7 @@ export default async function AdminLayout({
   const { profile } = await requireSuperAdmin();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-foreground">
+    <div className="flex h-[100dvh] overflow-hidden bg-background text-foreground">
       <AdminSidebar profile={profile} />
       <main className="flex-1 overflow-auto">{children}</main>
     </div>

@@ -313,23 +313,31 @@ function BroadcastWizard({
   // Estimate Audience Reach
   const estimateAudience = useCallback(async () => {
     try {
-      const supabase = createClient();
-      let query = supabase
-        .from("contacts")
-        .select("id", { count: "exact", head: true })
-        .eq("workspace_id", workspaceId);
-
       if (targetType === "all") {
-        const { count } = await query;
+        const supabase = createClient();
+        const { count } = await supabase
+          .from("contacts")
+          .select("id", { count: "exact", head: true })
+          .eq("workspace_id", workspaceId)
+          .neq("is_subscribed", false);
         setEstimatedReach(count ?? 0);
       } else {
-        const { count } = await query;
-        setEstimatedReach(count ?? 0);
+        const res = await fetch("/api/v1/broadcasts/audience", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filter: segmentFilter }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setEstimatedReach(data.count ?? 0);
+        } else {
+          setEstimatedReach(0);
+        }
       }
     } catch {
       setEstimatedReach(0);
     }
-  }, [workspaceId, targetType]);
+  }, [workspaceId, targetType, segmentFilter]);
 
   useEffect(() => {
     estimateAudience();

@@ -239,31 +239,54 @@ export function MessageThread({
 
   const lastConvIdRef = useRef<string | null>(null);
 
-  // Auto-scroll to bottom: instant on conversation open, smooth on new message if near bottom
-  useEffect(() => {
-    if (!messagesEndRef.current) return;
+  const [userScrolled, setUserScrolled] = useState(false);
 
+  // Auto-scroll logic using ResizeObserver to catch media loads
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior });
+      }
+    };
+
+    // If conversation changes, reset scroll tracking and snap to bottom
     if (lastConvIdRef.current !== conversation?.id) {
       lastConvIdRef.current = conversation?.id ?? null;
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop =
-          scrollContainerRef.current.scrollHeight;
-      }
-      messagesEndRef.current.scrollIntoView({
-        behavior: "instant" as ScrollBehavior,
-      });
-    } else {
-      const container = scrollContainerRef.current;
-      const isNearBottom = container
-        ? container.scrollHeight - container.scrollTop - container.clientHeight <
-          150
-        : true;
-
-      if (isNearBottom) {
-        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-      }
+      setUserScrolled(false);
+      // Wait for next tick to ensure DOM is ready
+      setTimeout(() => scrollToBottom("instant"), 0);
     }
-  }, [messages, conversation?.id]);
+
+    const observer = new ResizeObserver(() => {
+      // If user hasn't manually scrolled up, keep pinned to bottom when size changes
+      if (!userScrolled) {
+        scrollToBottom("smooth");
+      }
+    });
+
+    observer.observe(container);
+    
+    // Also observe the inner content to catch children rendering
+    const innerContent = container.firstElementChild;
+    if (innerContent) {
+      observer.observe(innerContent);
+    }
+
+    return () => observer.disconnect();
+  }, [conversation?.id, userScrolled]);
+
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    
+    const isNearBottom = 
+      container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    
+    setUserScrolled(!isNearBottom);
+  }, []);
 
   // ── No more polling! Messages arrive via Supabase Realtime → store ────
 
@@ -446,7 +469,11 @@ export function MessageThread({
       </div>
 
       {/* Messages */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-4 scroll-smooth"
+      >
         <div className="mx-auto max-w-2xl space-y-4">
           {messages.map((message, i) => (
             <div key={message.id}>

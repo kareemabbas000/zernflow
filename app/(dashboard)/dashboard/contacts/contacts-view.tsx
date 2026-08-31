@@ -29,6 +29,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
+import { PlatformIcon } from "@/components/platform-icon";
+import type { Platform } from "@/lib/types/database";
 
 type Tag = Database["public"]["Tables"]["tags"]["Row"];
 type ContactWithTags = Database["public"]["Tables"]["contacts"]["Row"] & {
@@ -36,6 +38,7 @@ type ContactWithTags = Database["public"]["Tables"]["contacts"]["Row"] & {
     tag_id: string;
     tags: Tag | null;
   }[];
+  conversations?: { platform: string }[];
 };
 
 function formatDate(dateStr: string | null): string {
@@ -333,7 +336,18 @@ export function ContactsView({
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-3">
-                              <Avatar className="h-8 w-8" src={contact.avatar_url} fallback={contact.display_name ?? "?"} />
+                              <div className="relative">
+                                <Avatar className="h-8 w-8" src={contact.avatar_url} fallback={contact.display_name ?? "?"} />
+                                {contact.conversations && contact.conversations.length > 0 && (
+                                  <div className="absolute -bottom-1 -right-1 flex -space-x-1">
+                                    {Array.from(new Set(contact.conversations.map(c => c.platform))).slice(0, 3).map((platform, i) => (
+                                      <div key={platform} className="flex h-3 w-3 items-center justify-center rounded-full border border-background bg-background z-10" style={{ zIndex: 10 - i }}>
+                                        <PlatformIcon platform={platform as Platform} className="h-2 w-2" size={8} />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                               <div>
                                 <Link
                                   href={`/dashboard/contacts/${contact.id}`}
@@ -415,7 +429,18 @@ export function ContactsView({
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <Avatar src={contact.avatar_url} fallback={contact.display_name ?? "?"} />
+                            <div className="relative">
+                              <Avatar src={contact.avatar_url} fallback={contact.display_name ?? "?"} />
+                              {contact.conversations && contact.conversations.length > 0 && (
+                                <div className="absolute -bottom-1 -right-1 flex -space-x-1">
+                                  {Array.from(new Set(contact.conversations.map(c => c.platform))).slice(0, 3).map((platform, i) => (
+                                    <div key={platform} className="flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-background z-10" style={{ zIndex: 10 - i }}>
+                                      <PlatformIcon platform={platform as Platform} className="h-2.5 w-2.5" size={10} />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                             <div>
                               <Link
                                 href={`/dashboard/contacts/${contact.id}`}

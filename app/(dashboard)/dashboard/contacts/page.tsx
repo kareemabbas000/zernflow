@@ -7,7 +7,7 @@ export default async function ContactsPage() {
   const [contactsRes, tagsRes] = await Promise.all([
     supabase
       .from("contacts")
-      .select("*, contact_tags(tag_id, tags(*))")
+      .select("*, contact_tags(tag_id, tags(*)), conversations(platform)")
       .eq("workspace_id", workspace.id)
       .order("last_interaction_at", { ascending: false, nullsFirst: false })
       .limit(100),

@@ -20,7 +20,7 @@ export function ResponsiveLayoutWrapper({
   return (
     <div
       className={cn(
-        "flex h-screen w-full overflow-hidden",
+        "flex h-[100dvh] w-full overflow-hidden",
         mounted && isMobile ? "pb-16" : "" // Account for fixed bottom nav on mobile
       )}
     >
