@@ -220,7 +220,7 @@ export function MessageThread({
       }
       setAttachments((prev) => [...prev, ...newAttachments]);
     } catch (err) {
-      alert("Failed to upload attachment");
+      alert("Failed to upload attachment: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setUploadingFiles(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -233,6 +233,10 @@ export function MessageThread({
 
   const startRecording = async () => {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Browser blocked access. Ensure you are using HTTPS or localhost.");
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       // Safari/iOS doesn't support audio/webm, so we let the browser pick its default format
@@ -269,7 +273,7 @@ export function MessageThread({
             { url, path, type: "audio", name: "Voice Note" }
           ]);
         } catch (err) {
-          alert("Failed to upload voice note.");
+          alert("Failed to upload voice note: " + (err instanceof Error ? err.message : String(err)));
         } finally {
           setUploadingFiles(false);
         }
@@ -284,7 +288,7 @@ export function MessageThread({
       }, 1000);
     } catch (err) {
       console.error("Error accessing microphone:", err);
-      alert("Could not access microphone.");
+      alert("Could not access microphone: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
