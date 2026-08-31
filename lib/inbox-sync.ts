@@ -72,10 +72,14 @@ export async function upsertContactForSender({
 
   if (existingContactChannel) {
     if (stampExisting) {
-      await supabase
+      // Fire and forget
+      supabase
         .from("contacts")
         .update({ last_interaction_at: interactionAt })
-        .eq("id", existingContactChannel.contact_id);
+        .eq("id", existingContactChannel.contact_id)
+        .then(({ error }) => {
+          if (error) console.error("Failed to update contact interaction:", error);
+        });
     }
     return { contactId: existingContactChannel.contact_id, existed: true };
   }
@@ -98,10 +102,14 @@ export async function upsertContactForSender({
       });
 
       if (stampExisting) {
-        await supabase
+        // Fire and forget
+        supabase
           .from("contacts")
           .update({ last_interaction_at: interactionAt })
-          .eq("id", existingWorkspaceContact.id);
+          .eq("id", existingWorkspaceContact.id)
+          .then(({ error }) => {
+            if (error) console.error("Failed to update contact interaction:", error);
+          });
       }
       return { contactId: existingWorkspaceContact.id, existed: true };
     }

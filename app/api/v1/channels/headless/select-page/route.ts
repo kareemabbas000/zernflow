@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { validateOAuthState } from "@/lib/auth-state";
 import { getPlatformZernioClient } from "@/lib/zernio-client";
@@ -184,18 +185,24 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 9. Backfill conversations asynchronously
+    // 9. Backfill conversations asynchronously in the background
     try {
       if (channel) {
-        await backfillInboxConversations({
-          supabase: serviceClient,
-          zernio,
-          workspaceId: workspace.id,
-          channels: [channel],
+        after(async () => {
+          try {
+            await backfillInboxConversations({
+              supabase: serviceClient,
+              zernio,
+              workspaceId: workspace.id,
+              channels: [channel],
+            });
+          } catch (backfillErr) {
+            console.warn("[headless/select-page] Backfill warning:", backfillErr);
+          }
         });
       }
-    } catch (backfillErr) {
-      console.warn("[headless/select-page] Backfill warning:", backfillErr);
+    } catch (e) {
+      console.warn("after() failed:", e);
     }
 
     return NextResponse.json({

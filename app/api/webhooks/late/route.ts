@@ -267,7 +267,8 @@ async function processMessageEvent(
   if (existingConv) {
     // Existing conversation: increment unread by 1 cleanly
     const newUnread = (existingConv.unread_count || 0) + 1;
-    await supabase
+    // Fire and forget
+    supabase
       .from("conversations")
       .update({
         last_message_at: new Date().toISOString(),
@@ -276,7 +277,10 @@ async function processMessageEvent(
         status: "open",
         late_conversation_id: conv?.id || undefined,
       })
-      .eq("id", existingConv.id);
+      .eq("id", existingConv.id)
+      .then(({ error }) => {
+        if (error) console.error("Failed to update conversation:", error);
+      });
   } else {
     // Brand new conversation starts with 1 unread message
     const { data: newConv } = await supabase
@@ -371,11 +375,15 @@ async function processMessageEvent(
 
       if (trigger) {
         // Clear previous stale active sessions for this contact
-        await supabase
+        // Fire and forget
+        supabase
           .from("flow_sessions")
           .update({ status: "cancelled" })
           .eq("contact_id", contactId)
-          .eq("status", "active");
+          .eq("status", "active")
+          .then(({ error }) => {
+            if (error) console.error("Failed to cancel stale sessions:", error);
+          });
 
         try {
           await executeFlow(supabase, {
