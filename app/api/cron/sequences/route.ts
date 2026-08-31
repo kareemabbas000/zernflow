@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { processSequenceSteps } from "@/lib/sequence-processor";
 
+export const maxDuration = 60;
+
 /**
  * Cron job handler that processes sequence enrollments.
  * Call via Vercel Cron or external cron every 30-60 seconds.

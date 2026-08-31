@@ -3,6 +3,8 @@ import { after } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { executeFlow, resumeSession } from "@/lib/flow-engine/engine";
 import { matchTrigger } from "@/lib/flow-engine/trigger-matcher";
+
+export const maxDuration = 30;
 import { resolveWebhookSecret, verifyWebhookSignature } from "@/lib/zernio-webhook";
 import { upsertContactForSender } from "@/lib/inbox-sync";
 import { processComment } from "@/lib/comment-processor";

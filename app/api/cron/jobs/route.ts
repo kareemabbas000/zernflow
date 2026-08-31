@@ -3,6 +3,8 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { FlowLoadError, resumeSession } from "@/lib/flow-engine/engine";
 import type { Json } from "@/lib/types/database";
 
+export const maxDuration = 60;
+
 // Signals the handler to skip retry/backoff and route straight to the
 // failed + settle branch (which performs/re-attempts the session cancel).
 // Thrown when (a) a resume failed AND the cancel of its session also failed
