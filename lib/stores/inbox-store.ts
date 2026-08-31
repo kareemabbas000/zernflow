@@ -52,6 +52,7 @@ interface InboxState {
   upsertConversation: (conversation: Conversation) => void;
   removeConversation: (id: string) => void;
   addMessage: (conversationId: string, message: Message) => void;
+  updateMessage: (conversationId: string, message: Message) => void;
   setMessages: (conversationId: string, messages: Message[]) => void;
 
   // Optimistic operations
@@ -185,6 +186,22 @@ export const useInboxStore = create<InboxState>()(
           messagesByConversation: {
             ...state.messagesByConversation,
             [conversationId]: [...existing, message],
+          },
+        };
+      });
+    },
+
+    updateMessage: (conversationId, message) => {
+      set((state) => {
+        const existing = state.messagesByConversation[conversationId] ?? [];
+        return {
+          messagesByConversation: {
+            ...state.messagesByConversation,
+            [conversationId]: existing.map((m) =>
+              (m.id === message.id || (m.platform_message_id && m.platform_message_id === message.platform_message_id))
+                ? { ...m, ...message }
+                : m
+            ),
           },
         };
       });

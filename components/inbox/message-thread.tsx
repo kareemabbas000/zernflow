@@ -25,6 +25,8 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { uploadAttachment } from "@/lib/storage";
 import { useInboxStore } from "@/lib/stores/inbox-store";
+import { FFmpeg } from "@ffmpeg/ffmpeg";
+import { fetchFile } from "@ffmpeg/util";
 import { cn } from "@/lib/utils";
 import { PlatformIcon } from "@/components/platform-icon";
 import { Button } from "@/components/ui/button";
@@ -65,7 +67,7 @@ function shouldShowDateSeparator(
   return currentDate !== previousDate;
 }
 
-function MessageBubble({ message, onRetry }: { message: Message; onRetry?: (msg: Message) => void }) {
+function MessageBubble({ message, onRetry, avatarUrl }: { message: Message; onRetry?: (msg: Message) => void; avatarUrl?: string | null }) {
   const isInbound = message.direction === "inbound";
   const isBot = message.sent_by_flow_id !== null;
 
@@ -77,8 +79,12 @@ function MessageBubble({ message, onRetry }: { message: Message; onRetry?: (msg:
       )}
     >
       {isInbound && (
-        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-muted">
-          <User className="h-3.5 w-3.5 text-muted-foreground" />
+        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-muted overflow-hidden">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="User" className="h-full w-full object-cover" />
+          ) : (
+            <User className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
         </div>
       )}
 
@@ -122,8 +128,9 @@ function MessageBubble({ message, onRetry }: { message: Message; onRetry?: (msg:
           {!isInbound && (
             <span className="ml-1 flex items-center">
               {message.status === "pending" && <Clock className="h-3 w-3" />}
-              {message.status === "sent" && <Check className="h-3.5 w-3.5 text-muted-foreground" />}
-              {message.status === "delivered" && <CheckCheck className="h-3.5 w-3.5 text-blue-500" />}
+              {message.delivery_status === "sent" && <Check className="h-3.5 w-3.5 text-muted-foreground" />}
+              {message.delivery_status === "delivered" && <CheckCheck className="h-3.5 w-3.5 text-muted-foreground" />}
+              {message.delivery_status === "read" && <CheckCheck className="h-3.5 w-3.5 text-blue-500" />}
               {message.status === "failed" && (
                 <div className="flex items-center gap-1 text-red-500">
                   <AlertCircle className="h-3 w-3" />
@@ -260,8 +267,34 @@ export function MessageThread({
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         stream.getTracks().forEach((track) => track.stop());
         
-        // Construct a File object from the Blob
-        const file = new File([audioBlob], `voice_note_${Date.now()}.${extension}`, { type: mimeType });
+        let finalBlob = audioBlob;
+        let finalExtension = extension;
+        let finalMimeType = mimeType;
+        let isVoiceNote = false;
+
+        // WhatsApp strictly requires .ogg OPUS. Transcode if FFmpeg is ready!
+        if (ffmpegLoaded && ffmpegRef.current && conversation?.platform === "whatsapp") {
+          try {
+            const ffmpeg = ffmpegRef.current;
+            const inputName = `input.${extension}`;
+            const outputName = `output.ogg`;
+            
+            await ffmpeg.writeFile(inputName, await fetchFile(audioBlob));
+            // Convert to mono OGG Opus
+            await ffmpeg.exec(['-i', inputName, '-c:a', 'libopus', '-ac', '1', outputName]);
+            
+            const data = await ffmpeg.readFile(outputName);
+            finalBlob = new Blob([data as any], { type: "audio/ogg" });
+            finalExtension = "ogg";
+            finalMimeType = "audio/ogg";
+            isVoiceNote = true;
+          } catch (transcodeErr) {
+            console.error("FFmpeg transcode failed, falling back to raw audio", transcodeErr);
+          }
+        }
+        
+        // Construct a File object from the final Blob
+        const file = new File([finalBlob], `voice_note_${Date.now()}.${finalExtension}`, { type: finalMimeType });
         
         // Upload the voice note
         setUploadingFiles(true);
@@ -270,7 +303,7 @@ export function MessageThread({
           const { url, path } = await uploadAttachment(conversation.workspace_id, conversation.id, file);
           setAttachments((prev) => [
             ...prev,
-            { url, path, type: "audio", name: "Voice Note" }
+            { url, path, type: "audio", name: "Voice Note", isVoiceNote }
           ]);
         } catch (err) {
           alert("Failed to upload voice note: " + (err instanceof Error ? err.message : String(err)));
@@ -339,6 +372,27 @@ export function MessageThread({
   };
 
   // Seed store from initial server-rendered messages
+  const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
+  const ffmpegRef = useRef<FFmpeg | null>(null);
+
+  useEffect(() => {
+    // Lazily load FFmpeg for Voice Notes (WhatsApp strictly requires .ogg Opus)
+    const loadFFmpeg = async () => {
+      try {
+        const ffmpeg = new FFmpeg();
+        ffmpegRef.current = ffmpeg;
+        await ffmpeg.load({
+          coreURL: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js",
+          wasmURL: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm"
+        });
+        setFfmpegLoaded(true);
+      } catch (err) {
+        console.error("Failed to load FFmpeg. Voice notes will fallback to generic audio.", err);
+      }
+    };
+    loadFFmpeg();
+  }, []);
+
   useEffect(() => {
     if (conversation?.id && initialMessages.length > 0) {
       setMessages(conversation.id, initialMessages);
@@ -451,6 +505,7 @@ export function MessageThread({
       sent_by_node_id: null,
       sent_by_user_id: null,
       status: "pending",
+      delivery_status: "sent",
       is_internal: isInternal,
       created_at: new Date().toISOString(),
     };

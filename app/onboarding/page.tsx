@@ -274,13 +274,19 @@ export default function OnboardingPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="rounded-xl border border-border p-3 flex items-center gap-2.5 bg-muted/20">
-                  <Bot className="h-4 w-4 text-primary" />
-                  <span className="text-xs font-semibold text-foreground">AI Copilot</span>
+                <div className="rounded-xl border border-border p-3 flex flex-col gap-1.5 bg-muted/20">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-semibold text-foreground">Unified Inbox</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">All your channels in one place</p>
                 </div>
-                <div className="rounded-xl border border-border p-3 flex items-center gap-2.5 bg-muted/20">
-                  <Share2 className="h-4 w-4 text-emerald-500" />
-                  <span className="text-xs font-semibold text-foreground">5 Channels</span>
+                <div className="rounded-xl border border-border p-3 flex flex-col gap-1.5 bg-muted/20">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-emerald-500" />
+                    <span className="text-xs font-semibold text-foreground">Smart Automations</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Visual flow builder & auto-replies</p>
                 </div>
               </div>
             </div>

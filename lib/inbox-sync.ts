@@ -71,15 +71,21 @@ export async function upsertContactForSender({
     .single();
 
   if (existingContactChannel) {
-    if (stampExisting) {
+    if (stampExisting || senderPicture) {
       // Fire and forget
-      supabase
-        .from("contacts")
-        .update({ last_interaction_at: interactionAt })
-        .eq("id", existingContactChannel.contact_id)
-        .then(({ error }) => {
-          if (error) console.error("Failed to update contact interaction:", error);
-        });
+      const updateData: any = {};
+      if (stampExisting) updateData.last_interaction_at = interactionAt;
+      if (senderPicture) updateData.avatar_url = senderPicture;
+      
+      if (Object.keys(updateData).length > 0) {
+        supabase
+          .from("contacts")
+          .update(updateData)
+          .eq("id", existingContactChannel.contact_id)
+          .then(({ error }) => {
+            if (error) console.error("Failed to update contact interaction:", error);
+          });
+      }
     }
     return { contactId: existingContactChannel.contact_id, existed: true };
   }
@@ -101,15 +107,21 @@ export async function upsertContactForSender({
         platform_username: senderUsername ?? null,
       });
 
-      if (stampExisting) {
+      if (stampExisting || senderPicture) {
         // Fire and forget
-        supabase
-          .from("contacts")
-          .update({ last_interaction_at: interactionAt })
-          .eq("id", existingWorkspaceContact.id)
-          .then(({ error }) => {
-            if (error) console.error("Failed to update contact interaction:", error);
-          });
+        const updateData: any = {};
+        if (stampExisting) updateData.last_interaction_at = interactionAt;
+        if (senderPicture) updateData.avatar_url = senderPicture;
+        
+        if (Object.keys(updateData).length > 0) {
+          supabase
+            .from("contacts")
+            .update(updateData)
+            .eq("id", existingWorkspaceContact.id)
+            .then(({ error }) => {
+              if (error) console.error("Failed to update contact interaction:", error);
+            });
+        }
       }
       return { contactId: existingWorkspaceContact.id, existed: true };
     }

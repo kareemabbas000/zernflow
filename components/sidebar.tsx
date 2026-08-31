@@ -124,8 +124,8 @@ export function Sidebar({
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    document.cookie = "zernflow_workspace_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    window.location.href = "/login";
   }
 
   // ── Mobile: Bottom Navigation Bar ───────────────────────────────

@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     // Fetch local message metadata (to retain bot badges / sent_by_flow_id)
     const { data: localMessages } = await supabase
       .from("messages")
-      .select("id, platform_message_id, sent_by_flow_id, direction, text, created_at")
+      .select("id, platform_message_id, sent_by_flow_id, direction, text, created_at, delivery_status")
       .eq("conversation_id", conversationId);
 
     const localMsgByTextTime = new Map<string, any>();
@@ -113,6 +113,7 @@ export async function GET(request: NextRequest) {
         sent_by_node_id: null,
         sent_by_user_id: null,
         status: isOutbound ? (m.status ?? "delivered") : "delivered",
+        delivery_status: isOutbound ? (matchedLocal?.delivery_status ?? "sent") : "read",
         created_at: m.createdAt ?? m.sentAt ?? new Date().toISOString(),
       };
     });
@@ -240,6 +241,7 @@ export async function POST(request: NextRequest) {
           attachmentUrl: firstAttachment.url,
           attachmentType: firstAttachment.type,
           attachmentName: firstAttachment.name,
+          ...(firstAttachment.isVoiceNote && { voiceNote: true })
         })
       },
     });
@@ -255,9 +257,24 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", conversationId);
 
+    // Insert the outbound message locally so delivery webhooks and Realtime can track it
+    const localMessageId = `msg-${Date.now()}`;
+    await supabase.from("messages").insert({
+      id: localMessageId,
+      conversation_id: conversationId,
+      direction: "outbound",
+      text: text || null,
+      attachments: attachments || null,
+      platform_message_id: messageId,
+      sent_by_user_id: user.id,
+      status: "sent",
+      delivery_status: "sent",
+      is_internal: false,
+    });
+
     return NextResponse.json(
       {
-        id: messageId ?? `sent-${Date.now()}`,
+        id: localMessageId,
         conversation_id: conversationId,
         direction: "outbound",
         text,
@@ -270,6 +287,7 @@ export async function POST(request: NextRequest) {
         sent_by_node_id: null,
         sent_by_user_id: user.id,
         status: "sent",
+        delivery_status: "sent",
         is_internal: false,
         created_at: new Date().toISOString(),
       },

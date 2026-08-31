@@ -143,9 +143,28 @@ async function handleWebhook(request: NextRequest, requestId: string) {
     return handleCommentWebhook(parsed as CommentWebhookPayload, body, signature, eventId);
   }
 
-  // Everything else besides message.received is acknowledged and ignored
-  if (parsed.event !== "message.received") {
+  // Everything else besides message.received, message.delivered, message.read is acknowledged and ignored
+  if (parsed.event !== "message.received" && parsed.event !== "message.delivered" && parsed.event !== "message.read") {
     return NextResponse.json({ ok: true, skipped: true });
+  }
+
+  const supabase = await createServiceClient();
+
+  if (parsed.event === "message.delivered" || parsed.event === "message.read") {
+    const deliveryPayload = parsed as any;
+    const msgId = deliveryPayload.message?.id || deliveryPayload.message?.platformMessageId;
+    if (msgId) {
+      const status = parsed.event === "message.delivered" ? "delivered" : "read";
+      const { error } = await supabase
+        .from("messages")
+        .update({ delivery_status: status })
+        .eq("platform_message_id", msgId);
+      
+      if (error) {
+        logger.warn("Failed to update delivery_status", { error: error.message, msgId });
+      }
+    }
+    return NextResponse.json({ ok: true, updated: true });
   }
 
   const payload = parsed as WebhookPayload;
@@ -153,8 +172,6 @@ async function handleWebhook(request: NextRequest, requestId: string) {
   const { message: msg, account } = payload;
 
   const isOutbound = msg.direction === "outbound" || msg.direction === "outgoing";
-
-  const supabase = await createServiceClient();
 
   // Look up channel by late_account_id or zernio_account_id matching any account identifier
   const normPlatform = normalizePlatform(msg.platform || account.platform);

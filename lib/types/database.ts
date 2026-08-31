@@ -947,6 +947,7 @@ export type Database = {
           sent_by_node_id: string | null
           sent_by_user_id: string | null
           status: string
+          delivery_status: string | null
           text: string | null
           workspace_id: string | null
         }
@@ -965,6 +966,7 @@ export type Database = {
           sent_by_node_id?: string | null
           sent_by_user_id?: string | null
           status?: string
+          delivery_status?: string | null
           text?: string | null
           workspace_id?: string | null
         }
@@ -983,6 +985,7 @@ export type Database = {
           sent_by_node_id?: string | null
           sent_by_user_id?: string | null
           status?: string
+          delivery_status?: string | null
           text?: string | null
           workspace_id?: string | null
         }
