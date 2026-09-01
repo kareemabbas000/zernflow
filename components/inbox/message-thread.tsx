@@ -27,6 +27,7 @@ import {
   Volume2,
   Info,
   Square,
+  RefreshCw,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadAttachment } from "@/lib/storage";
@@ -44,6 +45,14 @@ type Message = Database["public"]["Tables"]["messages"]["Row"] & { is_internal?:
 type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
   contacts: Database["public"]["Tables"]["contacts"]["Row"] | null;
 };
+
+const POPULAR_EMOJIS = [
+  "😀", "😂", "🤣", "😊", "😍", "🥰", "😎", "🤩",
+  "🤔", "🤫", "🙄", "😴", "😭", "😤", "😡", "🤯",
+  "👍", "👎", "👏", "🙌", "🙏", "🤝", "💪", "✌️",
+  "❤️", "🔥", "✨", "🎉", "💯", "🚀", "💡", "⭐",
+  "👀", "🎯", "✅", "❌", "❓", "❗", "💬", "📦"
+];
 
 function formatMessageTime(dateStr: string): string {
   const date = new Date(dateStr);
@@ -257,16 +266,17 @@ export function MessageThread({
   
   const [attachments, setAttachments] = useState<{url: string, type: string, name: string, path?: string, isVoiceNote?: boolean}[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  // Voice recording state & microphone modal
+  // Voice recording state & microphone diagnostics
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [micPermissionError, setMicPermissionError] = useState(false);
+  const [micErrorInfo, setMicErrorInfo] = useState<{ name: string; message: string } | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -338,17 +348,48 @@ export function MessageThread({
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 150)}px`;
+  }, []);
+
+  const handleInsertEmoji = (emoji: string) => {
+    setInput((prev) => prev + emoji);
+    setShowEmojiPicker(false);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+      setTimeout(autoResize, 0);
+    }
+  };
+
   const startRecording = async () => {
-    setMicPermissionError(false);
+    setMicErrorInfo(null);
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setMicPermissionError(true);
+      if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+        setMicErrorInfo({
+          name: "NotSupportedError",
+          message: "Media recording is not supported in this browser or over an insecure (HTTP) connection.",
+        });
         return;
       }
       
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      const options = MediaRecorder.isTypeSupported("audio/webm") ? { mimeType: "audio/webm" } : undefined;
+      // Determine supported audio mime type
+      let mimeType = "audio/webm";
+      if (!MediaRecorder.isTypeSupported("audio/webm")) {
+        if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          mimeType = "audio/mp4";
+        } else if (MediaRecorder.isTypeSupported("audio/ogg")) {
+          mimeType = "audio/ogg";
+        } else {
+          mimeType = "";
+        }
+      }
+
+      const options = mimeType ? { mimeType } : undefined;
       const mediaRecorder = new MediaRecorder(stream, options);
       
       mediaRecorderRef.current = mediaRecorder;
@@ -361,15 +402,15 @@ export function MessageThread({
       };
 
       mediaRecorder.onstop = async () => {
-        const mimeType = mediaRecorder.mimeType || "audio/webm";
-        const extension = mimeType.includes("mp4") ? "mp4" : mimeType.includes("ogg") ? "ogg" : "webm";
+        const actualMime = mediaRecorder.mimeType || mimeType || "audio/webm";
+        const extension = actualMime.includes("mp4") ? "mp4" : actualMime.includes("ogg") ? "ogg" : "webm";
         
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        const audioBlob = new Blob(audioChunksRef.current, { type: actualMime });
         stream.getTracks().forEach((track) => track.stop());
         
         let finalBlob = audioBlob;
         let finalExtension = extension;
-        let finalMimeType = mimeType;
+        let finalMimeType = actualMime;
         let isVoiceNote = false;
 
         // WhatsApp strictly requires .ogg OPUS. Transcode if FFmpeg is ready!
@@ -418,8 +459,10 @@ export function MessageThread({
       }, 1000);
     } catch (err: any) {
       console.error("Error accessing microphone:", err);
-      // Display clear, instructive modal instead of generic alert
-      setMicPermissionError(true);
+      setMicErrorInfo({
+        name: err.name || "AccessError",
+        message: err.message || "Failed to access microphone hardware.",
+      });
     }
   };
 
@@ -495,13 +538,6 @@ export function MessageThread({
     },
     [conversation, assigning]
   );
-
-  const autoResize = useCallback(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 150)}px`;
-  }, []);
 
   const [userScrolled, setUserScrolled] = useState(false);
 
@@ -695,53 +731,56 @@ export function MessageThread({
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-1 w-44 rounded-xl border border-border bg-card p-1 shadow-lg z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
-                <button
-                  onClick={() => updateConversationStatus(conversation.status === "open" ? "closed" : "open")}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors"
-                >
-                  {conversation.status === "open" ? (
-                    <>
-                      <CheckCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>Mark as Closed</span>
-                    </>
-                  ) : (
-                    <>
-                      <RotateCcw className="h-3.5 w-3.5 text-primary" />
-                      <span>Reopen Chat</span>
-                    </>
-                  )}
-                </button>
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 mt-1 w-44 rounded-xl border border-border bg-card p-1 shadow-lg z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
+                  <button
+                    onClick={() => updateConversationStatus(conversation.status === "open" ? "closed" : "open")}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors"
+                  >
+                    {conversation.status === "open" ? (
+                      <>
+                        <CheckCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>Mark as Closed</span>
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw className="h-3.5 w-3.5 text-primary" />
+                        <span>Reopen Chat</span>
+                      </>
+                    )}
+                  </button>
 
-                <button
-                  onClick={() => updateConversationStatus("snoozed")}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors"
-                >
-                  <Clock className="h-3.5 w-3.5 text-amber-500" />
-                  <span>Snooze Chat</span>
-                </button>
+                  <button
+                    onClick={() => updateConversationStatus("snoozed")}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors"
+                  >
+                    <Clock className="h-3.5 w-3.5 text-amber-500" />
+                    <span>Snooze Chat</span>
+                  </button>
 
-                <button
-                  onClick={() => updateConversationStatus("archived")}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors"
-                >
-                  <Archive className="h-3.5 w-3.5 text-indigo-500" />
-                  <span>Archive Chat</span>
-                </button>
+                  <button
+                    onClick={() => updateConversationStatus("archived")}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors"
+                  >
+                    <Archive className="h-3.5 w-3.5 text-indigo-500" />
+                    <span>Archive Chat</span>
+                  </button>
 
-                <div className="my-1 border-t border-border/60" />
+                  <div className="my-1 border-t border-border/60" />
 
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setDeleteConfirmOpen(true);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-rose-600 hover:bg-rose-500/10 transition-colors"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  <span>Delete Chat</span>
-                </button>
-              </div>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setDeleteConfirmOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-rose-600 hover:bg-rose-500/10 transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Delete Chat</span>
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -805,42 +844,66 @@ export function MessageThread({
         </div>
       )}
 
-      {/* Microphone Permission Modal */}
-      {micPermissionError && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-2xl animate-in zoom-in-95 duration-150">
-            <div className="flex items-center gap-3 text-amber-500 mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
-                <Mic className="h-5 w-5" />
+      {/* Comprehensive Microphone Permission Diagnostic Modal */}
+      {micErrorInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-rose-500 mb-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-500/10">
+                <Mic className="h-6 w-6" />
               </div>
-              <h4 className="text-base font-bold text-foreground">Microphone Access Required</h4>
+              <div>
+                <h4 className="text-base font-bold text-foreground">Microphone Access Denied</h4>
+                <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                  Browser error: {micErrorInfo.name} ({micErrorInfo.message})
+                </p>
+              </div>
             </div>
             
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Your browser blocked microphone access. To record and send voice notes:
+              Google Chrome or macOS blocked access to your microphone hardware. Follow these two quick checks:
             </p>
 
-            <ol className="mt-3 space-y-2 text-xs text-foreground bg-muted/40 p-3 rounded-xl border border-border/50">
-              <li className="flex items-start gap-2">
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-[10px]">1</span>
-                <span>Click the <strong>Padlock 🔒 / Site Settings</strong> icon on the left side of your browser address bar (URL).</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-[10px]">2</span>
-                <span>Toggle <strong>Microphone</strong> to <strong>Allow</strong>.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-[10px]">3</span>
-                <span>Click the microphone button again to start recording!</span>
-              </li>
-            </ol>
+            <div className="mt-4 space-y-3">
+              {/* Check 1: Chrome Site Settings */}
+              <div className="bg-muted/40 p-3.5 rounded-xl border border-border/50 text-xs space-y-1.5">
+                <p className="font-bold text-foreground flex items-center gap-1.5">
+                  <span>1. Check Chrome Site Settings</span>
+                </p>
+                <p className="text-muted-foreground text-[11px]">
+                  Click the <strong>Tune / Padlock icon 🔒</strong> on the far left of your address bar (URL) and ensure <strong>Microphone</strong> is set to <strong>Allow</strong>.
+                </p>
+              </div>
 
-            <div className="mt-5 flex justify-end">
+              {/* Check 2: Mac System Settings */}
+              <div className="bg-muted/40 p-3.5 rounded-xl border border-border/50 text-xs space-y-1.5">
+                <p className="font-bold text-foreground flex items-center gap-1.5">
+                  <span>2. Check macOS System Permissions (Crucial on Mac)</span>
+                </p>
+                <p className="text-muted-foreground text-[11px]">
+                  Open Mac <strong>System Settings</strong> ➔ <strong>Privacy & Security</strong> ➔ <strong>Microphone</strong> ➔ Make sure <strong>Google Chrome</strong> is toggled <strong>ON</strong>.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-between">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMicErrorInfo(null)}
+              >
+                Dismiss
+              </Button>
               <Button
                 size="sm"
-                onClick={() => setMicPermissionError(false)}
+                onClick={() => {
+                  setMicErrorInfo(null);
+                  startRecording();
+                }}
+                className="bg-primary text-primary-foreground flex items-center gap-1.5 shadow-sm"
               >
-                Got It
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Test Microphone Again</span>
               </Button>
             </div>
           </div>
@@ -903,7 +966,7 @@ export function MessageThread({
             </div>
           </div>
         ) : (
-          <div className="rounded-2xl border border-input bg-card shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+          <div className="rounded-2xl border border-input bg-card shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all relative">
             {/* Mode switch (Chat vs Internal Note) */}
             <div className="flex items-center justify-between px-3 pt-2 pb-1 border-b border-border/40 text-xs">
               <div className="flex items-center gap-1">
@@ -959,7 +1022,7 @@ export function MessageThread({
 
             {/* Bottom tools */}
             <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 relative">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -976,6 +1039,42 @@ export function MessageThread({
                 >
                   <Paperclip className="h-4 w-4" />
                 </button>
+
+                {/* Emoji Picker Button */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className={cn(
+                      "p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
+                      showEmojiPicker && "bg-muted text-foreground"
+                    )}
+                    title="Insert emoji"
+                  >
+                    <Smile className="h-4 w-4" />
+                  </button>
+
+                  {/* Emoji Popover */}
+                  {showEmojiPicker && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
+                      <div className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-2xl border border-border bg-popover p-2.5 shadow-xl animate-in slide-in-from-bottom-2 fade-in">
+                        <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
+                          {POPULAR_EMOJIS.map((emoji) => (
+                            <button
+                              key={emoji}
+                              type="button"
+                              onClick={() => handleInsertEmoji(emoji)}
+                              className="flex h-7 w-7 items-center justify-center rounded-lg hover:bg-muted text-base transition-transform hover:scale-125"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
 
                 <button
                   type="button"

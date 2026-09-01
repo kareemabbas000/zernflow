@@ -304,6 +304,15 @@ async function processMessageEvent(
   let isAutomationPaused = existingConv?.is_automation_paused || false;
   let isMuted = existingConv?.is_muted || false;
 
+  const lateConvId =
+    conv?.id ||
+    (conv as any)?._id ||
+    msg?.conversationId ||
+    (payload as any)?.conversationId ||
+    (payload as any)?.conversation_id ||
+    (payload as any)?.data?.conversationId ||
+    null;
+
   if (existingConv) {
     // Existing conversation: increment unread by 1 cleanly unless outbound or muted
     const newUnread = isOutbound || isMuted ? 0 : (existingConv.unread_count || 0) + 1;
@@ -315,7 +324,7 @@ async function processMessageEvent(
         last_message_preview: preview,
         unread_count: newUnread,
         status: "open",
-        late_conversation_id: conv?.id || undefined,
+        ...(lateConvId ? { late_conversation_id: lateConvId } : {}),
       })
       .eq("id", existingConv.id)
       .then(({ error }) => {
@@ -330,7 +339,7 @@ async function processMessageEvent(
         channel_id: channel.id,
         contact_id: contactId,
         platform: channel.platform,
-        late_conversation_id: conv?.id || null,
+        late_conversation_id: lateConvId,
         status: "open",
         last_message_at: new Date().toISOString(),
         last_message_preview: preview,
@@ -350,7 +359,26 @@ async function processMessageEvent(
     return;
   }
 
-  // Messages are stored by Zernio (source of truth) — no local insert needed.
+  // Persist incoming message locally so it is immediately visible in Live Inbox and triggers Supabase Realtime
+  const rawText = msg.text || (typeof msg === "string" ? msg : null);
+  const platformMsgId = msg.platformMessageId || msg.id || (msg as any)._id || null;
+
+  try {
+    await supabase.from("messages").insert({
+      workspace_id: channel.workspace_id,
+      conversation_id: conversationId,
+      direction: isOutbound ? "outbound" : "inbound",
+      text: rawText,
+      attachments: msg.attachments && msg.attachments.length > 0 ? (msg.attachments as any) : null,
+      platform_message_id: platformMsgId,
+      status: "delivered",
+      delivery_status: isOutbound ? "sent" : "delivered",
+      is_internal: false,
+      created_at: msg.sentAt || new Date().toISOString(),
+    });
+  } catch (msgErr) {
+    logger.warn("Failed to insert message locally", { error: String(msgErr) });
+  }
 
   // ── Flow engine ───────────────────────────────────────────────────────────
   // We ONLY trigger the Flow Engine for inbound messages to prevent loops
