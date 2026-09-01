@@ -28,6 +28,7 @@ import {
   Info,
   Square,
   RefreshCw,
+  Reply,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadAttachment } from "@/lib/storage";
@@ -88,23 +89,29 @@ function shouldShowDateSeparator(
 function MessageBubble({
   message,
   onRetry,
+  onReply,
   contactName,
   avatarUrl,
   platform,
 }: {
   message: Message;
   onRetry?: (msg: Message) => void;
+  onReply?: (msg: Message) => void;
   contactName?: string | null;
   avatarUrl?: string | null;
   platform?: Platform | null;
 }) {
   const isInbound = message.direction === "inbound";
   const isBot = message.sent_by_flow_id !== null;
+  const replyInfo =
+    (message.quick_reply_payload as any)?.reply_to ||
+    (message as any).reply_to ||
+    null;
 
   return (
     <div
       className={cn(
-        "flex gap-2.5 group transition-all",
+        "flex items-end gap-2 group transition-all relative",
         isInbound ? "justify-start" : "justify-end"
       )}
     >
@@ -113,8 +120,20 @@ function MessageBubble({
           src={avatarUrl}
           name={contactName}
           size="xs"
-          className="mt-0.5"
+          className="mb-1 shrink-0"
         />
+      )}
+
+      {/* Hover Reply button (appears on opposite side for inbound) */}
+      {!isInbound && onReply && (
+        <button
+          type="button"
+          onClick={() => onReply(message)}
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all shrink-0 mb-3 cursor-pointer shadow-2xs"
+          title="Reply to this message"
+        >
+          <Reply className="h-3.5 w-3.5" />
+        </button>
       )}
 
       <div className="max-w-[75%] sm:max-w-[70%] flex flex-col">
@@ -131,6 +150,26 @@ function MessageBubble({
           {message.is_internal && (
             <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 mb-1">
               <span>INTERNAL NOTE</span>
+            </div>
+          )}
+
+          {/* Quoted / Replied Message Card */}
+          {replyInfo && (
+            <div
+              className={cn(
+                "mb-2.5 rounded-xl border-l-3 px-3 py-1.5 text-xs select-none",
+                isInbound
+                  ? "border-primary bg-background/60 text-foreground"
+                  : "border-primary-foreground/70 bg-black/20 text-primary-foreground"
+              )}
+            >
+              <div className="flex items-center gap-1 font-bold text-[10px] opacity-90">
+                <Reply className="h-3 w-3 shrink-0" />
+                <span className="truncate">{replyInfo.sender_name || "Replying to"}</span>
+              </div>
+              <p className="text-[11px] opacity-80 truncate mt-0.5 font-normal">
+                {replyInfo.text || "Media message"}
+              </p>
             </div>
           )}
 
@@ -203,13 +242,25 @@ function MessageBubble({
         </div>
       </div>
 
+      {/* Hover Reply button (appears on opposite side for outbound) */}
+      {isInbound && onReply && (
+        <button
+          type="button"
+          onClick={() => onReply(message)}
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all shrink-0 mb-3 cursor-pointer shadow-2xs"
+          title="Reply to this message"
+        >
+          <Reply className="h-3.5 w-3.5" />
+        </button>
+      )}
+
       {!isInbound && !isBot && (
-        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold mt-0.5">
+        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold mb-1">
           You
         </div>
       )}
       {!isInbound && isBot && (
-        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary mt-0.5">
+        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary mb-1">
           <Bot className="h-3.5 w-3.5" />
         </div>
       )}
@@ -253,6 +304,7 @@ export function MessageThread({
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [isInternal, setIsInternal] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [assigning, setAssigning] = useState(false);
   const [members, setMembers] = useState<{user_id: string, users: {full_name: string | null}}[]>([]);
   
@@ -562,7 +614,17 @@ export function MessageThread({
     setInput("");
     const attachmentsToSend = [...attachments];
     setAttachments([]);
+    const currentReply = replyingTo;
+    setReplyingTo(null);
     setSending(true);
+
+    const replyPayload = currentReply
+      ? {
+          id: currentReply.id,
+          text: currentReply.text || ((currentReply.attachments as any[])?.length ? "Attached media" : "Message"),
+          sender_name: currentReply.direction === "inbound" ? contactName : "You",
+        }
+      : null;
 
     const optimisticId = `optimistic-${Date.now()}`;
     const optimisticMessage: Message = {
@@ -572,7 +634,7 @@ export function MessageThread({
       direction: "outbound",
       text,
       attachments: attachmentsToSend.length > 0 ? attachmentsToSend : null,
-      quick_reply_payload: null,
+      quick_reply_payload: replyPayload ? ({ reply_to: replyPayload } as any) : null,
       postback_payload: null,
       callback_data: null,
       platform_message_id: null,
@@ -590,7 +652,13 @@ export function MessageThread({
       const res = await fetch("/api/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: conversation.id, text, isInternal, attachments: attachmentsToSend }),
+        body: JSON.stringify({
+          conversationId: conversation.id,
+          text,
+          isInternal,
+          attachments: attachmentsToSend,
+          replyTo: replyPayload,
+        }),
       });
 
       if (!res.ok) {
@@ -798,6 +866,7 @@ export function MessageThread({
               <MessageBubble
                 message={message}
                 onRetry={handleRetry}
+                onReply={setReplyingTo}
                 contactName={contactName}
                 avatarUrl={conversation.contacts?.avatar_url}
                 platform={conversation.platform as Platform}
@@ -966,7 +1035,7 @@ export function MessageThread({
                   type="button"
                   onClick={() => setIsInternal(false)}
                   className={cn(
-                    "px-2 py-0.5 rounded-md font-semibold transition-colors",
+                    "px-2 py-0.5 rounded-md font-semibold transition-colors cursor-pointer",
                     !isInternal
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted"
@@ -978,7 +1047,7 @@ export function MessageThread({
                   type="button"
                   onClick={() => setIsInternal(true)}
                   className={cn(
-                    "px-2 py-0.5 rounded-md font-semibold transition-colors",
+                    "px-2 py-0.5 rounded-md font-semibold transition-colors cursor-pointer",
                     isInternal
                       ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
                       : "text-muted-foreground hover:bg-muted"
@@ -988,6 +1057,31 @@ export function MessageThread({
                 </button>
               </div>
             </div>
+
+            {/* Quoting / Replying Banner */}
+            {replyingTo && (
+              <div className="flex items-center justify-between border-b border-border/50 bg-primary/5 px-3 py-2 text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Reply className="h-4 w-4 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-bold text-[11px] text-primary truncate">
+                      Replying to {replyingTo.direction === "inbound" ? contactName : "You"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {replyingTo.text || ((replyingTo.attachments as any[])?.length ? "Attached media" : "Message")}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReplyingTo(null)}
+                  className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+                  title="Cancel reply"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
 
             {/* Textarea */}
             <textarea

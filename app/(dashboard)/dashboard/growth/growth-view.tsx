@@ -13,11 +13,16 @@ import {
   TrendingUp,
   Send,
   Eye,
+  Film,
+  Globe,
+  Sparkles,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Database, Json } from "@/lib/types/database";
 import { PLATFORM_LABELS } from "@/lib/platforms";
+import { PostSelectorModal } from "@/components/flow-builder/post-selector-modal";
 
 type Channel = Database["public"]["Tables"]["channels"]["Row"];
 type CommentLog = Database["public"]["Tables"]["comment_logs"]["Row"];
@@ -84,8 +89,23 @@ export function GrowthView({
     replyText: "",
     postIds: "",
   });
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const selectedPostIdsList = form.postIds
+    ? form.postIds.split(",").map((s) => s.trim()).filter(Boolean)
+    : [];
+
+  const handleTogglePostId = (postId: string) => {
+    const current = new Set(selectedPostIdsList);
+    if (current.has(postId)) {
+      current.delete(postId);
+    } else {
+      current.add(postId);
+    }
+    setForm((f) => ({ ...f, postIds: Array.from(current).join(", ") }));
+  };
 
   const conversionRate =
     stats.totalComments > 0
@@ -453,24 +473,67 @@ export function GrowthView({
                 </p>
               </div>
 
-              {/* Post IDs (optional) */}
-              <div className="sm:col-span-2">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Specific Post IDs (optional, comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={form.postIds}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, postIds: e.target.value }))
-                  }
-                  placeholder="Leave empty to match comments on all posts"
-                  className="mt-1.5 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-                <p className="mt-1 text-[11px] text-muted-foreground/60">
-                  Limit this rule to specific Zernio post IDs. If empty, all posts
-                  on this channel are monitored.
-                </p>
+              {/* Post & Reel Target Selection */}
+              <div className="sm:col-span-2 rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Film className="h-3.5 w-3.5 text-primary" />
+                      Target Posts & Reels
+                    </label>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Select which posts or reels this rule monitors for comments.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsPostModalOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-3.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors shrink-0 cursor-pointer shadow-xs"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Browse Published Posts & Reels</span>
+                  </button>
+                </div>
+
+                {/* Selected Post Pills */}
+                {selectedPostIdsList.length > 0 ? (
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+                      <span>Monitored on {selectedPostIdsList.length} specific post{selectedPostIdsList.length > 1 ? "s" : ""}:</span>
+                      <button
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, postIds: "" }))}
+                        className="text-rose-500 hover:underline text-[10px] font-bold cursor-pointer"
+                      >
+                        Reset to All Posts
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {selectedPostIdsList.map((id) => (
+                        <div
+                          key={id}
+                          className="flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-medium text-foreground"
+                        >
+                          <span className="font-mono text-[11px] text-primary">#{id.slice(-8)}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePostId(id)}
+                            className="text-muted-foreground hover:text-rose-500 transition-colors ml-1 p-0.5 rounded"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/50 px-3 py-2 text-xs text-muted-foreground">
+                    <Globe className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span><strong>All Posts:</strong> This rule is currently active on <em>all existing and future posts</em> published to this channel.</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -781,6 +844,16 @@ export function GrowthView({
           </div>
         )}
       </div>
+
+      {/* Post & Reel Selector Modal */}
+      <PostSelectorModal
+        isOpen={isPostModalOpen}
+        onClose={() => setIsPostModalOpen(false)}
+        selectedPostIds={selectedPostIdsList}
+        channelId={form.channelId}
+        channelName={channels.find((c) => c.id === form.channelId)?.display_name || undefined}
+        onSelect={handleTogglePostId}
+      />
     </div>
   );
 }

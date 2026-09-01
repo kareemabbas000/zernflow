@@ -148,15 +148,57 @@ async function evaluateRule(
       return new Set(contactIds);
     }
 
+    case "lead_stage": {
+      const { data } = await supabase
+        .from("contacts")
+        .select("id")
+        .eq("workspace_id", workspaceId)
+        .eq("lead_stage", rule.value)
+        .in("id", contactIds);
+
+      return new Set((data ?? []).map((c) => c.id));
+    }
+
+    case "has_phone": {
+      const { data } = await supabase
+        .from("contacts")
+        .select("id")
+        .eq("workspace_id", workspaceId)
+        .not("phone", "is", null)
+        .in("id", contactIds);
+
+      return new Set((data ?? []).map((c) => c.id));
+    }
+
+    case "has_username": {
+      const { data } = await supabase
+        .from("contact_channels")
+        .select("contact_id")
+        .not("platform_username", "is", null)
+        .in("contact_id", contactIds);
+
+      return new Set((data ?? []).map((c) => c.contact_id));
+    }
+
     case "last_interaction": {
-      const date = new Date(rule.value).toISOString();
+      let date: string;
+      if (rule.value === "24h") {
+        date = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      } else if (rule.value === "7d") {
+        date = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (rule.value === "30d") {
+        date = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      } else {
+        date = new Date(rule.value).toISOString();
+      }
+
       let query = supabase
         .from("contacts")
         .select("id")
         .eq("workspace_id", workspaceId)
         .in("id", contactIds);
 
-      if (rule.operator === "before") {
+      if (rule.operator === "before" || rule.operator === "older_than") {
         query = query.lt("last_interaction_at", date);
       } else {
         query = query.gt("last_interaction_at", date);

@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { conversationId, text, isInternal, attachments } = body;
+  const { conversationId, text, isInternal, attachments, replyTo } = body;
 
   if (!conversationId || (!text && (!attachments || attachments.length === 0))) {
     return NextResponse.json(
@@ -323,6 +323,8 @@ export async function POST(request: NextRequest) {
     .eq("id", conversation.workspace_id)
     .single();
 
+  const replyPayload = replyTo ? { reply_to: replyTo } : null;
+
   // If this is an internal note, skip Zernio and insert directly
   if (isInternal) {
     try {
@@ -331,6 +333,7 @@ export async function POST(request: NextRequest) {
         direction: "outbound",
         text,
         attachments: attachments || null,
+        quick_reply_payload: replyPayload ? JSON.stringify(replyPayload) : null,
         sent_by_user_id: user.id,
         status: "sent",
         is_internal: true,
@@ -369,6 +372,7 @@ export async function POST(request: NextRequest) {
       body: { 
         accountId, 
         message: text || undefined, 
+        ...(replyTo?.id && { replyToMessageId: replyTo.id }),
         ...(firstAttachment && {
           attachmentUrl: firstAttachment.url,
           attachmentType: firstAttachment.type,
@@ -391,12 +395,13 @@ export async function POST(request: NextRequest) {
 
     // Insert the outbound message locally so delivery webhooks and Realtime can track it
     const localMessageId = `msg-${Date.now()}`;
-    await supabase.from("messages").insert({
+    await (supabase as any).from("messages").insert({
       id: localMessageId,
       conversation_id: conversationId,
       direction: "outbound",
       text: text || null,
       attachments: attachments || null,
+      quick_reply_payload: replyPayload ? JSON.stringify(replyPayload) : null,
       platform_message_id: messageId,
       sent_by_user_id: user.id,
       status: "sent",
@@ -411,7 +416,7 @@ export async function POST(request: NextRequest) {
         direction: "outbound",
         text,
         attachments: attachments || null,
-        quick_reply_payload: null,
+        quick_reply_payload: replyPayload,
         postback_payload: null,
         callback_data: null,
         platform_message_id: messageId,

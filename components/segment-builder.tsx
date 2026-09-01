@@ -1,15 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, X, ChevronDown } from "lucide-react";
+import { Plus, X, ChevronDown, Filter, Users, Tag as TagIcon, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/types/database";
 import { PLATFORMS, PLATFORM_LABELS } from "@/lib/platforms";
 
 type Tag = Database["public"]["Tables"]["tags"]["Row"];
-type CustomFieldDef =
-  Database["public"]["Tables"]["custom_field_definitions"]["Row"];
 
 // --- Filter types ---
 
@@ -20,15 +18,19 @@ export type FilterOperator =
   | "gt"
   | "lt"
   | "before"
-  | "after";
+  | "after"
+  | "within"
+  | "older_than";
 
 export type FilterField =
   | "has_tag"
   | "missing_tag"
-  | "custom_field"
+  | "lead_stage"
   | "platform"
-  | "is_subscribed"
-  | "last_interaction";
+  | "last_interaction"
+  | "has_phone"
+  | "has_username"
+  | "is_subscribed";
 
 export interface FilterRule {
   id: string;
@@ -55,52 +57,73 @@ const fieldConfig: Record<
   {
     label: string;
     operators: { value: FilterOperator; label: string }[];
-    valueType: "tag" | "custom_field" | "platform" | "boolean" | "date" | "text";
+    valueType: "tag" | "lead_stage" | "platform" | "interaction_window" | "boolean" | "text";
   }
 > = {
   has_tag: {
-    label: "Has tag",
-    operators: [{ value: "equals", label: "is" }],
+    label: "Has Tag",
+    operators: [{ value: "equals", label: "is tagged with" }],
     valueType: "tag",
   },
   missing_tag: {
-    label: "Missing tag",
-    operators: [{ value: "equals", label: "is" }],
+    label: "Missing Tag",
+    operators: [{ value: "equals", label: "does not have tag" }],
     valueType: "tag",
   },
-  custom_field: {
-    label: "Custom field",
-    operators: [
-      { value: "equals", label: "equals" },
-      { value: "not_equals", label: "does not equal" },
-      { value: "contains", label: "contains" },
-      { value: "gt", label: "greater than" },
-      { value: "lt", label: "less than" },
-    ],
-    valueType: "custom_field",
-  },
-  platform: {
-    label: "Platform",
+  lead_stage: {
+    label: "Lead Stage / Pipeline",
     operators: [
       { value: "equals", label: "is" },
       { value: "not_equals", label: "is not" },
     ],
+    valueType: "lead_stage",
+  },
+  platform: {
+    label: "Platform / Channel",
+    operators: [
+      { value: "equals", label: "is connected on" },
+      { value: "not_equals", label: "is not on" },
+    ],
     valueType: "platform",
   },
-  is_subscribed: {
-    label: "Subscribed",
+  last_interaction: {
+    label: "Last Active / Interaction",
+    operators: [
+      { value: "within", label: "within last" },
+      { value: "older_than", label: "older than" },
+    ],
+    valueType: "interaction_window",
+  },
+  has_phone: {
+    label: "Has Phone Number",
     operators: [{ value: "equals", label: "is" }],
     valueType: "boolean",
   },
-  last_interaction: {
-    label: "Last interaction",
-    operators: [
-      { value: "before", label: "before" },
-      { value: "after", label: "after" },
-    ],
-    valueType: "date",
+  has_username: {
+    label: "Has Social Handle / Username",
+    operators: [{ value: "equals", label: "is" }],
+    valueType: "boolean",
+  },
+  is_subscribed: {
+    label: "Opt-In / Subscription Status",
+    operators: [{ value: "equals", label: "is" }],
+    valueType: "boolean",
   },
 };
+
+const LEAD_STAGES = [
+  { value: "lead", label: "Lead (New Inquiry)" },
+  { value: "qualified", label: "Qualified Prospect" },
+  { value: "customer", label: "Paying Customer" },
+  { value: "vip", label: "VIP Client" },
+  { value: "churned", label: "Inactive / Churned" },
+];
+
+const INTERACTION_WINDOWS = [
+  { value: "24h", label: "24 Hours (Active Window)" },
+  { value: "7d", label: "7 Days" },
+  { value: "30d", label: "30 Days" },
+];
 
 function generateId() {
   return Math.random().toString(36).slice(2, 10);
@@ -140,30 +163,30 @@ function CombinatorToggle({
   onChange: (v: "and" | "or") => void;
 }) {
   return (
-    <div className="inline-flex rounded-lg border border-border bg-muted p-0.5">
+    <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
       <button
         type="button"
         onClick={() => onChange("and")}
         className={cn(
-          "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+          "rounded-md px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer",
           value === "and"
-            ? "bg-primary text-primary-foreground shadow-sm"
+            ? "bg-primary text-primary-foreground shadow-xs"
             : "text-muted-foreground hover:text-foreground"
         )}
       >
-        AND
+        AND (All match)
       </button>
       <button
         type="button"
         onClick={() => onChange("or")}
         className={cn(
-          "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+          "rounded-md px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer",
           value === "or"
-            ? "bg-primary text-primary-foreground shadow-sm"
+            ? "bg-primary text-primary-foreground shadow-xs"
             : "text-muted-foreground hover:text-foreground"
         )}
       >
-        OR
+        OR (Any match)
       </button>
     </div>
   );
@@ -172,19 +195,17 @@ function CombinatorToggle({
 function FilterRuleRow({
   rule,
   tags,
-  customFields,
   onChange,
   onRemove,
   canRemove,
 }: {
   rule: FilterRule;
   tags: Tag[];
-  customFields: CustomFieldDef[];
   onChange: (rule: FilterRule) => void;
   onRemove: () => void;
   canRemove: boolean;
 }) {
-  const config = fieldConfig[rule.field];
+  const config = fieldConfig[rule.field] || fieldConfig.has_tag;
   const operators = config.operators;
 
   function handleFieldChange(field: FilterField) {
@@ -193,7 +214,16 @@ function FilterRuleRow({
       ...rule,
       field,
       operator: newConfig.operators[0].value,
-      value: "",
+      value:
+        field === "lead_stage"
+          ? "lead"
+          : field === "platform"
+          ? "instagram"
+          : field === "last_interaction"
+          ? "24h"
+          : field === "has_phone" || field === "has_username" || field === "is_subscribed"
+          ? "true"
+          : "",
     });
   }
 
@@ -204,55 +234,39 @@ function FilterRuleRow({
           <select
             value={rule.value}
             onChange={(e) => onChange({ ...rule, value: e.target.value })}
-            className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
           >
-            <option value="">Select tag...</option>
+            <option value="">Select a tag...</option>
             {tags.map((tag) => (
               <option key={tag.id} value={tag.id}>
-                {tag.name}
+                🏷️ {tag.name}
               </option>
             ))}
           </select>
         );
-      case "custom_field":
+
+      case "lead_stage":
         return (
-          <div className="flex items-center gap-2">
-            <select
-              value={rule.value.split("::")[0] || ""}
-              onChange={(e) => {
-                const fieldSlug = e.target.value;
-                const existingVal = rule.value.split("::")[1] || "";
-                onChange({ ...rule, value: `${fieldSlug}::${existingVal}` });
-              }}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Select field...</option>
-              {customFields.map((cf) => (
-                <option key={cf.id} value={cf.slug}>
-                  {cf.name}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder="Value..."
-              value={rule.value.split("::")[1] || ""}
-              onChange={(e) => {
-                const fieldSlug = rule.value.split("::")[0] || "";
-                onChange({ ...rule, value: `${fieldSlug}::${e.target.value}` });
-              }}
-              className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+          <select
+            value={rule.value || "lead"}
+            onChange={(e) => onChange({ ...rule, value: e.target.value })}
+            className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+          >
+            {LEAD_STAGES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
         );
+
       case "platform":
         return (
           <select
-            value={rule.value}
+            value={rule.value || "instagram"}
             onChange={(e) => onChange({ ...rule, value: e.target.value })}
-            className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
           >
-            <option value="">Select platform...</option>
             {PLATFORMS.map((p) => (
               <option key={p} value={p}>
                 {PLATFORM_LABELS[p]}
@@ -260,27 +274,34 @@ function FilterRuleRow({
             ))}
           </select>
         );
+
+      case "interaction_window":
+        return (
+          <select
+            value={rule.value || "24h"}
+            onChange={(e) => onChange({ ...rule, value: e.target.value })}
+            className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+          >
+            {INTERACTION_WINDOWS.map((w) => (
+              <option key={w.value} value={w.value}>
+                {w.label}
+              </option>
+            ))}
+          </select>
+        );
+
       case "boolean":
         return (
           <select
-            value={rule.value}
+            value={rule.value || "true"}
             onChange={(e) => onChange({ ...rule, value: e.target.value })}
-            className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
           >
-            <option value="">Select...</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
+            <option value="true">Yes / Verified</option>
+            <option value="false">No / Not Set</option>
           </select>
         );
-      case "date":
-        return (
-          <input
-            type="date"
-            value={rule.value}
-            onChange={(e) => onChange({ ...rule, value: e.target.value })}
-            className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        );
+
       default:
         return (
           <input
@@ -288,19 +309,19 @@ function FilterRuleRow({
             placeholder="Value..."
             value={rule.value}
             onChange={(e) => onChange({ ...rule, value: e.target.value })}
-            className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
         );
     }
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex items-center gap-2 flex-wrap rounded-xl border border-border/60 bg-card/60 p-2 shadow-2xs">
       {/* Field selector */}
       <select
         value={rule.field}
         onChange={(e) => handleFieldChange(e.target.value as FilterField)}
-        className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
       >
         {(Object.entries(fieldConfig) as [FilterField, typeof config][]).map(
           ([key, cfg]) => (
@@ -318,7 +339,7 @@ function FilterRuleRow({
           onChange={(e) =>
             onChange({ ...rule, operator: e.target.value as FilterOperator })
           }
-          className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          className="rounded-xl border border-border bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
         >
           {operators.map((op) => (
             <option key={op.value} value={op.value}>
@@ -336,9 +357,10 @@ function FilterRuleRow({
         <button
           type="button"
           onClick={onRemove}
-          className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+          className="ml-auto rounded-lg p-1 text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 transition-colors cursor-pointer"
+          title="Remove rule"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="h-4 w-4" />
         </button>
       )}
     </div>
@@ -347,213 +369,197 @@ function FilterRuleRow({
 
 function FilterGroupCard({
   group,
+  groupIndex,
+  totalGroups,
   tags,
-  customFields,
   onChange,
   onRemove,
   canRemove,
 }: {
   group: FilterGroup;
+  groupIndex: number;
+  totalGroups: number;
   tags: Tag[];
-  customFields: CustomFieldDef[];
   onChange: (group: FilterGroup) => void;
   onRemove: () => void;
   canRemove: boolean;
 }) {
-  function updateRule(ruleId: string, updated: FilterRule) {
-    onChange({
-      ...group,
-      rules: group.rules.map((r) => (r.id === ruleId ? updated : r)),
-    });
+  function handleCombinatorChange(combinator: "and" | "or") {
+    onChange({ ...group, combinator });
   }
 
-  function removeRule(ruleId: string) {
-    onChange({
-      ...group,
-      rules: group.rules.filter((r) => r.id !== ruleId),
-    });
-  }
-
-  function addRule() {
+  function handleAddRule() {
     onChange({
       ...group,
       rules: [...group.rules, createEmptyRule()],
     });
   }
 
+  function handleRuleChange(index: number, updatedRule: FilterRule) {
+    const nextRules = [...group.rules];
+    nextRules[index] = updatedRule;
+    onChange({ ...group, rules: nextRules });
+  }
+
+  function handleRemoveRule(index: number) {
+    if (group.rules.length <= 1) return;
+    onChange({
+      ...group,
+      rules: group.rules.filter((_, i) => i !== index),
+    });
+  }
+
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between mb-3">
+    <div className="rounded-2xl border border-border bg-muted/20 p-4 space-y-3">
+      {/* Group header */}
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground uppercase">
-            Match
+          <span className="text-xs font-extrabold text-foreground">
+            Filter Group {totalGroups > 1 ? `#${groupIndex + 1}` : ""}
           </span>
-          <CombinatorToggle
-            value={group.combinator}
-            onChange={(v) => onChange({ ...group, combinator: v })}
-          />
-          <span className="text-xs font-medium text-muted-foreground uppercase">
-            of the following
-          </span>
+          {group.rules.length > 1 && (
+            <CombinatorToggle
+              value={group.combinator}
+              onChange={handleCombinatorChange}
+            />
+          )}
         </div>
+
         {canRemove && (
           <button
             type="button"
             onClick={onRemove}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+            className="rounded-lg p-1 text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 transition-colors text-xs font-semibold flex items-center gap-1 cursor-pointer"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
+            <span>Remove Group</span>
           </button>
         )}
       </div>
 
+      {/* Rules list */}
       <div className="space-y-2">
-        {group.rules.map((rule, idx) => (
-          <div key={rule.id}>
-            {idx > 0 && (
-              <div className="flex items-center gap-2 py-1 pl-2">
-                <span className="text-[10px] font-semibold uppercase text-muted-foreground">
-                  {group.combinator}
-                </span>
-                <div className="flex-1 border-t border-border" />
-              </div>
-            )}
-            <FilterRuleRow
-              rule={rule}
-              tags={tags}
-              customFields={customFields}
-              onChange={(updated) => updateRule(rule.id, updated)}
-              onRemove={() => removeRule(rule.id)}
-              canRemove={group.rules.length > 1}
-            />
-          </div>
+        {group.rules.map((rule, ruleIndex) => (
+          <FilterRuleRow
+            key={rule.id}
+            rule={rule}
+            tags={tags}
+            onChange={(r) => handleRuleChange(ruleIndex, r)}
+            onRemove={() => handleRemoveRule(ruleIndex)}
+            canRemove={group.rules.length > 1}
+          />
         ))}
       </div>
 
+      {/* Add rule button */}
       <button
         type="button"
-        onClick={addRule}
-        className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+        onClick={handleAddRule}
+        className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/5 transition-colors cursor-pointer"
       >
-        <Plus className="h-3 w-3" />
-        Add filter
+        <Plus className="h-3.5 w-3.5" />
+        Add Targeting Rule
       </button>
     </div>
   );
 }
 
-// --- Main export ---
+// --- Main Component ---
 
-export function SegmentBuilder({
-  value,
-  onChange,
-  workspaceId,
-}: {
+interface SegmentBuilderProps {
+  workspaceId: string;
   value: SegmentFilter;
   onChange: (filter: SegmentFilter) => void;
-  workspaceId: string;
-}) {
+}
+
+export function SegmentBuilder({
+  workspaceId,
+  value,
+  onChange,
+}: SegmentBuilderProps) {
   const [tags, setTags] = useState<Tag[]>([]);
-  const [customFields, setCustomFields] = useState<CustomFieldDef[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchData() {
+    async function loadData() {
       const supabase = createClient();
-      const [tagsRes, fieldsRes] = await Promise.all([
-        supabase
-          .from("tags")
-          .select("*")
-          .eq("workspace_id", workspaceId)
-          .order("name"),
-        supabase
-          .from("custom_field_definitions")
-          .select("*")
-          .eq("workspace_id", workspaceId)
-          .order("name"),
-      ]);
-      setTags(tagsRes.data ?? []);
-      setCustomFields(fieldsRes.data ?? []);
-      setLoading(false);
+      const { data: tagData } = await supabase
+        .from("tags")
+        .select("*")
+        .eq("workspace_id", workspaceId)
+        .order("name");
+
+      setTags(tagData ?? []);
     }
-    fetchData();
+    loadData();
   }, [workspaceId]);
 
-  function updateGroup(groupId: string, updated: FilterGroup) {
+  const filter = value?.groups?.length ? value : createEmptyFilter();
+
+  function handleCombinatorChange(combinator: "and" | "or") {
+    onChange({ ...filter, combinator });
+  }
+
+  function handleAddGroup() {
     onChange({
-      ...value,
-      groups: value.groups.map((g) => (g.id === groupId ? updated : g)),
+      ...filter,
+      groups: [...filter.groups, createEmptyGroup()],
     });
   }
 
-  function removeGroup(groupId: string) {
-    onChange({
-      ...value,
-      groups: value.groups.filter((g) => g.id !== groupId),
-    });
+  function handleGroupChange(index: number, updatedGroup: FilterGroup) {
+    const nextGroups = [...filter.groups];
+    nextGroups[index] = updatedGroup;
+    onChange({ ...filter, groups: nextGroups });
   }
 
-  function addGroup() {
+  function handleRemoveGroup(index: number) {
+    if (filter.groups.length <= 1) return;
     onChange({
-      ...value,
-      groups: [...value.groups, createEmptyGroup()],
+      ...filter,
+      groups: filter.groups.filter((_, i) => i !== index),
     });
-  }
-
-  if (loading) {
-    return (
-      <div className="rounded-lg border border-border bg-card p-6 text-center">
-        <p className="text-sm text-muted-foreground">Loading filters...</p>
-      </div>
-    );
   }
 
   return (
     <div className="space-y-3">
-      {/* Top-level combinator */}
-      {value.groups.length > 1 && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground uppercase">
-            Groups match
+      {/* Top-level combinator (if multiple groups) */}
+      {filter.groups.length > 1 && (
+        <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card p-3">
+          <span className="text-xs font-bold text-foreground">
+            Match between Groups:
           </span>
           <CombinatorToggle
-            value={value.combinator}
-            onChange={(v) => onChange({ ...value, combinator: v })}
+            value={filter.combinator}
+            onChange={handleCombinatorChange}
           />
         </div>
       )}
 
-      {value.groups.map((group, idx) => (
-        <div key={group.id}>
-          {idx > 0 && (
-            <div className="flex items-center gap-2 py-2">
-              <div className="flex-1 border-t border-border" />
-              <span className="text-[10px] font-semibold uppercase text-muted-foreground">
-                {value.combinator}
-              </span>
-              <div className="flex-1 border-t border-border" />
-            </div>
-          )}
+      {/* Groups */}
+      <div className="space-y-3">
+        {filter.groups.map((group, groupIndex) => (
           <FilterGroupCard
+            key={group.id}
             group={group}
+            groupIndex={groupIndex}
+            totalGroups={filter.groups.length}
             tags={tags}
-            customFields={customFields}
-            onChange={(updated) => updateGroup(group.id, updated)}
-            onRemove={() => removeGroup(group.id)}
-            canRemove={value.groups.length > 1}
+            onChange={(g) => handleGroupChange(groupIndex, g)}
+            onRemove={() => handleRemoveGroup(groupIndex)}
+            canRemove={filter.groups.length > 1}
           />
-        </div>
-      ))}
+        ))}
+      </div>
 
+      {/* Add group button */}
       <button
         type="button"
-        onClick={addGroup}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+        onClick={handleAddGroup}
+        className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-3.5 py-2 text-xs font-bold text-primary hover:bg-primary/10 transition-colors cursor-pointer"
       >
-        <Plus className="h-3 w-3" />
-        Add filter group
+        <Plus className="h-4 w-4" />
+        Add Target Segment Group
       </button>
-
     </div>
   );
 }

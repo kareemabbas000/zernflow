@@ -427,11 +427,11 @@ export function ConversationList({
                             const rect = e.currentTarget.getBoundingClientRect();
                             setContextMenuState({
                               x: rect.left,
-                              y: rect.bottom,
+                              y: rect.bottom + 4,
                               conversation,
                             });
                           }}
-                          className="opacity-0 group-hover:opacity-100 sm:opacity-0 focus:opacity-100 p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-opacity"
+                          className="opacity-70 group-hover:opacity-100 p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-opacity cursor-pointer"
                           title="Conversation options"
                         >
                           <MoreVertical className="h-3.5 w-3.5" />
