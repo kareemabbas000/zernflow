@@ -241,11 +241,43 @@ export const useInboxStore = create<InboxState>()(
     sendMessage: (conversationId, optimisticMessage) => {
       set((state) => {
         const existing = state.messagesByConversation[conversationId] ?? [];
+        const nextMessages = [...existing, optimisticMessage];
+
+        let preview = optimisticMessage.text || "";
+        if (!preview && optimisticMessage.attachments) {
+          const firstAtt = Array.isArray(optimisticMessage.attachments)
+            ? optimisticMessage.attachments[0]
+            : null;
+          preview = (firstAtt as any)?.isVoiceNote
+            ? "🎤 Voice Note"
+            : (firstAtt as any)?.type === "image"
+            ? "📸 Photo"
+            : (firstAtt as any)?.type === "video"
+            ? "🎬 Video"
+            : "📎 Attachment";
+        }
+        if (optimisticMessage.is_internal) {
+          preview = `[Internal Note] ${preview}`;
+        }
+
+        // Instantly reflect the sent message in the conversation row and sort to top
+        const updatedConversations = state.conversations.map((c) =>
+          c.id === conversationId
+            ? {
+                ...c,
+                last_message_preview: preview || c.last_message_preview,
+                last_message_at: optimisticMessage.created_at,
+                unread_count: 0,
+              }
+            : c
+        );
+
         return {
           messagesByConversation: {
             ...state.messagesByConversation,
-            [conversationId]: [...existing, optimisticMessage],
+            [conversationId]: nextMessages,
           },
+          conversations: sortConversations(updatedConversations),
         };
       });
     },
@@ -253,13 +285,44 @@ export const useInboxStore = create<InboxState>()(
     confirmMessage: (conversationId, optimisticId, confirmed) => {
       set((state) => {
         const existing = state.messagesByConversation[conversationId] ?? [];
+        const nextMessages = existing.map((m) =>
+          m.id === optimisticId ? confirmed : m
+        );
+
+        let preview = confirmed.text || "";
+        if (!preview && confirmed.attachments) {
+          const firstAtt = Array.isArray(confirmed.attachments)
+            ? confirmed.attachments[0]
+            : null;
+          preview = (firstAtt as any)?.isVoiceNote
+            ? "🎤 Voice Note"
+            : (firstAtt as any)?.type === "image"
+            ? "📸 Photo"
+            : (firstAtt as any)?.type === "video"
+            ? "🎬 Video"
+            : "📎 Attachment";
+        }
+        if (confirmed.is_internal) {
+          preview = `[Internal Note] ${preview}`;
+        }
+
+        const updatedConversations = state.conversations.map((c) =>
+          c.id === conversationId
+            ? {
+                ...c,
+                last_message_preview: preview || c.last_message_preview,
+                last_message_at: confirmed.created_at || c.last_message_at,
+                unread_count: 0,
+              }
+            : c
+        );
+
         return {
           messagesByConversation: {
             ...state.messagesByConversation,
-            [conversationId]: existing.map((m) =>
-              m.id === optimisticId ? confirmed : m
-            ),
+            [conversationId]: nextMessages,
           },
+          conversations: sortConversations(updatedConversations),
         };
       });
     },

@@ -181,18 +181,19 @@ function MessageBubble({
             (!message.attachments || !Array.isArray(message.attachments) || message.attachments.length === 0) && (
               isInbound ? (
                 (message as any).referral ? (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground italic py-0.5">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium py-0.5">
                     <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
                     <span>Started conversation from your Instagram Ad</span>
                   </div>
                 ) : (
-                  <span className="text-xs text-muted-foreground italic opacity-75">
-                    (No text content)
-                  </span>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium py-0.5">
+                    <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span>Started conversation / Sent a reaction</span>
+                  </div>
                 )
               ) : (
-                <span className="text-xs text-primary-foreground/75 italic">
-                  (Empty message)
+                <span className="text-xs text-primary-foreground/85 font-medium">
+                  Sent message
                 </span>
               )
             )
