@@ -358,7 +358,9 @@ export function AttachmentRenderer({
           if (isReelOrPostLink) {
             const isReel = url.includes("/reel/") || type.includes("reel") || Boolean(att.payload?.reel_video_id);
             const title = att.payload?.title || att.payload?.caption || att.title || "";
-            const directPostUrl = att.payload?.url || url;
+            const isWebLink = url.startsWith("https://www.instagram.com") || url.startsWith("https://instagram.com") || url.startsWith("https://facebook.com");
+            const directPostUrl = isWebLink ? url : (att.payload?.url?.startsWith("http") ? att.payload.url : null);
+            const mediaPreviewUrl = !isWebLink && url.startsWith("http") ? url : (att.payload?.thumbnail_url || att.payload?.media_url || null);
 
             return (
               <div
@@ -386,6 +388,13 @@ export function AttachmentRenderer({
                     </a>
                   )}
                 </div>
+
+                {/* Media preview (video loop or image) */}
+                {mediaPreviewUrl && (
+                  <div className="p-2 pb-0">
+                    <StoryMediaPreview url={mediaPreviewUrl} onExpand={(u) => setLightboxUrl(u)} />
+                  </div>
+                )}
 
                 {/* Caption / Title */}
                 {title && (
