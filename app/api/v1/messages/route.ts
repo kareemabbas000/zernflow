@@ -156,12 +156,39 @@ export async function GET(request: NextRequest) {
         matchedLocalIds.add(matchedLocal.id);
       }
 
+      const rawAttachments = Array.isArray(m.attachments) ? [...m.attachments.filter(Boolean)] : (m.attachments ? [m.attachments] : []);
+
+      if (m.storyReply && (m.storyReply.storyUrl || m.storyReply.storyId)) {
+        rawAttachments.push({
+          type: "story_reply",
+          url: m.storyReply.storyUrl || null,
+          payload: {
+            storyId: m.storyReply.storyId,
+            url: m.storyReply.storyUrl,
+          },
+          isStoryReply: true,
+        });
+      }
+
+      if (m.referral && (m.referral.image_url || m.referral.thumbnail_url || m.referral.headline || m.referral.ad_id || m.referral.source_url)) {
+        rawAttachments.push({
+          type: "ad_referral",
+          url: m.referral.image_url || m.referral.thumbnail_url || m.referral.video_url || null,
+          payload: {
+            headline: m.referral.headline,
+            body: m.referral.body,
+            sourceUrl: m.referral.source_url,
+            adId: m.referral.ad_id,
+          },
+        });
+      }
+
       return {
         id: m.id || m._id || `msg-${Date.now()}`,
         conversation_id: conversationId,
         direction: isOutbound ? "outbound" : "inbound",
         text: rawText,
-        attachments: Array.isArray(m.attachments) ? m.attachments.filter(Boolean) : (m.attachments ? [m.attachments] : null),
+        attachments: rawAttachments.length > 0 ? rawAttachments : null,
         quick_reply_payload: null as string | null,
         postback_payload: null as string | null,
         callback_data: null as string | null,
@@ -175,13 +202,14 @@ export async function GET(request: NextRequest) {
         created_at: m.createdAt ?? m.sentAt ?? new Date().toISOString(),
         isStoryMention: Boolean(
           m.isStoryMention ||
-          m.attachments?.some((a: any) => a.isStoryMention || (a.type || "").includes("story_mention"))
+          rawAttachments.some((a: any) => a.isStoryMention || (a.type || "").includes("story_mention"))
         ),
         isStoryReply: Boolean(
           m.isStoryReply ||
-          m.attachments?.some((a: any) => (a.type || "").includes("story_reply"))
+          Boolean(m.storyReply) ||
+          rawAttachments.some((a: any) => (a.type || "").includes("story_reply"))
         ),
-        storyUrl: m.storyUrl || null,
+        storyUrl: m.storyUrl || m.storyReply?.storyUrl || null,
         referral: m.referral || null,
       };
     });
@@ -192,6 +220,7 @@ export async function GET(request: NextRequest) {
         if (!matchedLocalIds.has(lm.id)) {
           messages.push({
             ...lm,
+            attachments: Array.isArray(lm.attachments) ? (lm.attachments as any[]) : (lm.attachments ? [lm.attachments] : null),
             isStoryMention: false,
             isStoryReply: false,
             storyUrl: null,

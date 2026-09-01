@@ -169,10 +169,66 @@ export function AttachmentRenderer({
       <div className="mt-2 flex flex-col gap-2">
         {attachments.filter(Boolean).map((att, index) => {
           const rawUrl = att.url || att.payload?.url;
-          if (!rawUrl && !att.storyUrl) return null;
-
           const url = rawUrl || att.storyUrl || "";
           const type = ((att.type || "") as string).toLowerCase();
+
+          // ── 0. Ad Referral / Click-to-Message Ad ────────────────────────
+          if (type === "ad_referral" || type === "referral") {
+            return (
+              <div
+                key={index}
+                className="overflow-hidden rounded-2xl border border-primary/30 bg-primary/5 p-3 max-w-[290px] shadow-xs"
+              >
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Sparkles className="h-3 w-3" />
+                  </div>
+                  <span className="text-[11px] font-bold text-foreground">
+                    Replied to Instagram Ad
+                  </span>
+                </div>
+
+                {url && (
+                  <div
+                    className="relative cursor-pointer overflow-hidden rounded-xl bg-black/30 mb-2 group"
+                    onClick={() => setLightboxUrl(url)}
+                  >
+                    <img
+                      src={url}
+                      alt="Ad creative preview"
+                      className="h-auto w-full object-cover max-h-[200px] rounded-xl transition-transform duration-200 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
+
+                {att.payload?.headline && (
+                  <p className="text-xs font-bold text-foreground line-clamp-1">
+                    {att.payload.headline}
+                  </p>
+                )}
+                {att.payload?.body && (
+                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
+                    {att.payload.body}
+                  </p>
+                )}
+
+                {att.payload?.sourceUrl && (
+                  <a
+                    href={att.payload.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                  >
+                    <span>View original ad</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
+            );
+          }
+
+          if (!url && !att.payload?.title && !att.payload?.body) return null;
 
           // ── 1. Story Mention & Story Reply ─────────────────────────────
           const isMention = isStoryMention || att.isStoryMention || type.includes("story_mention");

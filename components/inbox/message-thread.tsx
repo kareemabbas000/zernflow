@@ -134,10 +134,17 @@ function MessageBubble({
             </div>
           )}
 
-          {message.text && (
+          {message.text ? (
             <p className="whitespace-pre-wrap leading-relaxed break-words">
               {typeof message.text === "string" ? message.text : JSON.stringify(message.text)}
             </p>
+          ) : (
+            (!message.attachments || !Array.isArray(message.attachments) || message.attachments.length === 0) && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground italic py-0.5">
+                <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>Started conversation from your Instagram Ad / Post</span>
+              </div>
+            )
           )}
 
           <AttachmentRenderer
