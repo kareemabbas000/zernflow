@@ -99,21 +99,51 @@ function MessageBubble({ message, onRetry, avatarUrl }: { message: Message; onRe
                 : "rounded-tr-md bg-primary text-primary-foreground"
           )}
         >
-          {message.text && <p className="whitespace-pre-wrap">{message.text}</p>}
+          {message.text && (
+            <p className="whitespace-pre-wrap">
+              {typeof message.text === "string" ? message.text : JSON.stringify(message.text)}
+            </p>
+          )}
           {message.attachments && Array.isArray(message.attachments) && message.attachments.length > 0 && (
             <div className="mt-2 flex flex-col gap-1">
-              {message.attachments.map((att: any, i: number) => (
-                att.type === "image" ? (
-                  <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="block max-w-[200px] overflow-hidden rounded-md border border-border/50">
-                    <img src={att.url} alt="Attachment" className="h-auto w-full object-cover" />
-                  </a>
-                ) : (
-                  <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md bg-background/50 px-2 py-1.5 text-xs hover:bg-background/80 transition-colors">
-                    <Paperclip className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{att.name || "Attachment"}</span>
-                  </a>
-                )
-              ))}
+              {message.attachments.filter(Boolean).map((att: any, i: number) => {
+                const url = att.url || att.payload?.url;
+                if (!url) return null;
+                
+                if (att.type === "image") {
+                  return (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block max-w-[200px] overflow-hidden rounded-md border border-border/50">
+                      <img src={url} alt="Attachment" className="h-auto w-full object-cover" />
+                    </a>
+                  );
+                } else if (att.type === "video" || att.type === "reel") {
+                  return (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block max-w-[200px] overflow-hidden rounded-md border border-border/50 bg-black">
+                      <video src={url} controls className="h-auto w-full max-h-[250px]" preload="metadata" />
+                    </a>
+                  );
+                } else if (att.type === "audio" || att.type === "voice") {
+                  return (
+                    <div key={i} className="max-w-[250px] overflow-hidden rounded-md border border-border/50 bg-background/50 p-1">
+                      <audio src={url} controls className="w-full h-10" preload="metadata" />
+                    </div>
+                  );
+                } else if (att.type === "share") {
+                  return (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md bg-background/50 px-2 py-1.5 text-xs hover:bg-background/80 transition-colors">
+                      <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{att.name || "Shared Link"}</span>
+                    </a>
+                  );
+                } else {
+                  return (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md bg-background/50 px-2 py-1.5 text-xs hover:bg-background/80 transition-colors">
+                      <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{att.name || "Attachment"}</span>
+                    </a>
+                  );
+                }
+              })}
             </div>
           )}
         </div>

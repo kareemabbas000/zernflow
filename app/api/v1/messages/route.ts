@@ -94,7 +94,14 @@ export async function GET(request: NextRequest) {
         m.isFromAccount === true ||
         m.fromAccount === true;
 
-      const rawText = m.message ?? m.text ?? null;
+      let rawText = m.message ?? m.text ?? null;
+      if (typeof rawText === "object" && rawText !== null) {
+        rawText = rawText.text || JSON.stringify(rawText);
+      }
+      if (typeof rawText !== "string" && rawText !== null) {
+        rawText = String(rawText);
+      }
+
       const matchedLocal = (m.id && localMsgByTextTime.get(m.id)) ||
         (m.platformMessageId && localMsgByTextTime.get(m.platformMessageId)) ||
         (rawText && localMsgByTextTime.get(rawText));
@@ -104,7 +111,7 @@ export async function GET(request: NextRequest) {
         conversation_id: conversationId,
         direction: isOutbound ? "outbound" : "inbound",
         text: rawText,
-        attachments: m.attachments?.length ? m.attachments : null,
+        attachments: Array.isArray(m.attachments) ? m.attachments.filter(Boolean) : (m.attachments ? [m.attachments] : null),
         quick_reply_payload: null,
         postback_payload: null,
         callback_data: null,

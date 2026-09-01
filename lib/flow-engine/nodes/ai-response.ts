@@ -192,11 +192,18 @@ export async function executeAiResponse(
     // Expose the generated text to downstream nodes as {{ai_response}}
     context.variables = { ...(context.variables ?? {}), ai_response: text };
 
+    await supabase.from("analytics_events").insert({
+      workspace_id: context.workspaceId,
+      event_type: "debug_ai_generated",
+      metadata: { sendDirectly: data.sendDirectly, text }
+    });
+
     if (data.sendDirectly !== false) {
       let messageId: string | null = null;
       
       if (isCommentContext) {
         // Send via Private Reply (Comment Context)
+        await supabase.from("analytics_events").insert({ workspace_id: context.workspaceId, event_type: "debug_ai_sending_private" });
         await zernio.comments.sendPrivateReplyToComment({
           path: { 
             postId: context.variables!.post_id as string, 
@@ -204,17 +211,20 @@ export async function executeAiResponse(
           },
           body: { accountId: lateAccountId, message: text },
         });
+        await supabase.from("analytics_events").insert({ workspace_id: context.workspaceId, event_type: "debug_ai_sent_private" });
       } else {
         // Send via Zernio REST API (Standard DM Context)
+        await supabase.from("analytics_events").insert({ workspace_id: context.workspaceId, event_type: "debug_ai_sending_inbox" });
         const response = await zernio.messages.sendInboxMessage({
           path: { conversationId: lateConversationId as string },
           body: { accountId: lateAccountId, message: text },
         });
         messageId = response.data?.data?.messageId || null;
+        await supabase.from("analytics_events").insert({ workspace_id: context.workspaceId, event_type: "debug_ai_sent_inbox" });
       }
 
       // Store outbound message
-      await supabase.from("messages").insert({
+      const msgInsert = await supabase.from("messages").insert({
         conversation_id: context.conversationId,
         direction: "outbound",
         text,
@@ -224,6 +234,11 @@ export async function executeAiResponse(
         platform_message_id: messageId,
         status: "sent",
       });
+      await supabase.from("analytics_events").insert({
+        workspace_id: context.workspaceId,
+        event_type: "debug_ai_msg_insert",
+        metadata: { error: msgInsert.error?.message || null }
+      });
 
       await supabase.from("analytics_events").insert({
         workspace_id: context.workspaceId,
@@ -231,9 +246,21 @@ export async function executeAiResponse(
         contact_id: context.contactId,
         event_type: "message_sent",
       });
+    } else {
+      await supabase.from("analytics_events").insert({
+        workspace_id: context.workspaceId,
+        event_type: "debug_ai_skipped_sendDirectly_false"
+      });
     }
   } catch (error) {
     console.error("Failed to generate or send AI response:", error);
+    await supabase.from("analytics_events").insert({
+      workspace_id: context.workspaceId,
+      flow_id: context.flowId,
+      contact_id: context.contactId,
+      event_type: "debug_ai_catch",
+      metadata: { error: error instanceof Error ? error.message : "Unknown error" }
+    });
 
     await supabase.from("messages").insert({
       conversation_id: context.conversationId,
