@@ -3,6 +3,7 @@ import type { Database } from "@/lib/types/database";
 import type { FlowExecutionContext, AiResponseNodeData } from "../types";
 import { createZernioClient } from "@/lib/zernio-client";
 import { generateText, createGateway, tool } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
 import { z } from "zod";
 import { interpolateVariables } from "../utils";
 
@@ -117,9 +118,18 @@ export async function executeAiResponse(
   }
 
   try {
-    const model = data.model || "openai/gpt-4o-mini";
-    const aiGatewayKey = workspace?.ai_api_key || process.env.AI_GATEWAY_API_KEY;
-    const gw = createGateway({ apiKey: aiGatewayKey || undefined });
+    const modelString = data.model || "openai/gpt-4o-mini";
+    const userApiKey = workspace?.ai_api_key;
+    const defaultAiGatewayKey = process.env.AI_GATEWAY_API_KEY;
+    
+    let languageModel;
+    if (userApiKey && modelString.startsWith("openai/")) {
+      const openai = createOpenAI({ apiKey: userApiKey });
+      languageModel = openai(modelString.replace("openai/", ""));
+    } else {
+      const gw = createGateway({ apiKey: defaultAiGatewayKey || undefined });
+      languageModel = gw(modelString);
+    }
     
     // Interpolate variables into the system prompt (e.g. {{comment_text}})
     let systemPrompt = interpolateVariables(
@@ -179,7 +189,7 @@ export async function executeAiResponse(
     const hasTools = Object.keys(activeTools).length > 0;
 
     const result = await generateText({
-      model: gw(model),
+      model: languageModel,
       system: systemPrompt,
       messages: aiMessages,
       temperature: data.temperature ?? 0.7,
