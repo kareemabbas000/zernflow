@@ -37,44 +37,73 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const channelId = searchParams.get("channelId");
+    const platformFilter = searchParams.get("platform");
     
     // Ensure we have a valid Zernio profile for this workspace
     const { profileId, zernio } = await ensureWorkspaceZernioProfile(supabase, workspaceId);
 
     const queryOptions: Record<string, any> = {
       profileId,
-      limit: 50,
+      limit: 60,
       sortBy: "createdAt:desc"
     };
+
+    let targetPlatform = platformFilter;
 
     if (channelId && channelId !== "all") {
       const { data: channel } = await supabase
         .from("channels")
-        .select("late_account_id")
+        .select("late_account_id, zernio_account_id, platform")
         .eq("id", channelId)
         .eq("workspace_id", workspaceId)
         .maybeSingle();
 
-      if (channel?.late_account_id) {
-        queryOptions.accountId = channel.late_account_id;
+      if (channel?.late_account_id || channel?.zernio_account_id) {
+        queryOptions.accountId = channel.zernio_account_id || channel.late_account_id;
+      }
+      if (channel?.platform) {
+        targetPlatform = channel.platform;
       }
     }
 
     const res = await (zernio.posts as any).listPosts({ query: queryOptions });
+    const rawPosts = res?.data?.posts || res?.data || [];
     
-    // Fallback if listPosts isn't exact
-    const posts = res?.data?.posts || res?.data || [];
-    
-    // Transform slightly for the frontend if needed
-    const formattedPosts = (Array.isArray(posts) ? posts : []).map((p: any) => ({
-      id: p._id || p.id,
-      text: p.content?.text || p.text || p.content?.caption || "",
-      mediaUrl: p.content?.media?.[0]?.url || p.media?.[0]?.url || null,
-      platform: p.platform || p.platforms?.[0] || "unknown",
-      createdAt: p.createdAt || p.created_at || new Date().toISOString(),
-    }));
+    const formattedPosts = (Array.isArray(rawPosts) ? rawPosts : []).map((p: any) => {
+      const mediaList = p.content?.media || p.media || [];
+      const firstMedia = mediaList[0];
+      const mediaUrl =
+        firstMedia?.url ||
+        firstMedia?.thumbnailUrl ||
+        p.content?.mediaUrl ||
+        p.mediaUrl ||
+        p.thumbnailUrl ||
+        null;
 
-    return NextResponse.json({ posts: formattedPosts });
+      const mediaType =
+        firstMedia?.type ||
+        p.mediaType ||
+        (mediaUrl?.includes(".mp4") ? "video" : "image");
+
+      const platform = p.platform || p.platforms?.[0] || targetPlatform || "instagram";
+
+      return {
+        id: p.platformPostId || p._id || p.id,
+        text: p.content?.text || p.text || p.content?.caption || p.caption || "",
+        mediaUrl,
+        mediaType,
+        platform,
+        permalink: p.permalink || p.url || (platform === "instagram" ? `https://instagram.com/p/${p.id}` : null),
+        createdAt: p.createdAt || p.created_at || p.publishedAt || new Date().toISOString(),
+        likesCount: p.metrics?.likes || p.likesCount || 0,
+        commentsCount: p.metrics?.comments || p.commentsCount || 0,
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      posts: formattedPosts,
+    });
   } catch (error) {
     logger.error("[posts/route] Error fetching posts:", error);
     return NextResponse.json(

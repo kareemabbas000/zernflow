@@ -13,6 +13,7 @@ import {
   RefreshCw,
   ChevronDown,
   Sparkles,
+  MoreVertical,
 } from "lucide-react";
 import {
   useInboxStore,
@@ -94,6 +95,8 @@ export function ConversationList({
     conversation: Conversation;
   } | null>(null);
 
+  const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleContextMenu = (e: React.MouseEvent, conversation: Conversation) => {
     e.preventDefault();
     setContextMenuState({
@@ -101,6 +104,26 @@ export function ConversationList({
       y: e.clientY,
       conversation,
     });
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, conversation: Conversation) => {
+    const touch = e.touches[0];
+    const clientX = touch.clientX;
+    const clientY = touch.clientY;
+    touchTimerRef.current = setTimeout(() => {
+      setContextMenuState({
+        x: clientX,
+        y: clientY,
+        conversation,
+      });
+    }, 450); // 450ms long press
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+      touchTimerRef.current = null;
+    }
   };
 
   // ── AJAX Pagination & Deep-Dive Load More ──────────────────────
@@ -331,12 +354,15 @@ export function ConversationList({
               const contactName = conversation.contacts?.display_name || "Customer";
 
               return (
-                <button
+                <div
                   key={conversation.id}
                   onClick={() => onSelect(conversation)}
                   onContextMenu={(e) => handleContextMenu(e, conversation)}
+                  onTouchStart={(e) => handleTouchStart(e, conversation)}
+                  onTouchEnd={handleTouchEnd}
+                  onTouchMove={handleTouchEnd}
                   className={cn(
-                    "flex w-full items-start gap-3 p-3.5 text-left transition-all relative group",
+                    "flex w-full items-start gap-3 p-3.5 text-left transition-all relative group cursor-pointer",
                     isSelected
                       ? "bg-primary/10 dark:bg-primary/15 border-l-4 border-l-primary shadow-xs"
                       : isUnread
@@ -377,19 +403,40 @@ export function ConversationList({
                           )}
                         </div>
                       </div>
-                      <span
-                        suppressHydrationWarning
-                        className={cn(
-                          "flex-shrink-0 text-[10px]",
-                          isUnread
-                            ? "font-bold text-rose-600 dark:text-rose-400"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {mounted
-                          ? formatTime(conversation.last_message_at)
-                          : ""}
-                      </span>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span
+                          suppressHydrationWarning
+                          className={cn(
+                            "text-[10px]",
+                            isUnread
+                              ? "font-bold text-rose-600 dark:text-rose-400"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {mounted
+                            ? formatTime(conversation.last_message_at)
+                            : ""}
+                        </span>
+
+                        {/* 3-dots options button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setContextMenuState({
+                              x: rect.left,
+                              y: rect.bottom,
+                              conversation,
+                            });
+                          }}
+                          className="opacity-0 group-hover:opacity-100 sm:opacity-0 focus:opacity-100 p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-opacity"
+                          title="Conversation options"
+                        >
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between mt-1 gap-2">
@@ -410,7 +457,7 @@ export function ConversationList({
                       )}
                     </div>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>

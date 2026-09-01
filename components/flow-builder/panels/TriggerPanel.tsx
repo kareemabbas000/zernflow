@@ -355,9 +355,13 @@ export function TriggerPanel({ data: rawData, onChange }: TriggerPanelProps) {
                 isOpen={isPostSelectorOpen}
                 onClose={() => setIsPostSelectorOpen(false)}
                 channelId={selectedChannelId}
+                selectedPostIds={data.postIds || []}
                 onSelect={(postId) => {
-                  if (!data.postIds?.includes(postId)) {
-                    onChange({ ...data, postIds: [...(data.postIds || []), postId] });
+                  const current = data.postIds || [];
+                  if (current.includes(postId)) {
+                    onChange({ ...data, postIds: current.filter((id) => id !== postId) });
+                  } else {
+                    onChange({ ...data, postIds: [...current, postId] });
                   }
                 }}
               />
