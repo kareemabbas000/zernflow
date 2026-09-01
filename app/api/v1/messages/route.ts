@@ -173,6 +173,16 @@ export async function GET(request: NextRequest) {
         delivery_status: isOutbound ? (matchedLocal?.delivery_status ?? "sent") : "read",
         is_internal: false,
         created_at: m.createdAt ?? m.sentAt ?? new Date().toISOString(),
+        isStoryMention: Boolean(
+          m.isStoryMention ||
+          m.attachments?.some((a: any) => a.isStoryMention || (a.type || "").includes("story_mention"))
+        ),
+        isStoryReply: Boolean(
+          m.isStoryReply ||
+          m.attachments?.some((a: any) => (a.type || "").includes("story_reply"))
+        ),
+        storyUrl: m.storyUrl || null,
+        referral: m.referral || null,
       };
     });
 
@@ -180,13 +190,39 @@ export async function GET(request: NextRequest) {
     if (localMessages) {
       for (const lm of localMessages) {
         if (!matchedLocalIds.has(lm.id)) {
-          messages.push(lm);
+          messages.push({
+            ...lm,
+            isStoryMention: false,
+            isStoryReply: false,
+            storyUrl: null,
+            referral: null,
+          });
         }
       }
     }
     
     // Sort combined messages by created_at ascending
     messages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+    // Auto-update conversation preview in DB if empty
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      const preview = messagePreview(lastMsg.text, lastMsg.attachments, {
+        isStoryMention: (lastMsg as any).isStoryMention,
+        isStoryReply: (lastMsg as any).isStoryReply,
+      });
+
+      if (preview && (!conversation.last_message_preview || conversation.last_message_preview !== preview)) {
+        supabase
+          .from("conversations")
+          .update({
+            last_message_preview: preview,
+            last_message_at: lastMsg.created_at,
+          })
+          .eq("id", conversation.id)
+          .then();
+      }
+    }
 
     return NextResponse.json(messages);
   } catch (error) {

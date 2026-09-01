@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { PlatformIcon } from "@/components/platform-icon";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
+import { AttachmentRenderer } from "@/components/inbox/attachment-renderer";
 import type { Database, ConversationStatus, Platform } from "@/lib/types/database";
 
 type Message = Database["public"]["Tables"]["messages"]["Row"] & { is_internal?: boolean };
@@ -139,41 +140,13 @@ function MessageBubble({
             </p>
           )}
 
-          {message.attachments && Array.isArray(message.attachments) && message.attachments.length > 0 && (
-            <div className="mt-2 flex flex-col gap-1.5">
-              {message.attachments.filter(Boolean).map((att: any, i: number) => {
-                const url = att.url || att.payload?.url;
-                if (!url) return null;
-                
-                if (att.type === "image") {
-                  return (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block max-w-[280px] overflow-hidden rounded-xl border border-border/50 hover:opacity-90 transition-opacity">
-                      <img src={url} alt="Attachment" className="h-auto w-full object-cover max-h-[300px]" loading="lazy" />
-                    </a>
-                  );
-                } else if (att.type === "video" || att.type === "reel") {
-                  return (
-                    <div key={i} className="max-w-[280px] overflow-hidden rounded-xl border border-border/50 bg-black">
-                      <video src={url} controls className="h-auto w-full max-h-[280px]" preload="metadata" />
-                    </div>
-                  );
-                } else if (att.type === "audio" || att.type === "voice") {
-                  return (
-                    <div key={i} className="min-w-[220px] max-w-[280px] overflow-hidden rounded-xl border border-border/50 bg-background/60 p-2 backdrop-blur-xs">
-                      <audio src={url} controls className="w-full h-8" preload="metadata" />
-                    </div>
-                  );
-                } else {
-                  return (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl bg-background/50 px-3 py-2 text-xs hover:bg-background/80 transition-colors border border-border/40">
-                      <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      <span className="truncate font-medium">{att.name || "Attachment"}</span>
-                    </a>
-                  );
-                }
-              })}
-            </div>
-          )}
+          <AttachmentRenderer
+            attachments={message.attachments as any}
+            platform={platform}
+            isInbound={isInbound}
+            isStoryMention={(message as any).isStoryMention}
+            isStoryReply={(message as any).isStoryReply}
+          />
         </div>
 
         <div

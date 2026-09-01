@@ -289,9 +289,17 @@ async function processMessageEvent(
 
   const contactId = contact.contactId;
 
-  // ── Upsert conversation with clean single unread increment ───────────────
-
-  const preview = messagePreview(msg.text);
+  const isStoryMention = Boolean(
+    (msg as any).isStoryMention ||
+    (payload as any).isStoryMention ||
+    msg.attachments?.some((a: any) => a.isStoryMention || (a.type || "").includes("story_mention"))
+  );
+  const isStoryReply = Boolean(
+    (msg as any).isStoryReply ||
+    (payload as any).isStoryReply ||
+    msg.attachments?.some((a: any) => (a.type || "").includes("story_reply"))
+  );
+  const preview = messagePreview(msg.text, msg.attachments, { isStoryMention, isStoryReply });
 
   const { data: existingConv } = await supabase
     .from("conversations")

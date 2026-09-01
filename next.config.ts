@@ -5,9 +5,13 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       // Supabase storage
       { protocol: "https", hostname: "*.supabase.co" },
-      // Social platform avatars
+      // Social platform avatars and media
       { protocol: "https", hostname: "*.fbcdn.net" },
       { protocol: "https", hostname: "*.cdninstagram.com" },
+      { protocol: "https", hostname: "*.fbsbx.com" },
+      { protocol: "https", hostname: "lookaside.fbsbx.com" },
+      { protocol: "https", hostname: "*.whatsapp.net" },
+      { protocol: "https", hostname: "*.facebook.com" },
       { protocol: "https", hostname: "*.twimg.com" },
       { protocol: "https", hostname: "*.telegram.org" },
       { protocol: "https", hostname: "*.googleusercontent.com" },
