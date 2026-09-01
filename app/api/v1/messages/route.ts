@@ -25,12 +25,12 @@ export async function GET(request: NextRequest) {
   // Look up the conversation and ensure user is a workspace member
   const { data: conversation } = await supabase
     .from("conversations")
-    .select("late_conversation_id, workspace_id, channels(late_account_id, zernio_account_id)")
+    .select("id, late_conversation_id, workspace_id, channels(late_account_id, zernio_account_id)")
     .eq("id", conversationId)
     .single();
 
-  if (!conversation?.late_conversation_id) {
-    return NextResponse.json({ error: "Conversation not found or missing external ID" }, { status: 404 });
+  if (!conversation) {
+    return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
   }
 
   // Tenant isolation check
@@ -45,19 +45,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Access denied to this workspace" }, { status: 403 });
   }
 
+  // Fetch local messages from Supabase first
+  const { data: localMessages } = await supabase
+    .from("messages")
+    .select("id, conversation_id, platform_message_id, sent_by_flow_id, sent_by_node_id, sent_by_user_id, direction, text, attachments, quick_reply_payload, postback_payload, callback_data, status, delivery_status, is_internal, created_at")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true });
+
+  const channel = conversation.channels as { late_account_id?: string; zernio_account_id?: string } | null;
+  const accountId = channel?.zernio_account_id || channel?.late_account_id;
+
+  // If there is no external Zernio conversation ID or account ID, return local messages directly
+  if (!conversation.late_conversation_id || !accountId) {
+    return NextResponse.json(localMessages || []);
+  }
+
   const { data: workspace } = await supabase
     .from("workspaces")
     .select("late_api_key_encrypted")
     .eq("id", conversation.workspace_id)
     .single();
 
-  const channel = conversation.channels as { late_account_id?: string; zernio_account_id?: string } | null;
-  const accountId = channel?.zernio_account_id || channel?.late_account_id;
-  if (!accountId) {
-    return NextResponse.json({ error: "Channel not found" }, { status: 404 });
-  }
-
-  // Fetch messages from Zernio API
+  // Fetch messages from Zernio API and merge with local
   try {
     const zernio = createZernioClient(workspace?.late_api_key_encrypted);
     const res = await zernio.messages.getInboxConversationMessages({
@@ -69,12 +78,6 @@ export async function GET(request: NextRequest) {
       (res.data as { messages?: unknown[] })?.messages ??
       (res.data as { data?: unknown[] })?.data ??
       [];
-
-    // Fetch local message metadata (to retain bot badges / sent_by_flow_id)
-    const { data: localMessages } = await supabase
-      .from("messages")
-      .select("id, conversation_id, platform_message_id, sent_by_flow_id, sent_by_node_id, sent_by_user_id, direction, text, attachments, quick_reply_payload, postback_payload, callback_data, status, delivery_status, is_internal, created_at")
-      .eq("conversation_id", conversationId);
 
     const localMsgByTextTime = new Map<string, any>();
     for (const lm of localMessages || []) {
@@ -136,24 +139,7 @@ export async function GET(request: NextRequest) {
     if (localMessages) {
       for (const lm of localMessages) {
         if (!matchedLocalIds.has(lm.id)) {
-          messages.push({
-            id: lm.id,
-            conversation_id: lm.conversation_id,
-            direction: lm.direction,
-            text: lm.text,
-            attachments: lm.attachments,
-            quick_reply_payload: lm.quick_reply_payload,
-            postback_payload: lm.postback_payload,
-            callback_data: lm.callback_data,
-            platform_message_id: lm.platform_message_id,
-            sent_by_flow_id: lm.sent_by_flow_id,
-            sent_by_node_id: lm.sent_by_node_id,
-            sent_by_user_id: lm.sent_by_user_id,
-            status: lm.status ?? "delivered",
-            delivery_status: lm.delivery_status ?? "sent",
-            is_internal: lm.is_internal,
-            created_at: lm.created_at,
-          });
+          messages.push(lm);
         }
       }
     }
@@ -163,11 +149,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(messages);
   } catch (error) {
-    logger.error("Failed to fetch messages from Zernio API:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch messages" },
-      { status: 500 }
-    );
+    logger.error("Failed to fetch messages from Zernio API, falling back to local messages:", error);
+    return NextResponse.json(localMessages || []);
   }
 }
 

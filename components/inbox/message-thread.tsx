@@ -21,16 +21,24 @@ import {
   CheckCheck,
   AlertCircle,
   Mic,
+  Archive,
+  Trash2,
+  MoreVertical,
+  Volume2,
+  Info,
+  Square,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadAttachment } from "@/lib/storage";
 import { useInboxStore } from "@/lib/stores/inbox-store";
+import { useConversationMessages, useUpdateConversationStatus, useDeleteConversation } from "@/lib/hooks/use-inbox-queries";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 import { cn } from "@/lib/utils";
 import { PlatformIcon } from "@/components/platform-icon";
 import { Button } from "@/components/ui/button";
-import type { Database, ConversationStatus } from "@/lib/types/database";
+import { Avatar } from "@/components/ui/avatar";
+import type { Database, ConversationStatus, Platform } from "@/lib/types/database";
 
 type Message = Database["public"]["Tables"]["messages"]["Row"] & { is_internal?: boolean };
 type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
@@ -67,79 +75,90 @@ function shouldShowDateSeparator(
   return currentDate !== previousDate;
 }
 
-function MessageBubble({ message, onRetry, avatarUrl }: { message: Message; onRetry?: (msg: Message) => void; avatarUrl?: string | null }) {
+function MessageBubble({
+  message,
+  onRetry,
+  contactName,
+  avatarUrl,
+  platform,
+}: {
+  message: Message;
+  onRetry?: (msg: Message) => void;
+  contactName?: string | null;
+  avatarUrl?: string | null;
+  platform?: Platform | null;
+}) {
   const isInbound = message.direction === "inbound";
   const isBot = message.sent_by_flow_id !== null;
 
   return (
     <div
       className={cn(
-        "flex gap-2",
+        "flex gap-2.5 group transition-all",
         isInbound ? "justify-start" : "justify-end"
       )}
     >
       {isInbound && (
-        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-muted overflow-hidden">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="User" className="h-full w-full object-cover" />
-          ) : (
-            <User className="h-3.5 w-3.5 text-muted-foreground" />
-          )}
-        </div>
+        <Avatar
+          src={avatarUrl}
+          name={contactName}
+          size="xs"
+          className="mt-0.5"
+        />
       )}
 
-      <div className="max-w-[70%]">
+      <div className="max-w-[75%] sm:max-w-[70%] flex flex-col">
         <div
           className={cn(
-            "rounded-2xl px-4 py-2 text-sm",
+            "rounded-2xl px-4 py-2.5 text-sm shadow-xs transition-shadow",
             isInbound
-              ? "rounded-tl-md bg-muted text-foreground"
+              ? "rounded-tl-xs bg-muted text-foreground border border-border/40"
               : message.is_internal 
-                ? "rounded-tr-md bg-yellow-100 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-200"
-                : "rounded-tr-md bg-primary text-primary-foreground"
+                ? "rounded-tr-xs bg-amber-500/10 text-amber-900 dark:text-amber-200 border border-amber-500/30"
+                : "rounded-tr-xs bg-primary text-primary-foreground shadow-sm shadow-primary/20"
           )}
         >
+          {message.is_internal && (
+            <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 mb-1">
+              <span>INTERNAL NOTE</span>
+            </div>
+          )}
+
           {message.text && (
-            <p className="whitespace-pre-wrap">
+            <p className="whitespace-pre-wrap leading-relaxed break-words">
               {typeof message.text === "string" ? message.text : JSON.stringify(message.text)}
             </p>
           )}
+
           {message.attachments && Array.isArray(message.attachments) && message.attachments.length > 0 && (
-            <div className="mt-2 flex flex-col gap-1">
+            <div className="mt-2 flex flex-col gap-1.5">
               {message.attachments.filter(Boolean).map((att: any, i: number) => {
                 const url = att.url || att.payload?.url;
                 if (!url) return null;
                 
                 if (att.type === "image") {
                   return (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block max-w-[200px] overflow-hidden rounded-md border border-border/50">
-                      <img src={url} alt="Attachment" className="h-auto w-full object-cover" />
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block max-w-[280px] overflow-hidden rounded-xl border border-border/50 hover:opacity-90 transition-opacity">
+                      <img src={url} alt="Attachment" className="h-auto w-full object-cover max-h-[300px]" loading="lazy" />
                     </a>
                   );
                 } else if (att.type === "video" || att.type === "reel") {
                   return (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block max-w-[200px] overflow-hidden rounded-md border border-border/50 bg-black">
-                      <video src={url} controls className="h-auto w-full max-h-[250px]" preload="metadata" />
-                    </a>
+                    <div key={i} className="max-w-[280px] overflow-hidden rounded-xl border border-border/50 bg-black">
+                      <video src={url} controls className="h-auto w-full max-h-[280px]" preload="metadata" />
+                    </div>
                   );
                 } else if (att.type === "audio" || att.type === "voice") {
                   return (
-                    <div key={i} className="max-w-[250px] overflow-hidden rounded-md border border-border/50 bg-background/50 p-1">
-                      <audio src={url} controls className="w-full h-10" preload="metadata" />
+                    <div key={i} className="min-w-[220px] max-w-[280px] overflow-hidden rounded-xl border border-border/50 bg-background/60 p-2 backdrop-blur-xs">
+                      <audio src={url} controls className="w-full h-8" preload="metadata" />
                     </div>
-                  );
-                } else if (att.type === "share") {
-                  return (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md bg-background/50 px-2 py-1.5 text-xs hover:bg-background/80 transition-colors">
-                      <Paperclip className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">{att.name || "Shared Link"}</span>
-                    </a>
                   );
                 } else {
                   return (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-md bg-background/50 px-2 py-1.5 text-xs hover:bg-background/80 transition-colors">
-                      <Paperclip className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">{att.name || "Attachment"}</span>
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl bg-background/50 px-3 py-2 text-xs hover:bg-background/80 transition-colors border border-border/40">
+                      <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="truncate font-medium">{att.name || "Attachment"}</span>
                     </a>
                   );
                 }
@@ -147,26 +166,32 @@ function MessageBubble({ message, onRetry, avatarUrl }: { message: Message; onRe
             </div>
           )}
         </div>
+
         <div
           className={cn(
-            "mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground",
+            "mt-1 flex items-center gap-1 text-[10px] text-muted-foreground px-1",
             isInbound ? "justify-start" : "justify-end"
           )}
         >
-          {isBot && <Bot className="h-3 w-3" />}
+          {isBot && (
+            <span className="flex items-center gap-0.5 text-primary font-semibold">
+              <Bot className="h-3 w-3" />
+              AI
+            </span>
+          )}
           <span>{formatMessageTime(message.created_at)}</span>
           {!isInbound && (
             <span className="ml-1 flex items-center">
-              {message.status === "pending" && <Clock className="h-3 w-3" />}
+              {message.status === "pending" && <Clock className="h-3 w-3 animate-spin" />}
               {message.delivery_status === "sent" && <Check className="h-3.5 w-3.5 text-muted-foreground" />}
               {message.delivery_status === "delivered" && <CheckCheck className="h-3.5 w-3.5 text-muted-foreground" />}
               {message.delivery_status === "read" && <CheckCheck className="h-3.5 w-3.5 text-blue-500" />}
               {message.status === "failed" && (
-                <div className="flex items-center gap-1 text-red-500">
+                <div className="flex items-center gap-1 text-red-500 font-medium">
                   <AlertCircle className="h-3 w-3" />
-                  <span className="text-[10px]">Failed</span>
+                  <span>Failed</span>
                   {onRetry && (
-                    <button onClick={() => onRetry(message)} className="ml-1 hover:underline">
+                    <button onClick={() => onRetry(message)} className="ml-1 underline font-bold">
                       Retry
                     </button>
                   )}
@@ -178,13 +203,13 @@ function MessageBubble({ message, onRetry, avatarUrl }: { message: Message; onRe
       </div>
 
       {!isInbound && !isBot && (
-        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
-          <User className="h-3.5 w-3.5 text-primary" />
+        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold mt-0.5">
+          You
         </div>
       )}
       {!isInbound && isBot && (
-        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
-          <Bot className="h-3.5 w-3.5 text-primary" />
+        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary mt-0.5">
+          <Bot className="h-3.5 w-3.5" />
         </div>
       )}
     </div>
@@ -200,7 +225,11 @@ export function MessageThread({
 }) {
   const router = useRouter();
 
-  // ── Store integration ────────────────────────────────────────────
+  // ── TanStack Query + Zustand fallback ────────────────────────────
+  const { data: queryMessages } = useConversationMessages(conversation?.id ?? null);
+  const updateStatusMutation = useUpdateConversationStatus();
+  const deleteConversationMutation = useDeleteConversation();
+
   const storeMessages = useInboxStore(
     (s) =>
       conversation?.id
@@ -210,34 +239,75 @@ export function MessageThread({
   const sendMessageToStore = useInboxStore((s) => s.sendMessage);
   const confirmMessage = useInboxStore((s) => s.confirmMessage);
   const failMessage = useInboxStore((s) => s.failMessage);
-  const setMessages = useInboxStore((s) => s.setMessages);
+  const removeConversationFromStore = useInboxStore((s) => s.removeConversation);
 
-  // Use store messages if available, otherwise fall back to initial
+  // Combine query and store messages for instant reactivity
   const messages =
-    storeMessages.length > 0 ? storeMessages : initialMessages;
+    queryMessages && queryMessages.length > 0
+      ? queryMessages
+      : storeMessages.length > 0
+      ? storeMessages
+      : initialMessages;
 
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [isInternal, setIsInternal] = useState(false);
-  const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
   const [assigning, setAssigning] = useState(false);
   const [members, setMembers] = useState<{user_id: string, users: {full_name: string | null}}[]>([]);
   
-  const [attachments, setAttachments] = useState<{url: string, type: string, name: string, path?: string}[]>([]);
+  const [attachments, setAttachments] = useState<{url: string, type: string, name: string, path?: string, isVoiceNote?: boolean}[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  // Voice recording state
+  // Voice recording state & microphone modal
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [micPermissionError, setMicPermissionError] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // FFmpeg for transcode
+  const ffmpegRef = useRef<FFmpeg | null>(null);
+  const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
+
+  // Action Menu Dropdown State
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    async function initFFmpeg() {
+      try {
+        const ffmpeg = new FFmpeg();
+        await ffmpeg.load();
+        ffmpegRef.current = ffmpeg;
+        setFfmpegLoaded(true);
+      } catch (err) {
+        console.warn("FFmpeg failed to load in browser:", err);
+      }
+    }
+    initFFmpeg();
+  }, []);
+
+  // Fetch team members for assignment
+  useEffect(() => {
+    if (!conversation?.workspace_id) return;
+    async function loadMembers() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("workspace_members")
+        .select("user_id, users:user_id(full_name)")
+        .eq("workspace_id", conversation!.workspace_id);
+      if (data) {
+        setMembers(data as any);
+      }
+    }
+    loadMembers();
+  }, [conversation?.workspace_id]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files.length || !conversation?.workspace_id) return;
@@ -251,7 +321,7 @@ export function MessageThread({
         newAttachments.push({
           url,
           path,
-          type: file.type.startsWith("image/") ? "image" : "document",
+          type: file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "document",
           name: file.name
         });
       }
@@ -269,14 +339,15 @@ export function MessageThread({
   };
 
   const startRecording = async () => {
+    setMicPermissionError(false);
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Browser blocked access. Ensure you are using HTTPS or localhost.");
+        setMicPermissionError(true);
+        return;
       }
       
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // Safari/iOS doesn't support audio/webm, so we let the browser pick its default format
       const options = MediaRecorder.isTypeSupported("audio/webm") ? { mimeType: "audio/webm" } : undefined;
       const mediaRecorder = new MediaRecorder(stream, options);
       
@@ -290,7 +361,6 @@ export function MessageThread({
       };
 
       mediaRecorder.onstop = async () => {
-        // Determine the actual mime type the browser used
         const mimeType = mediaRecorder.mimeType || "audio/webm";
         const extension = mimeType.includes("mp4") ? "mp4" : mimeType.includes("ogg") ? "ogg" : "webm";
         
@@ -310,7 +380,6 @@ export function MessageThread({
             const outputName = `output.ogg`;
             
             await ffmpeg.writeFile(inputName, await fetchFile(audioBlob));
-            // Convert to mono OGG Opus
             await ffmpeg.exec(['-i', inputName, '-c:a', 'libopus', '-ac', '1', outputName]);
             
             const data = await ffmpeg.readFile(outputName);
@@ -323,10 +392,8 @@ export function MessageThread({
           }
         }
         
-        // Construct a File object from the final Blob
         const file = new File([finalBlob], `voice_note_${Date.now()}.${finalExtension}`, { type: finalMimeType });
         
-        // Upload the voice note
         setUploadingFiles(true);
         try {
           if (!conversation?.workspace_id) throw new Error("Missing workspace");
@@ -349,9 +416,10 @@ export function MessageThread({
       recordingTimerRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error accessing microphone:", err);
-      alert("Could not access microphone: " + (err instanceof Error ? err.message : String(err)));
+      // Display clear, instructive modal instead of generic alert
+      setMicPermissionError(true);
     }
   };
 
@@ -359,94 +427,73 @@ export function MessageThread({
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
     }
   };
 
-
-  // Fetch workspace members for assignment
-  useEffect(() => {
-    if (!conversation?.workspace_id) return;
-    const fetchMembers = async () => {
-      const { data } = await createClient()
-        .from("workspace_members")
-        .select("user_id, users(full_name)")
-        .eq("workspace_id", conversation.workspace_id);
-      if (data) {
-        // Handle TS strictness for the join
-        const typedData = data.map((d: any) => ({
-           user_id: d.user_id,
-           users: { full_name: d.users?.full_name || "Unknown" }
-        }));
-        setMembers(typedData);
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.onstop = null;
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
       }
-    };
-    fetchMembers();
-  }, [conversation?.workspace_id]);
-
-  const updateAssignee = async (userId: string) => {
-    if (!conversation) return;
-    setAssigning(true);
-    try {
-      const res = await fetch(`/api/v1/conversations/${conversation.id}/assign`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ assignedTo: userId || null }),
-      });
-      if (!res.ok) throw new Error("Failed to assign");
-    } catch (e) {
-      alert("Failed to update assignee");
-    } finally {
-      setAssigning(false);
+      audioChunksRef.current = [];
     }
   };
-
-  // Seed store from initial server-rendered messages
-  const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
-  const ffmpegRef = useRef<FFmpeg | null>(null);
-
-  useEffect(() => {
-    // Lazily load FFmpeg for Voice Notes (WhatsApp strictly requires .ogg Opus)
-    const loadFFmpeg = async () => {
-      try {
-        const ffmpeg = new FFmpeg();
-        ffmpegRef.current = ffmpeg;
-        await ffmpeg.load({
-          coreURL: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js",
-          wasmURL: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm"
-        });
-        setFfmpegLoaded(true);
-      } catch (err) {
-        console.error("Failed to load FFmpeg. Voice notes will fallback to generic audio.", err);
-      }
-    };
-    loadFFmpeg();
-  }, []);
-
-  useEffect(() => {
-    if (conversation?.id && initialMessages.length > 0) {
-      setMessages(conversation.id, initialMessages);
-    }
-  }, [conversation?.id, initialMessages, setMessages]);
 
   const updateConversationStatus = useCallback(
-    async (status: ConversationStatus) => {
-      if (!conversation || statusUpdating) return;
-      setStatusUpdating(status);
+    async (status: string) => {
+      if (!conversation) return;
       try {
-        const { error } = await createClient()
-          .from("conversations")
-          .update({ status })
-          .eq("id", conversation.id);
-        if (error) throw error;
-        router.refresh();
+        await updateStatusMutation.mutateAsync({
+          conversationId: conversation.id,
+          status,
+        });
+        setMenuOpen(false);
       } catch {
-        alert(`Failed to update conversation status`);
-      } finally {
-        setStatusUpdating(null);
+        alert("Failed to update status");
       }
     },
-    [conversation, statusUpdating, router]
+    [conversation, updateStatusMutation]
+  );
+
+  const handleDeleteConversation = useCallback(async () => {
+    if (!conversation) return;
+    try {
+      await deleteConversationMutation.mutateAsync(conversation.id);
+      removeConversationFromStore(conversation.id);
+      setDeleteConfirmOpen(false);
+      setMenuOpen(false);
+      router.push("/dashboard/inbox");
+    } catch (err) {
+      alert("Failed to delete conversation: " + (err instanceof Error ? err.message : String(err)));
+    }
+  }, [conversation, deleteConversationMutation, removeConversationFromStore, router]);
+
+  const updateAssignee = useCallback(
+    async (userId: string | null) => {
+      if (!conversation || assigning) return;
+      setAssigning(true);
+      try {
+        const res = await fetch(`/api/v1/conversations/${conversation.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ assigned_to: userId || null }),
+        });
+        if (!res.ok) throw new Error("Failed to assign");
+      } catch {
+        alert("Failed to assign conversation");
+      } finally {
+        setAssigning(false);
+      }
+    },
+    [conversation, assigning]
   );
 
   const autoResize = useCallback(() => {
@@ -456,11 +503,8 @@ export function MessageThread({
     el.style.height = `${Math.min(el.scrollHeight, 150)}px`;
   }, []);
 
-  const lastConvIdRef = useRef<string | null>(null);
-
   const [userScrolled, setUserScrolled] = useState(false);
 
-  // Auto-scroll logic using ResizeObserver to catch media loads
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -471,43 +515,17 @@ export function MessageThread({
       }
     };
 
-    // If conversation changes, reset scroll tracking and snap to bottom
-    if (lastConvIdRef.current !== conversation?.id) {
-      lastConvIdRef.current = conversation?.id ?? null;
-      setUserScrolled(false);
-      // Wait for next tick to ensure DOM is ready
-      setTimeout(() => scrollToBottom("instant"), 0);
-    }
+    scrollToBottom("instant");
 
     const observer = new ResizeObserver(() => {
-      // If user hasn't manually scrolled up, keep pinned to bottom when size changes
       if (!userScrolled) {
         scrollToBottom("smooth");
       }
     });
 
     observer.observe(container);
-    
-    // Also observe the inner content to catch children rendering
-    const innerContent = container.firstElementChild;
-    if (innerContent) {
-      observer.observe(innerContent);
-    }
-
     return () => observer.disconnect();
-  }, [conversation?.id, userScrolled]);
-
-  const handleScroll = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    
-    const isNearBottom = 
-      container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-    
-    setUserScrolled(!isNearBottom);
-  }, []);
-
-  // ── No more polling! Messages arrive via Supabase Realtime → store ────
+  }, [conversation?.id, messages.length, userScrolled]);
 
   async function handleSend() {
     if ((!input.trim() && attachments.length === 0) || !conversation || sending || uploadingFiles) return;
@@ -518,7 +536,6 @@ export function MessageThread({
     setAttachments([]);
     setSending(true);
 
-    // Optimistic update via store
     const optimisticId = `optimistic-${Date.now()}`;
     const optimisticMessage: Message = {
       id: optimisticId,
@@ -565,39 +582,29 @@ export function MessageThread({
 
   const handleRetry = async (failedMsg: Message) => {
     if (!conversation) return;
-    
-    // Convert back to pending state visually, though we might just create a new optimistic message
-    // Since it's already in the store, we can just hit the API again.
-    // Wait, the API takes `text` and `attachments`.
-    
-    // First remove the failed message and create a new pending one so it goes to bottom
     const newOptimisticId = `optimistic-${Date.now()}`;
-    const newOptimisticMessage = { ...failedMsg, id: newOptimisticId, status: "pending" as const, created_at: new Date().toISOString() };
-    
-    // Use the store to remove the old and add the new
-    setMessages(conversation.id, messages.filter(m => m.id !== failedMsg.id));
-    sendMessageToStore(conversation.id, newOptimisticMessage);
-    
+    confirmMessage(conversation.id, failedMsg.id, {
+      ...failedMsg,
+      id: newOptimisticId,
+      status: "pending",
+    });
+
     try {
       const res = await fetch("/api/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          conversationId: conversation.id, 
-          text: failedMsg.text, 
-          isInternal: failedMsg.is_internal, 
-          attachments: failedMsg.attachments 
+        body: JSON.stringify({
+          conversationId: conversation.id,
+          text: failedMsg.text,
+          isInternal: failedMsg.is_internal,
+          attachments: failedMsg.attachments,
         }),
       });
 
-      if (!res.ok) {
-        throw new Error(`Retry failed (${res.status})`);
-      }
-
+      if (!res.ok) throw new Error("Retry failed");
       const confirmedMessage: Message = await res.json();
       confirmMessage(conversation.id, newOptimisticId, confirmedMessage);
     } catch (err) {
-      console.error("Failed to retry message:", err);
       failMessage(conversation.id, newOptimisticId);
     }
   };
@@ -612,173 +619,322 @@ export function MessageThread({
           Select a conversation
         </h3>
         <p className="mt-1 text-xs text-muted-foreground max-w-xs">
-          Choose a conversation from the list to view messages and reply
+          Choose a chat from the list to view messages and interact with your customer
         </p>
       </div>
     );
   }
 
+  const contactName = conversation.contacts?.display_name || "Customer";
+
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex h-full flex-col bg-background relative">
       {/* Header */}
-      <div className="flex h-14 items-center justify-between border-b border-border px-4 shrink-0">
+      <div className="flex h-14 items-center justify-between border-b border-border px-4 bg-background/90 backdrop-blur-md shrink-0 z-10">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="relative shrink-0">
-            {conversation.contacts?.avatar_url ? (
-              <img
-                src={conversation.contacts.avatar_url}
-                alt=""
-                className="h-8 w-8 rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-medium">
-                {conversation.contacts?.display_name?.[0]?.toUpperCase() ??
-                  "?"}
-              </div>
-            )}
-            <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-background">
-              <PlatformIcon
-                platform={conversation.platform}
-                className="h-2.5 w-2.5"
-                size={10}
-              />
-            </div>
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium truncate">
-              {conversation.contacts?.display_name ?? "Unknown"}
+          <Avatar
+            src={conversation.contacts?.avatar_url}
+            name={contactName}
+            platform={conversation.platform as Platform}
+            size="sm"
+          />
+          <div className="min-w-0 flex flex-col">
+            <p className="text-sm font-bold text-foreground truncate">
+              {contactName}
             </p>
+            <span className="text-[10px] text-muted-foreground capitalize flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              {conversation.platform} • {conversation.status}
+            </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {/* Assignee select */}
           <select
             value={conversation.assigned_to || ""}
             onChange={(e) => updateAssignee(e.target.value)}
             disabled={assigning}
-            className="h-7 w-28 md:w-32 rounded-md border border-input bg-transparent px-2 text-xs text-muted-foreground outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+            className="hidden sm:block h-7 w-28 rounded-md border border-input bg-background/50 px-2 text-xs text-muted-foreground outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
           >
             <option value="">Unassigned</option>
             {members.map(m => (
               <option key={m.user_id} value={m.user_id}>{m.users.full_name}</option>
             ))}
           </select>
-          <span
-            className={cn(
-              "rounded-full px-2 py-0.5 text-[10px] font-medium capitalize",
-              conversation.status === "open"
-                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                : conversation.status === "snoozed"
-                ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                : "bg-muted text-muted-foreground"
-            )}
-          >
-            {conversation.status}
-          </span>
-          {conversation.is_automation_paused && (
-            <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-              Bot paused
-            </span>
+
+          {/* Status quick toggle */}
+          {conversation.status === "open" ? (
+            <button
+              onClick={() => updateConversationStatus("closed")}
+              title="Close chat"
+              className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+            >
+              <CheckCircle className="h-3.5 w-3.5" />
+              <span>Close</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => updateConversationStatus("open")}
+              title="Reopen chat"
+              className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-all"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Reopen</span>
+            </button>
           )}
-          <div className="flex items-center gap-1">
-            {conversation.status !== "closed" && (
-              <button
-                onClick={() => updateConversationStatus("closed")}
-                disabled={!!statusUpdating}
-                title="Close conversation"
-                aria-label="Close conversation"
-                className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
-              >
-                {statusUpdating === "closed" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-3.5 w-3.5" />
-                )}
-              </button>
-            )}
-            {conversation.status !== "snoozed" && (
-              <button
-                onClick={() => updateConversationStatus("snoozed")}
-                disabled={!!statusUpdating}
-                title="Snooze conversation"
-                aria-label="Snooze conversation"
-                className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
-              >
-                {statusUpdating === "snoozed" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Clock className="h-3.5 w-3.5" />
-                )}
-              </button>
-            )}
-            {conversation.status !== "open" && (
-              <button
-                onClick={() => updateConversationStatus("open")}
-                disabled={!!statusUpdating}
-                title="Reopen conversation"
-                aria-label="Reopen conversation"
-                className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
-              >
-                {statusUpdating === "open" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RotateCcw className="h-3.5 w-3.5" />
-                )}
-              </button>
+
+          {/* More Actions Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Chat Options"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 mt-1 w-44 rounded-xl border border-border bg-card p-1 shadow-lg z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
+                <button
+                  onClick={() => updateConversationStatus(conversation.status === "open" ? "closed" : "open")}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors"
+                >
+                  {conversation.status === "open" ? (
+                    <>
+                      <CheckCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>Mark as Closed</span>
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="h-3.5 w-3.5 text-primary" />
+                      <span>Reopen Chat</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => updateConversationStatus("snoozed")}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors"
+                >
+                  <Clock className="h-3.5 w-3.5 text-amber-500" />
+                  <span>Snooze Chat</span>
+                </button>
+
+                <button
+                  onClick={() => updateConversationStatus("archived")}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors"
+                >
+                  <Archive className="h-3.5 w-3.5 text-indigo-500" />
+                  <span>Archive Chat</span>
+                </button>
+
+                <div className="my-1 border-t border-border/60" />
+
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setDeleteConfirmOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-rose-600 hover:bg-rose-500/10 transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Delete Chat</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages Feed */}
       <div
         ref={scrollContainerRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 scroll-smooth"
+        className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth"
       >
         <div className="mx-auto max-w-2xl space-y-4">
           {messages.map((message, i) => (
             <div key={message.id}>
               {shouldShowDateSeparator(message, messages[i - 1]) && (
                 <div className="my-4 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-border" />
-                  <span className="text-[11px] text-muted-foreground">
+                  <div className="h-px flex-1 bg-border/60" />
+                  <span className="text-[11px] font-semibold text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">
                     {formatDateSeparator(message.created_at)}
                   </span>
-                  <div className="h-px flex-1 bg-border" />
+                  <div className="h-px flex-1 bg-border/60" />
                 </div>
               )}
-              <MessageBubble message={message} onRetry={handleRetry} />
+              <MessageBubble
+                message={message}
+                onRetry={handleRetry}
+                contactName={contactName}
+                avatarUrl={conversation.contacts?.avatar_url}
+                platform={conversation.platform as Platform}
+              />
             </div>
           ))}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Composer */}
-      <div className="border-t border-border bg-background p-3 sm:p-4 shrink-0">
-        <div className="mx-auto max-w-3xl rounded-xl border border-input bg-card shadow-sm focus-within:ring-1 focus-within:ring-primary/30 transition-all">
-          <div className="px-3 py-2">
-            {attachments.length > 0 && (
-              <div className="mb-2 flex flex-wrap gap-2">
-                {attachments.map((att, i) => (
-                  <div key={i} className="relative flex items-center gap-2 rounded-md border border-border bg-muted/50 p-1.5 pr-2 text-xs">
-                    {att.type === "image" ? (
-                      <ImageIcon className="h-4 w-4 text-primary" />
-                    ) : (
-                      <Paperclip className="h-4 w-4 text-primary" />
-                    )}
-                    <span className="max-w-[120px] truncate">{att.name}</span>
-                    <button
-                      onClick={() => removeAttachment(i)}
-                      className="ml-1 rounded-full p-0.5 hover:bg-background transition-colors"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-2xl animate-in zoom-in-95 duration-150">
+            <h4 className="text-base font-bold text-foreground">Delete Conversation?</h4>
+            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+              This will permanently delete this conversation and its local message history for <strong>{contactName}</strong>.
+            </p>
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteConfirmOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteConversation}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Microphone Permission Modal */}
+      {micPermissionError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-2xl animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-amber-500 mb-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
+                <Mic className="h-5 w-5" />
               </div>
-            )}
+              <h4 className="text-base font-bold text-foreground">Microphone Access Required</h4>
+            </div>
+            
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Your browser blocked microphone access. To record and send voice notes:
+            </p>
+
+            <ol className="mt-3 space-y-2 text-xs text-foreground bg-muted/40 p-3 rounded-xl border border-border/50">
+              <li className="flex items-start gap-2">
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-[10px]">1</span>
+                <span>Click the <strong>Padlock 🔒 / Site Settings</strong> icon on the left side of your browser address bar (URL).</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-[10px]">2</span>
+                <span>Toggle <strong>Microphone</strong> to <strong>Allow</strong>.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-[10px]">3</span>
+                <span>Click the microphone button again to start recording!</span>
+              </li>
+            </ol>
+
+            <div className="mt-5 flex justify-end">
+              <Button
+                size="sm"
+                onClick={() => setMicPermissionError(false)}
+              >
+                Got It
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Composer */}
+      <div className="border-t border-border bg-background/95 backdrop-blur-md p-3 sm:p-4 shrink-0">
+        {/* Attachment previews */}
+        {attachments.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {attachments.map((att, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/50 px-2.5 py-1 text-xs"
+              >
+                {att.type === "image" ? (
+                  <ImageIcon className="h-3.5 w-3.5 text-primary" />
+                ) : att.type === "audio" ? (
+                  <Volume2 className="h-3.5 w-3.5 text-emerald-500" />
+                ) : (
+                  <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+                <span className="max-w-[150px] truncate font-medium">{att.name}</span>
+                <button
+                  onClick={() => removeAttachment(index)}
+                  className="ml-1 text-muted-foreground hover:text-foreground p-0.5 rounded-full"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Recording active bar */}
+        {isRecording ? (
+          <div className="flex items-center justify-between rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm animate-pulse">
+            <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold">
+              <span className="h-3 w-3 rounded-full bg-rose-500 animate-ping" />
+              <span>Recording Voice Note... {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, "0")}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={cancelRecording}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={stopRecording}
+                className="bg-rose-500 hover:bg-rose-600 text-white shadow-sm"
+              >
+                <Square className="h-3.5 w-3.5 mr-1" />
+                Stop & Attach
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-input bg-card shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+            {/* Mode switch (Chat vs Internal Note) */}
+            <div className="flex items-center justify-between px-3 pt-2 pb-1 border-b border-border/40 text-xs">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setIsInternal(false)}
+                  className={cn(
+                    "px-2 py-0.5 rounded-md font-semibold transition-colors",
+                    !isInternal
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  Reply to Customer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsInternal(true)}
+                  className={cn(
+                    "px-2 py-0.5 rounded-md font-semibold transition-colors",
+                    isInternal
+                      ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  Internal Note (Team Only)
+                </button>
+              </div>
+            </div>
+
+            {/* Textarea */}
             <textarea
               ref={textareaRef}
               value={input}
@@ -792,126 +948,75 @@ export function MessageThread({
                   handleSend();
                 }
               }}
-              placeholder={isInternal ? "Type an internal note (only visible to team)..." : "Type your message..."}
-              rows={1}
-              className={cn("w-full resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none", isInternal ? "text-yellow-700 dark:text-yellow-400 font-medium" : "")}
-              style={{ maxHeight: 150 }}
+              placeholder={
+                isInternal
+                  ? "Write an internal note for your team..."
+                  : `Message ${contactName}...`
+              }
+              rows={2}
+              className="w-full resize-none bg-transparent px-4 py-2.5 text-xs focus:outline-none placeholder:text-muted-foreground/60"
             />
-          </div>
-          
-          <div className="flex items-center justify-between border-t border-border/50 px-2 py-2">
-            <div className="flex items-center gap-1">
-              <button 
-                onClick={() => setIsInternal(!isInternal)}
-                className={cn("flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-semibold transition-colors", isInternal ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" : "text-muted-foreground hover:bg-muted")}
-              >
-                Internal Note {isInternal ? "On" : "Off"}
-              </button>
-              <div className="ml-2 h-4 w-px bg-border"></div>
-              
-              <input
-                type="file"
-                multiple
-                ref={fileInputRef}
-                className="hidden"
-                onChange={handleFileSelect}
-                accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
-              />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-muted-foreground" 
-                title="Attach file or image"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingFiles}
-              >
-                {uploadingFiles ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
-              </Button>
-              
-              <div className="relative">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className={cn("h-8 w-8 text-muted-foreground", showEmojiPicker && "bg-muted text-foreground")} 
-                  title="Insert emoji"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+
+            {/* Bottom tools */}
+            <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
+              <div className="flex items-center gap-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingFiles}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                  title="Attach file"
                 >
-                  <Smile className="h-4 w-4" />
-                </Button>
-                
-                {showEmojiPicker && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
-                    <div className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-xl border border-border bg-popover p-2 shadow-lg animate-in slide-in-from-bottom-2 fade-in">
-                      <div className="grid grid-cols-6 gap-1">
-                        {["😀","😂","🥰","😎","🤔","🙄","😭","😡","👍","👎","👏","🙌","🙏","🔥","✨","🎉","❤️","💔","💯","✔️","❌","👀","😅","😊"].map(emoji => (
-                          <button
-                            key={emoji}
-                            className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted text-lg transition-colors"
-                            onClick={() => {
-                              setInput(prev => prev + emoji);
-                              setShowEmojiPicker(false);
-                              if (textareaRef.current) {
-                                textareaRef.current.focus();
-                                autoResize();
-                              }
-                            }}
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-              
-              <div className="ml-1 flex items-center">
-                {isRecording ? (
-                  <div className="flex items-center gap-2 rounded-full bg-red-100 px-3 py-1 dark:bg-red-900/30">
-                    <div className="h-2 w-2 animate-pulse rounded-full bg-red-500"></div>
-                    <span className="text-xs font-medium text-red-600 dark:text-red-400">
-                      {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, "0")}
-                    </span>
-                    <button
-                      onClick={stopRecording}
-                      className="ml-1 rounded-full bg-red-200 p-0.5 text-red-700 hover:bg-red-300 dark:bg-red-800 dark:text-red-200"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 text-muted-foreground" 
-                    title="Record voice note"
-                    onClick={startRecording}
-                    disabled={uploadingFiles}
-                  >
-                    <Mic className="h-4 w-4" />
-                  </Button>
-                )}
+                  <Paperclip className="h-4 w-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={startRecording}
+                  disabled={uploadingFiles}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                  title="Record voice note"
+                >
+                  <Mic className="h-4 w-4" />
+                </button>
               </div>
 
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleSend}
+                  disabled={
+                    (!input.trim() && attachments.length === 0) ||
+                    sending ||
+                    uploadingFiles
+                  }
+                  className={cn(
+                    "rounded-xl px-3 text-xs font-semibold shadow-sm transition-all",
+                    isInternal
+                      ? "bg-amber-500 hover:bg-amber-600 text-white"
+                      : "bg-primary text-primary-foreground hover:opacity-90"
+                  )}
+                >
+                  {sending || uploadingFiles ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <>
+                      <Send className="h-3.5 w-3.5 mr-1" />
+                      <span>{isInternal ? "Save Note" : "Send"}</span>
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
-            
-            <Button
-              onClick={handleSend}
-              disabled={(!input.trim() && attachments.length === 0) || sending || uploadingFiles}
-              size="sm"
-              className={cn("h-8 gap-1.5 rounded-lg px-4 font-semibold shadow-none", isInternal ? "bg-yellow-500 hover:bg-yellow-600 text-white" : "")}
-            >
-              {sending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <>
-                  {isInternal ? "Save Note" : "Send"} <Send className="h-3.5 w-3.5 ml-1" />
-                </>
-              )}
-            </Button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

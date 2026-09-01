@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Search, MessageSquare } from "lucide-react";
+import { Search, MessageSquare, X, Archive, Clock, CheckCircle, RotateCcw } from "lucide-react";
 import {
   useInboxStore,
   selectConversations,
@@ -10,6 +10,7 @@ import {
 } from "@/lib/stores/inbox-store";
 import { cn } from "@/lib/utils";
 import { PlatformIcon } from "@/components/platform-icon";
+import { Avatar } from "@/components/ui/avatar";
 import type { Database, Platform, ConversationStatus } from "@/lib/types/database";
 
 type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
@@ -36,7 +37,7 @@ function formatTime(dateStr: string | null): string {
 
 export function ConversationList({
   conversations: _initialConversations,
-  workspaceId,
+  workspaceId: _workspaceId,
   selectedId,
   onSelect,
 }: {
@@ -49,6 +50,7 @@ export function ConversationList({
   const filters = useInboxStore((s) => s.filters);
   const setFilters = useInboxStore((s) => s.setFilters);
   const allConversations = useInboxStore(selectConversations);
+  
   const filtered = useMemo(() => {
     const { status, platform, channelId, search } = filters;
     return allConversations.filter((c) => {
@@ -64,35 +66,34 @@ export function ConversationList({
       return true;
     });
   }, [allConversations, filters]);
+
   const unreadByPlatform = useInboxStore(selectUnreadByPlatform);
   const unreadAll = useInboxStore(selectUnreadAll);
 
   const [mounted, setMounted] = useState(false);
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   return (
-    <div className="flex h-full flex-col border-r border-border bg-background">
+    <div className="flex h-full flex-col border-r border-border bg-background select-none">
       {/* Header */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4 bg-muted/20 shrink-0">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-extrabold text-foreground tracking-tight">
             Live Inbox
           </h2>
-          {unreadAll ? (
+          {unreadAll > 0 && (
             <span className="flex h-5 items-center justify-center rounded-full bg-rose-500 px-2 text-[10px] font-black text-white shadow-sm shadow-rose-500/30 animate-pulse">
               {unreadAll} unread
             </span>
-          ) : null}
+          )}
         </div>
         <span className="text-xs font-semibold text-muted-foreground">
           {unreadAll > 0 ? (
             <span className="text-rose-600 dark:text-rose-400 font-bold">
-              {unreadAll} unread message
-              {unreadAll !== 1 ? "s" : ""}
+              {unreadAll} unread
             </span>
           ) : (
-            `${filtered.length} conversation${filtered.length !== 1 ? "s" : ""}`
+            `${filtered.length} chat${filtered.length !== 1 ? "s" : ""}`
           )}
         </span>
       </div>
@@ -134,7 +135,7 @@ export function ConversationList({
                 />
               )}
               <span className="capitalize">{plat}</span>
-              {count ? (
+              {count > 0 && (
                 <span
                   className={cn(
                     "flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-black",
@@ -145,7 +146,7 @@ export function ConversationList({
                 >
                   {count}
                 </span>
-              ) : null}
+              )}
             </button>
           );
         })}
@@ -160,20 +161,28 @@ export function ConversationList({
             placeholder="Search conversations..."
             value={filters.search}
             onChange={(e) => setFilters({ search: e.target.value })}
-            className="w-full rounded-xl border border-input bg-background/80 py-2 pl-9 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+            className="w-full rounded-xl border border-input bg-background/80 py-2 pl-9 pr-8 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
           />
+          {filters.search && (
+            <button
+              onClick={() => setFilters({ search: "" })}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Status & Channel filter */}
-      <div className="flex items-center justify-between px-3 pb-2 shrink-0 gap-2 overflow-hidden">
-        <div className="flex gap-1">
-          {(["all", "open", "closed", "snoozed"] as const).map((status) => (
+      <div className="flex items-center justify-between px-3 pb-2 shrink-0 gap-2 overflow-x-auto scrollbar-none">
+        <div className="flex gap-1 shrink-0">
+          {(["all", "open", "closed", "snoozed", "archived"] as const).map((status) => (
             <button
               key={status}
-              onClick={() => setFilters({ status })}
+              onClick={() => setFilters({ status: status as any })}
               className={cn(
-                "rounded-md px-2.5 py-1 text-[11px] font-semibold capitalize transition-colors",
+                "rounded-md px-2 py-1 text-[11px] font-semibold capitalize transition-all",
                 filters.status === status
                   ? "bg-muted text-foreground font-bold shadow-xs border border-border"
                   : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -187,7 +196,7 @@ export function ConversationList({
         <select 
           value={filters.channelId}
           onChange={(e) => setFilters({ channelId: e.target.value })}
-          className="text-[10px] rounded-md border border-input bg-background/50 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50 text-muted-foreground max-w-[120px] truncate"
+          className="text-[10px] rounded-md border border-input bg-background/50 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50 text-muted-foreground max-w-[110px] truncate shrink-0"
         >
           <option value="all">All Channels</option>
           {Array.from(
@@ -212,21 +221,26 @@ export function ConversationList({
             <p className="text-sm font-semibold text-foreground">
               No conversations found
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Messages from your connected channels will stream here instantly.
+            <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+              {filters.search
+                ? "Try a different search term"
+                : filters.status !== "all"
+                ? `No ${filters.status} conversations`
+                : "New inbound messages will stream here live"}
             </p>
           </div>
         ) : (
           filtered.map((conversation) => {
             const isUnread = conversation.unread_count > 0;
             const isSelected = selectedId === conversation.id;
+            const contactName = conversation.contacts?.display_name || "Customer";
 
             return (
               <button
                 key={conversation.id}
                 onClick={() => onSelect(conversation)}
                 className={cn(
-                  "flex w-full items-start gap-3 p-3.5 text-left transition-all relative",
+                  "flex w-full items-start gap-3 p-3.5 text-left transition-all relative group",
                   isSelected
                     ? "bg-primary/10 dark:bg-primary/15 border-l-4 border-l-primary shadow-xs"
                     : isUnread
@@ -235,34 +249,19 @@ export function ConversationList({
                 )}
               >
                 {/* Avatar with platform badge */}
-                <div className="relative flex-shrink-0">
-                  {conversation.contacts?.avatar_url ? (
-                    <img
-                      src={conversation.contacts.avatar_url}
-                      alt=""
-                      className="h-10 w-10 rounded-full object-cover ring-1 ring-border"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary text-sm font-bold ring-1 ring-primary/20">
-                      {conversation.contacts?.display_name?.[0]?.toUpperCase() ??
-                        "?"}
-                    </div>
-                  )}
-                  <div className="absolute -bottom-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 border-background bg-background shadow-xs">
-                    <PlatformIcon
-                      platform={conversation.platform}
-                      className="h-3 w-3"
-                      size={12}
-                    />
-                  </div>
-                </div>
+                <Avatar
+                  src={conversation.contacts?.avatar_url}
+                  name={contactName}
+                  platform={conversation.platform as Platform}
+                  size="md"
+                />
 
                 {/* Content */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-1">
                     <div className="flex items-center gap-1.5 truncate">
                       {isUnread && (
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50" />
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50 animate-pulse" />
                       )}
                       <div className="flex flex-col min-w-0">
                         <p
@@ -273,7 +272,7 @@ export function ConversationList({
                               : "font-semibold text-foreground/80"
                           )}
                         >
-                          {conversation.contacts?.display_name ?? "Customer"}
+                          {contactName}
                         </p>
                         {conversation.channels?.display_name && (
                           <span className="text-[9px] text-muted-foreground truncate leading-tight">
@@ -306,7 +305,7 @@ export function ConversationList({
                           : "text-muted-foreground"
                       )}
                     >
-                      {conversation.last_message_preview ?? "New message"}
+                      {conversation.last_message_preview ?? "New conversation"}
                     </p>
                     {isUnread && (
                       <span className="flex h-5 min-w-[20px] flex-shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-black text-white shadow-sm shadow-rose-500/40 animate-pulse">

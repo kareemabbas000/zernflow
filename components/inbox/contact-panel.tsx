@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { PlatformIcon } from "@/components/platform-icon";
 import { useContactsStore } from "@/lib/stores/contacts-store";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar } from "@/components/ui/avatar";
 import type { Database, Platform } from "@/lib/types/database";
 
 type TagRow = Database["public"]["Tables"]["tags"]["Row"];
@@ -389,18 +390,13 @@ export function ContactPanel({
         <div className="flex-1 overflow-y-auto divide-y divide-border/60">
           {/* Profile section */}
           <div className="flex flex-col items-center p-5 text-center bg-card">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary ring-2 ring-primary/20">
-              {details.contact.avatar_url ? (
-                <img
-                  src={details.contact.avatar_url}
-                  alt=""
-                  className="h-16 w-16 rounded-full object-cover"
-                />
-              ) : (
-                details.contact.display_name?.[0]?.toUpperCase() ?? "?"
-              )}
-            </div>
-            <h4 className="mt-3 font-semibold text-foreground text-sm">
+            <Avatar
+              src={details.contact.avatar_url}
+              name={details.contact.display_name}
+              size="xl"
+              className="mb-2"
+            />
+            <h4 className="mt-2 font-bold text-foreground text-base">
               {details.contact.display_name ?? "Customer"}
             </h4>
             {details.contact.email && (

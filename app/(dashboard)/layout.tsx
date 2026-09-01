@@ -1,6 +1,7 @@
 import { getWorkspace } from "@/lib/workspace";
 import { Sidebar } from "@/components/sidebar";
 import { GlobalLiveSyncProvider } from "@/components/providers/global-live-sync-provider";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { ResponsiveLayoutWrapper } from "@/components/responsive-layout-wrapper";
 import { CommandPalette } from "@/components/command-palette";
 
@@ -40,17 +41,19 @@ export default async function DashboardLayout({
   const isSuperAdmin = profile?.platform_role === "super_admin";
 
   return (
-    <GlobalLiveSyncProvider workspaceId={workspace.id}>
-      <ResponsiveLayoutWrapper>
-        <CommandPalette />
-        <Sidebar
-          workspace={workspace}
-          user={user}
-          workspaces={workspaces}
-          isSuperAdmin={isSuperAdmin}
-        />
-        <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
-      </ResponsiveLayoutWrapper>
-    </GlobalLiveSyncProvider>
+    <QueryProvider>
+      <GlobalLiveSyncProvider workspaceId={workspace.id}>
+        <ResponsiveLayoutWrapper>
+          <CommandPalette />
+          <Sidebar
+            workspace={workspace}
+            user={user}
+            workspaces={workspaces}
+            isSuperAdmin={isSuperAdmin}
+          />
+          <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
+        </ResponsiveLayoutWrapper>
+      </GlobalLiveSyncProvider>
+    </QueryProvider>
   );
 }
