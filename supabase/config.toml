@@ -8,6 +8,12 @@ port = 54322
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+site_url = "https://karim0comm0.vercel.app"
+additional_redirect_urls = [
+  "http://localhost:3000/auth/callback",
+  "http://localhost:3000/**",
+  "https://karim0comm0.vercel.app/auth/callback",
+  "https://karim0comm0.vercel.app/**",
+  "https://*.vercel.app/**"
+]
 jwt_expiry = 3600
