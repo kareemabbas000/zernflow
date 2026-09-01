@@ -305,6 +305,8 @@ async function processMessageEvent(
   let isMuted = existingConv?.is_muted || false;
 
   const lateConvId =
+    senderId ||
+    conv?.participantId ||
     conv?.id ||
     (conv as any)?._id ||
     msg?.conversationId ||

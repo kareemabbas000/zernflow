@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   // Look up the conversation and ensure user is a workspace member
   const { data: conversation } = await supabase
     .from("conversations")
-    .select("id, late_conversation_id, workspace_id, channels(late_account_id, zernio_account_id)")
+    .select("id, contact_id, channel_id, late_conversation_id, workspace_id, last_message_preview, channels(late_account_id, zernio_account_id), contacts(id, metadata)")
     .eq("id", conversationId)
     .single();
 
@@ -55,8 +55,25 @@ export async function GET(request: NextRequest) {
   const channel = conversation.channels as { late_account_id?: string; zernio_account_id?: string } | null;
   const accountId = channel?.zernio_account_id || channel?.late_account_id;
 
-  // If there is no external Zernio conversation ID or account ID, return local messages directly
-  if (!conversation.late_conversation_id || !accountId) {
+  const { data: contactChannel } = await supabase
+    .from("contact_channels")
+    .select("platform_sender_id")
+    .eq("contact_id", conversation.contact_id)
+    .eq("channel_id", conversation.channel_id)
+    .maybeSingle();
+
+  const candidateIds = Array.from(
+    new Set(
+      [
+        contactChannel?.platform_sender_id,
+        conversation.late_conversation_id,
+        (conversation.contacts?.metadata as any)?.sender_id,
+      ].filter(Boolean) as string[]
+    )
+  );
+
+  // If there are no candidate IDs or account ID, return local messages directly
+  if (candidateIds.length === 0 || !accountId) {
     return NextResponse.json(localMessages || []);
   }
 
@@ -66,18 +83,42 @@ export async function GET(request: NextRequest) {
     .eq("id", conversation.workspace_id)
     .single();
 
-  // Fetch messages from Zernio API and merge with local
+  // Fetch messages from Zernio API across candidate IDs and merge with local
   try {
     const zernio = createZernioClient(workspace?.late_api_key_encrypted);
-    const res = await zernio.messages.getInboxConversationMessages({
-      path: { conversationId: conversation.late_conversation_id },
-      query: { accountId },
-    });
+    let zernioMessages: any[] = [];
+    let successfulConvId: string | null = null;
 
-    const zernioMessages =
-      (res.data as { messages?: unknown[] })?.messages ??
-      (res.data as { data?: unknown[] })?.data ??
-      [];
+    for (const cId of candidateIds) {
+      try {
+        const res = await zernio.messages.getInboxConversationMessages({
+          path: { conversationId: cId },
+          query: { accountId },
+        });
+
+        const msgs =
+          (res.data as { messages?: unknown[] })?.messages ??
+          (res.data as { data?: unknown[] })?.data ??
+          [];
+
+        if (msgs.length > 0) {
+          zernioMessages = msgs;
+          successfulConvId = cId;
+          break;
+        }
+      } catch (e) {
+        // Continue trying next candidate ID
+      }
+    }
+
+    // If a working candidate ID was found and differs from saved, sync it to the DB
+    if (successfulConvId && successfulConvId !== conversation.late_conversation_id) {
+      supabase
+        .from("conversations")
+        .update({ late_conversation_id: successfulConvId })
+        .eq("id", conversation.id)
+        .then();
+    }
 
     const localMsgByTextTime = new Map<string, any>();
     for (const lm of localMessages || []) {

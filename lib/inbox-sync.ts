@@ -326,7 +326,7 @@ async function importConversation({
         channel_id: channel.id,
         contact_id: contact.contactId,
         platform: channel.platform,
-        late_conversation_id: conv.id,
+        late_conversation_id: conv.participantId || conv.id,
         status: targetStatus,
         last_message_at: newTimestamp,
         last_message_preview: newPreview,
