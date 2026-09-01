@@ -151,6 +151,66 @@ function VoiceNotePlayer({ url, isInbound }: { url: string; isInbound: boolean }
 }
 
 /**
+ * Story Media Preview — handles photo stories, video stories (MP4 streams), and expired fallbacks
+ */
+function StoryMediaPreview({
+  url,
+  onExpand,
+}: {
+  url: string;
+  onExpand: (url: string) => void;
+}) {
+  const [mediaType, setMediaType] = useState<"image" | "video" | "expired">("image");
+
+  if (mediaType === "expired") {
+    return (
+      <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-black/40 text-center">
+        <Instagram className="h-5 w-5 text-rose-500 mb-1 opacity-70" />
+        <span className="text-[11px] font-semibold text-foreground/80">Story Media Expired</span>
+        <span className="text-[9px] text-muted-foreground">Stories expire after 24 hours</span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative cursor-pointer overflow-hidden rounded-xl bg-black/40 group min-h-[140px] flex items-center justify-center"
+      onClick={() => onExpand(url)}
+    >
+      {mediaType === "image" ? (
+        <img
+          src={url}
+          alt="Story preview"
+          referrerPolicy="no-referrer"
+          className="h-auto w-full object-cover max-h-[260px] rounded-xl transition-transform duration-200 group-hover:scale-105"
+          loading="lazy"
+          onError={() => {
+            // Instagram Story is often a video/mp4 stream
+            setMediaType("video");
+          }}
+        />
+      ) : (
+        <video
+          src={url}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="h-auto w-full object-cover max-h-[260px] rounded-xl transition-transform duration-200 group-hover:scale-105"
+          onError={() => {
+            setMediaType("expired");
+          }}
+        />
+      )}
+
+      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+        <Maximize2 className="h-6 w-6 text-white drop-shadow-md" />
+      </div>
+    </div>
+  );
+}
+
+/**
  * Native Attachment Renderer supporting all Meta, WhatsApp, Telegram, Facebook, X, and Zernio message types
  */
 export function AttachmentRenderer({
@@ -204,6 +264,7 @@ export function AttachmentRenderer({
                     <img
                       src={url}
                       alt="Ad creative preview"
+                      referrerPolicy="no-referrer"
                       className="h-auto w-full object-cover max-h-[200px] rounded-xl transition-transform duration-200 group-hover:scale-105"
                       loading="lazy"
                     />
@@ -255,22 +316,7 @@ export function AttachmentRenderer({
                   </span>
                 </div>
 
-                {url && (
-                  <div
-                    className="relative cursor-pointer overflow-hidden rounded-xl bg-black/40 group"
-                    onClick={() => setLightboxUrl(url)}
-                  >
-                    <img
-                      src={url}
-                      alt="Story preview"
-                      className="h-auto w-full object-cover max-h-[260px] rounded-xl transition-transform duration-200 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Maximize2 className="h-6 w-6 text-white drop-shadow-md" />
-                    </div>
-                  </div>
-                )}
+                {url && <StoryMediaPreview url={url} onExpand={(u) => setLightboxUrl(u)} />}
 
                 <p className="mt-2 text-[11px] font-medium text-muted-foreground flex items-center gap-1">
                   <span>{isMention ? "Mentioned you in their story" : "Replied to this story"}</span>
@@ -290,7 +336,7 @@ export function AttachmentRenderer({
             url.includes(".aac") ||
             url.includes(".mp3") ||
             url.includes(".wav") ||
-            (url.includes("ig_messaging_cdn") && !url.includes("video_id"));
+            (url.includes("ig_messaging_cdn") && !url.includes("video_id") && !isMention && !isReply);
 
           if (isAudio && url) {
             return <VoiceNotePlayer key={index} url={url} isInbound={isInbound} />;
@@ -408,6 +454,7 @@ export function AttachmentRenderer({
                 <img
                   src={url}
                   alt={att.name || "Photo"}
+                  referrerPolicy="no-referrer"
                   className="h-auto w-full object-cover max-h-[320px] rounded-2xl transition-transform duration-200 group-hover:scale-[1.02]"
                   loading="lazy"
                 />
@@ -426,6 +473,7 @@ export function AttachmentRenderer({
                 <img
                   src={url}
                   alt="Sticker"
+                  referrerPolicy="no-referrer"
                   className="h-auto w-full object-contain max-h-[160px] drop-shadow-md"
                   loading="lazy"
                 />
@@ -504,6 +552,7 @@ export function AttachmentRenderer({
           <img
             src={lightboxUrl}
             alt="Expanded view"
+            referrerPolicy="no-referrer"
             className="max-h-[90vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />
