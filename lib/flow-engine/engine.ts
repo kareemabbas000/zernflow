@@ -230,12 +230,14 @@ async function traverseNodes(
   });
 
   // Execute the node using the registry
-  const handler = nodeRegistry[node.type];
+  const handlerKey = node.type === "action" ? (node.data as any)?.actionType : node.type;
+  const handler = handlerKey ? nodeRegistry[handlerKey] : undefined;
+  
   let result;
   if (handler) {
     result = await handler(supabase, node, context, sessionId);
   } else {
-    console.warn(`No handler registered for node type: ${node.type}`);
+    console.warn(`No handler registered for node type: ${node.type} (actionType: ${(node.data as any)?.actionType})`);
   }
 
   // Persist variables written by output-producing nodes
