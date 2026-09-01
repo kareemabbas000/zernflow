@@ -103,6 +103,19 @@ export async function executeAiResponse(
     }
   }
 
+  // Ensure the current incoming message (or comment) is always included
+  // as the latest user message, since inbound messages might not be in the DB yet.
+  if (context.incomingMessage.text) {
+    // Prevent duplication if somehow it was already the last message in DB
+    const lastMsg = aiMessages[aiMessages.length - 1];
+    if (!lastMsg || lastMsg.role !== "user" || lastMsg.content !== context.incomingMessage.text) {
+      aiMessages.push({
+        role: "user",
+        content: context.incomingMessage.text,
+      });
+    }
+  }
+
   try {
     const model = data.model || "openai/gpt-4o-mini";
     const aiGatewayKey = workspace?.ai_api_key || process.env.AI_GATEWAY_API_KEY;
