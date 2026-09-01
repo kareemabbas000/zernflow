@@ -318,7 +318,28 @@ export const selectUnreadAll = (state: InboxState) => state.unreadCount;
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function sortConversations(conversations: Conversation[]): Conversation[] {
-  return [...conversations].sort((a, b) => {
+  const seenIds = new Set<string>();
+  const seenLateIds = new Set<string>();
+  const seenContactIds = new Set<string>();
+  const deduplicated: Conversation[] = [];
+
+  for (const c of conversations) {
+    if (!c || !c.id || seenIds.has(c.id)) continue;
+    seenIds.add(c.id);
+
+    const lateKey = c.late_conversation_id ? `${c.channel_id || "ch"}:${c.late_conversation_id}` : null;
+    const contactKey = c.contact_id ? `${c.channel_id || "ch"}:${c.contact_id}` : null;
+
+    if (lateKey && seenLateIds.has(lateKey)) continue;
+    if (contactKey && seenContactIds.has(contactKey)) continue;
+
+    if (lateKey) seenLateIds.add(lateKey);
+    if (contactKey) seenContactIds.add(contactKey);
+
+    deduplicated.push(c);
+  }
+
+  return deduplicated.sort((a, b) => {
     const aTime = new Date(a.last_message_at || a.created_at).getTime();
     const bTime = new Date(b.last_message_at || b.created_at).getTime();
     if (bTime !== aTime) return bTime - aTime;

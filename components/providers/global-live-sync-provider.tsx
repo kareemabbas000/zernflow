@@ -11,8 +11,6 @@
  * Now: ONE Realtime channel for the entire workspace that listens to
  * conversations + messages tables. All state flows through the Zustand
  * inbox store. Zero polling. Zero redundant API calls.
- *
- * Performance impact: ~99% reduction in Vercel function invocations.
  */
 
 import React, {
@@ -21,9 +19,10 @@ import React, {
   useCallback,
   createContext,
   useContext,
+  useState,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { X } from "lucide-react";
+import { X, MessageSquare } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useInboxStore } from "@/lib/stores/inbox-store";
 import { useUIStore } from "@/lib/stores/ui-store";
@@ -61,7 +60,6 @@ export function useRealtime() {
 }
 
 // ── Backward-compatible export ────────────────────────────────────────────
-// Components that import useGlobalLiveSync continue to work during migration.
 export function useGlobalLiveSync() {
   const unreadCount = useInboxStore((s) => s.unreadCount);
   const conversations = useInboxStore((s) => s.conversations);
@@ -74,10 +72,9 @@ export function useGlobalLiveSync() {
     conversations,
     soundEnabled,
     setSoundEnabled,
-    syncNow: async () => {}, // No-op — Realtime handles everything
+    syncNow: async () => {},
     markConversationAsRead: async (id: string) => {
       markAsRead(id);
-      // Background DB write
       try {
         const supabase = createClient();
         await supabase
@@ -101,18 +98,16 @@ export function GlobalLiveSyncProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
-  const [activeToast, setActiveToast] = React.useState<ToastNotification | null>(null);
-  const [connectionStatus, setConnectionStatus] = React.useState<"connected" | "reconnecting" | "disconnected">("disconnected");
+  const [activeToast, setActiveToast] = useState<ToastNotification | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "reconnecting" | "disconnected">("disconnected");
 
   const soundEnabled = useUIStore((s) => s.soundEnabled);
   const upsertConversation = useInboxStore((s) => s.upsertConversation);
   const addMessage = useInboxStore((s) => s.addMessage);
   const setConversations = useInboxStore((s) => s.setConversations);
-  const conversationsLoaded = useInboxStore((s) => s.conversationsLoaded);
 
   const isInitialLoadRef = useRef(true);
-  const notifiedKeysRef = useRef(new Set<string>());
+  const lastSeenMessageTimeByConv = useRef<Map<string, number>>(new Map());
 
   // ── Notification trigger ──────────────────────────────────────────────
 
@@ -135,7 +130,7 @@ export function GlobalLiveSyncProvider({
         conversationId: conv.id,
         senderName,
         preview,
-        platform: conv.platform as Platform,
+        platform: (conv.platform as Platform) || "instagram",
         avatarUrl: conv.contacts?.avatar_url,
       });
 
@@ -143,12 +138,12 @@ export function GlobalLiveSyncProvider({
         body: preview,
       });
 
-      // Auto dismiss after 4.5s
+      // Auto dismiss after 5 seconds
       setTimeout(() => {
         setActiveToast((curr) =>
           curr?.conversationId === conv.id ? null : curr
         );
-      }, 4500);
+      }, 5000);
     },
     [soundEnabled]
   );
@@ -176,11 +171,10 @@ export function GlobalLiveSyncProvider({
 
         if (isMounted && data && data.length > 0) {
           setConversations(data as Conversation[], counts as { all: number; by_platform: Record<string, number> });
-          // Mark all initial conversations as "already seen" for notifications
+          // Mark all initial conversations timestamp as known so no fake alerts trigger
           data.forEach((c) => {
-            notifiedKeysRef.current.add(
-              `${c.id}:${c.last_message_at || c.last_message_preview}`
-            );
+            const timeEpoch = c.last_message_at ? new Date(c.last_message_at).getTime() : Date.now();
+            lastSeenMessageTimeByConv.current.set(c.id, timeEpoch);
           });
         }
         isInitialLoadRef.current = false;
@@ -231,17 +225,23 @@ export function GlobalLiveSyncProvider({
               const typed = fullConv as Conversation;
               upsertConversation(typed);
 
-              // Trigger notification for genuinely new messages
-              const key = `${typed.id}:${typed.last_message_at || typed.last_message_preview}`;
+              const msgTime = typed.last_message_at ? new Date(typed.last_message_at).getTime() : 0;
+              const lastKnownTime = lastSeenMessageTimeByConv.current.get(typed.id) || 0;
+              const isGenuinelyNewMessage = msgTime > lastKnownTime;
+
+              // Update last seen timestamp
+              if (msgTime > 0) {
+                lastSeenMessageTimeByConv.current.set(typed.id, Math.max(msgTime, lastKnownTime));
+              }
+
+              // Trigger notification ONLY if this is a genuinely new message received after initial load
               if (
                 !isInitialLoadRef.current &&
-                !notifiedKeysRef.current.has(key) &&
+                isGenuinelyNewMessage &&
                 typed.unread_count > 0
               ) {
-                notifiedKeysRef.current.add(key);
                 triggerNotification(typed);
               }
-              notifiedKeysRef.current.add(key);
               
               // If this conversation is currently open, instantly refetch the messages thread
               const { selectedConversationId, setMessages } = useInboxStore.getState();
@@ -287,9 +287,6 @@ export function GlobalLiveSyncProvider({
           setConnectionStatus("connected");
         } else if (status === "TIMED_OUT" || status === "CHANNEL_ERROR" || status === "CLOSED") {
           setConnectionStatus("disconnected");
-          // Simple reconnection backoff could be handled here or relied on Supabase's internal reconnect
-          // If disconnected, it will try to reconnect automatically (status changes to 'reconnecting' internally sometimes)
-          // Just setting disconnected for now, as Supabase client will keep retrying.
         }
       });
 
@@ -312,9 +309,9 @@ export function GlobalLiveSyncProvider({
     <RealtimeContext.Provider value={{ workspaceId, connectionStatus }}>
       {children}
 
-      {/* Global Floating Toast */}
+      {/* Global Floating Toast Popup */}
       {activeToast && (
-        <div className="fixed top-4 right-4 z-50 flex w-80 sm:w-96 items-center gap-3 rounded-2xl border border-primary/30 bg-card/95 backdrop-blur-md p-4 shadow-2xl animate-in slide-in-from-top-4 fade-in duration-300">
+        <div className="fixed top-5 right-5 z-[9999] flex w-80 sm:w-96 items-center gap-3 rounded-2xl border border-primary/40 bg-card/95 backdrop-blur-xl p-4 shadow-2xl animate-in slide-in-from-top-4 fade-in duration-200">
           <div
             className="relative shrink-0 cursor-pointer"
             onClick={() => handleToastClick(activeToast.conversationId)}
@@ -323,6 +320,7 @@ export function GlobalLiveSyncProvider({
               <img
                 src={activeToast.avatarUrl}
                 alt=""
+                referrerPolicy="no-referrer"
                 className="h-10 w-10 rounded-full object-cover border border-border"
               />
             ) : (
@@ -359,7 +357,7 @@ export function GlobalLiveSyncProvider({
 
           <button
             onClick={() => setActiveToast(null)}
-            className="shrink-0 rounded-lg p-1 text-muted-foreground hover:bg-muted transition-colors"
+            className="shrink-0 rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <X className="h-4 w-4" />
           </button>

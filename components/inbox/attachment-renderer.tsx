@@ -326,17 +326,32 @@ export function AttachmentRenderer({
           }
 
           // ── 2. Audio / Voice Note ──────────────────────────────────────
-          const isAudio =
+          const isExplicitAudioType =
             type === "audio" ||
             type === "voice" ||
             type === "voice_note" ||
             type === "audio_note" ||
+            type === "ptt" ||
+            att.mimeType?.startsWith("audio/");
+
+          const hasAudioExtension =
             url.includes(".ogg") ||
             url.includes(".m4a") ||
             url.includes(".aac") ||
             url.includes(".mp3") ||
             url.includes(".wav") ||
-            (url.includes("ig_messaging_cdn") && !url.includes("video_id") && !isMention && !isReply);
+            url.includes(".opus") ||
+            url.includes(".amr");
+
+          const isAudio =
+            (isExplicitAudioType || hasAudioExtension) &&
+            type !== "image" &&
+            type !== "photo" &&
+            type !== "picture" &&
+            type !== "video" &&
+            type !== "share" &&
+            !isMention &&
+            !isReply;
 
           if (isAudio && url) {
             return <VoiceNotePlayer key={index} url={url} isInbound={isInbound} />;

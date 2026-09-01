@@ -301,17 +301,6 @@ async function processMessageEvent(
   );
   const preview = messagePreview(msg.text, msg.attachments, { isStoryMention, isStoryReply });
 
-  const { data: existingConv } = await supabase
-    .from("conversations")
-    .select("id, unread_count, is_automation_paused, is_muted")
-    .eq("channel_id", channel.id)
-    .eq("contact_id", contactId)
-    .maybeSingle();
-
-  let conversationId = existingConv?.id;
-  let isAutomationPaused = existingConv?.is_automation_paused || false;
-  let isMuted = existingConv?.is_muted || false;
-
   const lateConvId =
     senderId ||
     conv?.participantId ||
@@ -322,6 +311,24 @@ async function processMessageEvent(
     (payload as any)?.conversation_id ||
     (payload as any)?.data?.conversationId ||
     null;
+
+  let existingConvQuery = supabase
+    .from("conversations")
+    .select("id, unread_count, is_automation_paused, is_muted")
+    .eq("channel_id", channel.id);
+
+  if (lateConvId) {
+    existingConvQuery = existingConvQuery.or(`contact_id.eq.${contactId},late_conversation_id.eq.${lateConvId}`);
+  } else {
+    existingConvQuery = existingConvQuery.eq("contact_id", contactId);
+  }
+
+  const { data: existingConvList } = await existingConvQuery.limit(1);
+  const existingConv = existingConvList?.[0] || null;
+
+  let conversationId = existingConv?.id;
+  let isAutomationPaused = existingConv?.is_automation_paused || false;
+  let isMuted = existingConv?.is_muted || false;
 
   if (existingConv) {
     // Existing conversation: increment unread by 1 cleanly unless outbound or muted
@@ -342,7 +349,7 @@ async function processMessageEvent(
       });
   } else {
     // Brand new conversation starts with 1 unread message
-    const { data: newConv } = await supabase
+    const { data: newConv, error: insertErr } = await supabase
       .from("conversations")
       .insert({
         workspace_id: channel.workspace_id,
@@ -356,11 +363,23 @@ async function processMessageEvent(
         unread_count: isOutbound ? 0 : 1,
       })
       .select("id, is_automation_paused")
-      .single();
+      .maybeSingle();
 
     if (newConv) {
       conversationId = newConv.id;
       isAutomationPaused = newConv.is_automation_paused || false;
+    } else if (insertErr) {
+      // Fallback: fetch again in case a concurrent request inserted it
+      const { data: retryConv } = await supabase
+        .from("conversations")
+        .select("id, is_automation_paused")
+        .eq("channel_id", channel.id)
+        .eq("contact_id", contactId)
+        .maybeSingle();
+      if (retryConv) {
+        conversationId = retryConv.id;
+        isAutomationPaused = retryConv.is_automation_paused || false;
+      }
     }
   }
 
