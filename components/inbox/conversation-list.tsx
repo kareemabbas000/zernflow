@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { PlatformIcon } from "@/components/platform-icon";
 import { Avatar } from "@/components/ui/avatar";
 import { ConversationContextMenu } from "@/components/inbox/conversation-context-menu";
+import { LEAD_STAGES } from "@/lib/crm";
 import type { Database, Platform, ConversationStatus } from "@/lib/types/database";
 
 type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
@@ -381,21 +382,34 @@ export function ConversationList({
                   {/* Content */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
-                      <div className="flex items-center gap-1.5 truncate">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         {isUnread && (
                           <span className="h-2 w-2 shrink-0 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50 animate-pulse" />
                         )}
-                        <div className="flex flex-col min-w-0">
-                          <p
-                            className={cn(
-                              "truncate text-xs",
-                              isUnread
-                                ? "font-bold text-foreground"
-                                : "font-semibold text-foreground/80"
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <p
+                              className={cn(
+                                "truncate text-xs",
+                                isUnread
+                                  ? "font-bold text-foreground"
+                                  : "font-semibold text-foreground/80"
+                              )}
+                            >
+                              {contactName}
+                            </p>
+                            {conversation.contacts?.lead_stage && (
+                              <span
+                                className={cn(
+                                  "shrink-0 rounded-full border px-1.5 py-0.2 text-[9px] font-bold tracking-tight capitalize",
+                                  LEAD_STAGES[conversation.contacts.lead_stage]?.badgeClass ||
+                                    "bg-muted text-muted-foreground border-border"
+                                )}
+                              >
+                                {LEAD_STAGES[conversation.contacts.lead_stage]?.label || conversation.contacts.lead_stage}
+                              </span>
                             )}
-                          >
-                            {contactName}
-                          </p>
+                          </div>
                           {conversation.channels?.display_name && (
                             <span className="text-[9px] text-muted-foreground truncate leading-tight">
                               via {conversation.channels.display_name}

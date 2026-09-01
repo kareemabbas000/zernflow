@@ -10,7 +10,8 @@ export async function PATCH(
     const { contactId } = await params;
     const { leadStage } = await request.json(); 
 
-    if (!["lead", "negotiation", "won", "lost"].includes(leadStage)) {
+    const validStages = ["lead", "qualified", "negotiation", "won", "customer", "vip", "lost", "churned"];
+    if (!validStages.includes(leadStage)) {
       return NextResponse.json({ error: "Invalid lead stage" }, { status: 400 });
     }
 

@@ -41,6 +41,7 @@ import { PlatformIcon } from "@/components/platform-icon";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { AttachmentRenderer } from "@/components/inbox/attachment-renderer";
+import { LEAD_STAGE_OPTIONS, LEAD_STAGES } from "@/lib/crm";
 import type { Database, ConversationStatus, Platform } from "@/lib/types/database";
 
 type Message = Database["public"]["Tables"]["messages"]["Row"] & { is_internal?: boolean };
@@ -292,6 +293,7 @@ export function MessageThread({
   const sendMessageToStore = useInboxStore((s) => s.sendMessage);
   const confirmMessage = useInboxStore((s) => s.confirmMessage);
   const failMessage = useInboxStore((s) => s.failMessage);
+  const upsertConversation = useInboxStore((s) => s.upsertConversation);
   const removeConversationFromStore = useInboxStore((s) => s.removeConversation);
 
   // Combine query and store messages for instant reactivity
@@ -307,6 +309,7 @@ export function MessageThread({
   const [isInternal, setIsInternal] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [assigning, setAssigning] = useState(false);
+  const [updatingStage, setUpdatingStage] = useState(false);
   const [members, setMembers] = useState<{user_id: string, users: {full_name: string | null}}[]>([]);
   
   const [attachments, setAttachments] = useState<{url: string, type: string, name: string, path?: string, isVoiceNote?: boolean}[]>([]);
@@ -584,6 +587,38 @@ export function MessageThread({
     [conversation, assigning]
   );
 
+  const updateLeadStage = useCallback(
+    async (stage: string) => {
+      if (!conversation?.contact_id || updatingStage) return;
+      setUpdatingStage(true);
+
+      // Optimistic update in inbox store
+      if (conversation.contacts) {
+        upsertConversation({
+          ...conversation,
+          contacts: {
+            ...conversation.contacts,
+            lead_stage: stage,
+          },
+        });
+      }
+
+      try {
+        const res = await fetch(`/api/v1/contacts/${conversation.contact_id}/lead-stage`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ leadStage: stage }),
+        });
+        if (!res.ok) throw new Error("Failed to update lead stage");
+      } catch (err) {
+        console.error("Failed to update lead stage:", err);
+      } finally {
+        setUpdatingStage(false);
+      }
+    },
+    [conversation, updatingStage, upsertConversation]
+  );
+
   const [userScrolled, setUserScrolled] = useState(false);
 
   useEffect(() => {
@@ -747,6 +782,25 @@ export function MessageThread({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {/* CRM Lead Stage Selector */}
+          <select
+            value={conversation.contacts?.lead_stage || "lead"}
+            onChange={(e) => updateLeadStage(e.target.value)}
+            disabled={updatingStage}
+            className={cn(
+              "h-7 rounded-md border px-2 text-xs font-semibold outline-none transition-all cursor-pointer",
+              LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.badgeClass ||
+                "bg-background/50 text-muted-foreground border-input"
+            )}
+            title="CRM Lead Stage"
+          >
+            {LEAD_STAGE_OPTIONS.map((opt) => (
+              <option key={opt.id} value={opt.id} className="bg-card text-foreground font-normal">
+                {opt.label}
+              </option>
+            ))}
+          </select>
+
           {/* Assignee select */}
           <select
             value={conversation.assigned_to || ""}

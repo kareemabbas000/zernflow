@@ -38,67 +38,127 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const channelId = searchParams.get("channelId");
     const platformFilter = searchParams.get("platform");
-    
+
+    // Fetch active channels for this workspace
+    let channelQuery = supabase
+      .from("channels")
+      .select("id, platform, zernio_account_id, late_account_id, display_name, is_active")
+      .eq("workspace_id", workspaceId);
+
+    if (channelId && channelId !== "all") {
+      channelQuery = channelQuery.eq("id", channelId);
+    } else if (platformFilter && platformFilter !== "all") {
+      channelQuery = channelQuery.eq("platform", platformFilter);
+    }
+
+    const { data: channels } = await channelQuery;
+
     // Ensure we have a valid Zernio profile for this workspace
     const { profileId, zernio } = await ensureWorkspaceZernioProfile(supabase, workspaceId);
 
-    const queryOptions: Record<string, any> = {
-      profileId,
-      limit: 60,
-      sortBy: "createdAt:desc"
-    };
+    const postMap = new Map<string, any>();
 
-    let targetPlatform = platformFilter;
+    // 1. Fetch published posts/reels for each connected channel account via listInboxComments
+    if (channels && channels.length > 0) {
+      await Promise.allSettled(
+        channels.map(async (ch) => {
+          const accountId = ch.zernio_account_id || ch.late_account_id;
+          if (!accountId) return;
 
-    if (channelId && channelId !== "all") {
-      const { data: channel } = await supabase
-        .from("channels")
-        .select("late_account_id, zernio_account_id, platform")
-        .eq("id", channelId)
-        .eq("workspace_id", workspaceId)
-        .maybeSingle();
+          try {
+            const res = await (zernio.comments as any).listInboxComments({
+              query: { accountId },
+            });
 
-      if (channel?.late_account_id || channel?.zernio_account_id) {
-        queryOptions.accountId = channel.zernio_account_id || channel.late_account_id;
-      }
-      if (channel?.platform) {
-        targetPlatform = channel.platform;
-      }
+            const items = res?.data?.data || res?.data?.posts || res?.data || [];
+            if (Array.isArray(items)) {
+              for (const item of items) {
+                const postId = String(item.id || item.platformPostId || "");
+                if (!postId) continue;
+
+                const isReel =
+                  item.permalink?.includes("/reel/") ||
+                  item.mediaType === "video" ||
+                  item.picture?.includes("CLIPS");
+
+                postMap.set(postId, {
+                  id: postId,
+                  text: item.content || item.text || item.caption || "",
+                  mediaUrl: item.picture || item.mediaUrl || item.thumbnailUrl || null,
+                  mediaType: isReel ? "video" : "image",
+                  platform: item.platform || ch.platform || "instagram",
+                  permalink: item.permalink || null,
+                  createdAt: item.createdTime || item.createdAt || new Date().toISOString(),
+                  likesCount: item.likeCount ?? item.likesCount ?? 0,
+                  commentsCount: item.commentCount ?? item.commentsCount ?? 0,
+                  accountName: item.accountUsername || ch.display_name,
+                });
+              }
+            }
+          } catch (err) {
+            logger.warn(`[posts/route] Could not fetch inbox comments for channel ${ch.display_name}:`, {
+              error: String(err),
+            });
+          }
+        })
+      );
     }
 
-    const res = await (zernio.posts as any).listPosts({ query: queryOptions });
-    const rawPosts = res?.data?.posts || res?.data || [];
-    
-    const formattedPosts = (Array.isArray(rawPosts) ? rawPosts : []).map((p: any) => {
-      const mediaList = p.content?.media || p.media || [];
-      const firstMedia = mediaList[0];
-      const mediaUrl =
-        firstMedia?.url ||
-        firstMedia?.thumbnailUrl ||
-        p.content?.mediaUrl ||
-        p.mediaUrl ||
-        p.thumbnailUrl ||
-        null;
+    // 2. Also fetch scheduled / platform posts from Zernio posts API for complete coverage (Reddit, X, etc.)
+    try {
+      const postsRes = await (zernio.posts as any).listPosts({
+        query: {
+          profileId,
+          limit: 100,
+          sortBy: "createdAt:desc",
+        },
+      });
 
-      const mediaType =
-        firstMedia?.type ||
-        p.mediaType ||
-        (mediaUrl?.includes(".mp4") ? "video" : "image");
+      const rawPosts = postsRes?.data?.posts || postsRes?.data?.data || postsRes?.data || [];
+      if (Array.isArray(rawPosts)) {
+        for (const p of rawPosts) {
+          const postId = String(p.platformPostId || p._id || p.id || "");
+          if (!postId || postMap.has(postId)) continue;
 
-      const platform = p.platform || p.platforms?.[0] || targetPlatform || "instagram";
+          const mediaList = p.content?.media || p.media || [];
+          const firstMedia = mediaList[0];
+          const mediaUrl =
+            firstMedia?.url ||
+            firstMedia?.thumbnailUrl ||
+            p.content?.mediaUrl ||
+            p.mediaUrl ||
+            p.thumbnailUrl ||
+            null;
 
-      return {
-        id: p.platformPostId || p._id || p.id,
-        text: p.content?.text || p.text || p.content?.caption || p.caption || "",
-        mediaUrl,
-        mediaType,
-        platform,
-        permalink: p.permalink || p.url || (platform === "instagram" ? `https://instagram.com/p/${p.id}` : null),
-        createdAt: p.createdAt || p.created_at || p.publishedAt || new Date().toISOString(),
-        likesCount: p.metrics?.likes || p.likesCount || 0,
-        commentsCount: p.metrics?.comments || p.commentsCount || 0,
-      };
-    });
+          const mediaType =
+            firstMedia?.type ||
+            p.mediaType ||
+            (mediaUrl?.includes(".mp4") ? "video" : "image");
+
+          const platform = p.platform || p.platforms?.[0] || platformFilter || "instagram";
+
+          postMap.set(postId, {
+            id: postId,
+            text: p.content?.text || p.text || p.content?.caption || p.caption || "",
+            mediaUrl,
+            mediaType,
+            platform,
+            permalink: p.permalink || p.url || null,
+            createdAt: p.createdAt || p.created_at || p.publishedAt || new Date().toISOString(),
+            likesCount: p.metrics?.likes || p.likesCount || 0,
+            commentsCount: p.metrics?.comments || p.commentsCount || 0,
+            accountName: p.accountUsername || null,
+          });
+        }
+      }
+    } catch (err) {
+      logger.warn("[posts/route] Could not fetch listPosts:", { error: String(err) });
+    }
+
+    // Convert map to sorted array (newest first)
+    const formattedPosts = Array.from(postMap.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
     return NextResponse.json({
       success: true,

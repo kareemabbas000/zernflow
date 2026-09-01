@@ -21,6 +21,8 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useInboxStore } from "@/lib/stores/inbox-store";
 import { useUpdateConversationStatus, useDeleteConversation } from "@/lib/hooks/use-inbox-queries";
+import { LEAD_STAGE_OPTIONS } from "@/lib/crm";
+import { cn } from "@/lib/utils";
 import type { Database } from "@/lib/types/database";
 
 type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
@@ -142,6 +144,33 @@ export function ConversationContextMenu({
       .eq("id", conversation.id);
   };
 
+  const handleSetLeadStage = async (e: React.MouseEvent, stage: string) => {
+    e.stopPropagation();
+    if (!conversation.contact_id) return;
+    
+    // Optimistic update in store
+    if (conversation.contacts) {
+      upsertConversation({
+        ...conversation,
+        contacts: {
+          ...conversation.contacts,
+          lead_stage: stage,
+        },
+      });
+    }
+    onClose();
+
+    try {
+      await fetch(`/api/v1/contacts/${conversation.contact_id}/lead-stage`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadStage: stage }),
+      });
+    } catch (err) {
+      console.error("Failed to update lead stage:", err);
+    }
+  };
+
   const handleCopy = (e: React.MouseEvent, text: string, label: string) => {
     e.stopPropagation();
     navigator.clipboard.writeText(text);
@@ -181,6 +210,37 @@ export function ConversationContextMenu({
               <X className="h-4 w-4" />
             </button>
           )}
+        </div>
+      </div>
+
+      {/* CRM Lead Stage Quick Selector */}
+      <div className="px-3 py-2 border-b border-border/50 bg-muted/10">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center justify-between">
+          <span>CRM Lead Stage</span>
+          <span className="capitalize font-semibold text-primary">
+            {conversation.contacts?.lead_stage || "lead"}
+          </span>
+        </p>
+        <div className="grid grid-cols-3 gap-1">
+          {LEAD_STAGE_OPTIONS.map((opt) => {
+            const isCurrent = (conversation.contacts?.lead_stage || "lead") === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={(e) => handleSetLeadStage(e, opt.id)}
+                className={cn(
+                  "flex items-center justify-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-semibold border transition-all cursor-pointer",
+                  isCurrent
+                    ? "bg-primary/15 text-primary border-primary/40 shadow-2xs font-bold"
+                    : "bg-background/60 text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", opt.dot)} />
+                <span className="truncate">{opt.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
