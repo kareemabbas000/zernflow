@@ -1,7 +1,19 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Search, MessageSquare, X, Archive, Clock, CheckCircle, RotateCcw } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import {
+  Search,
+  MessageSquare,
+  X,
+  Archive,
+  Clock,
+  CheckCircle,
+  RotateCcw,
+  Loader2,
+  RefreshCw,
+  ChevronDown,
+  Sparkles,
+} from "lucide-react";
 import {
   useInboxStore,
   selectConversations,
@@ -11,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PlatformIcon } from "@/components/platform-icon";
 import { Avatar } from "@/components/ui/avatar";
+import { ConversationContextMenu } from "@/components/inbox/conversation-context-menu";
 import type { Database, Platform, ConversationStatus } from "@/lib/types/database";
 
 type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
@@ -37,7 +50,7 @@ function formatTime(dateStr: string | null): string {
 
 export function ConversationList({
   conversations: _initialConversations,
-  workspaceId: _workspaceId,
+  workspaceId,
   selectedId,
   onSelect,
 }: {
@@ -50,7 +63,8 @@ export function ConversationList({
   const filters = useInboxStore((s) => s.filters);
   const setFilters = useInboxStore((s) => s.setFilters);
   const allConversations = useInboxStore(selectConversations);
-  
+  const upsertConversation = useInboxStore((s) => s.upsertConversation);
+
   const filtered = useMemo(() => {
     const { status, platform, channelId, search } = filters;
     return allConversations.filter((c) => {
@@ -73,8 +87,75 @@ export function ConversationList({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // ── Right-Click Context Menu State ─────────────────────────────
+  const [contextMenuState, setContextMenuState] = useState<{
+    x: number;
+    y: number;
+    conversation: Conversation;
+  } | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent, conversation: Conversation) => {
+    e.preventDefault();
+    setContextMenuState({
+      x: e.clientX,
+      y: e.clientY,
+      conversation,
+    });
+  };
+
+  // ── AJAX Pagination & Deep-Dive Load More ──────────────────────
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [syncingPlatform, setSyncingPlatform] = useState(false);
+  const [hasMoreLocal, setHasMoreLocal] = useState(true);
+
+  const loadMoreConversations = useCallback(
+    async (fromPlatform: boolean = false) => {
+      if (!workspaceId || loadingMore || syncingPlatform) return;
+
+      if (fromPlatform) {
+        setSyncingPlatform(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      try {
+        const offset = allConversations.length;
+        const res = await fetch(
+          `/api/v1/inbox/conversations?workspaceId=${workspaceId}&limit=30&offset=${offset}${
+            fromPlatform ? "&syncMore=true" : ""
+          }`
+        );
+
+        if (!res.ok) throw new Error("Failed to load more");
+        const data = await res.json();
+
+        if (data.conversations && Array.isArray(data.conversations)) {
+          data.conversations.forEach((conv: Conversation) => {
+            upsertConversation(conv);
+          });
+          setHasMoreLocal(data.hasMore ?? data.conversations.length >= 30);
+        }
+      } catch (err) {
+        console.error("Failed to load more conversations:", err);
+      } finally {
+        setLoadingMore(false);
+        setSyncingPlatform(false);
+      }
+    },
+    [workspaceId, loadingMore, syncingPlatform, allConversations.length, upsertConversation]
+  );
+
   return (
-    <div className="flex h-full flex-col border-r border-border bg-background select-none">
+    <div className="flex h-full flex-col border-r border-border bg-background select-none relative">
+      {/* Right Click Context Menu */}
+      {contextMenuState && (
+        <ConversationContextMenu
+          menuPosition={{ x: contextMenuState.x, y: contextMenuState.y }}
+          conversation={contextMenuState.conversation}
+          onClose={() => setContextMenuState(null)}
+        />
+      )}
+
       {/* Header */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4 bg-muted/20 shrink-0">
         <div className="flex items-center gap-2">
@@ -87,15 +168,26 @@ export function ConversationList({
             </span>
           )}
         </div>
-        <span className="text-xs font-semibold text-muted-foreground">
-          {unreadAll > 0 ? (
-            <span className="text-rose-600 dark:text-rose-400 font-bold">
-              {unreadAll} unread
-            </span>
-          ) : (
-            `${filtered.length} chat${filtered.length !== 1 ? "s" : ""}`
-          )}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => loadMoreConversations(true)}
+            disabled={syncingPlatform}
+            className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors disabled:opacity-50"
+            title="Sync latest chats from Instagram/Facebook"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", syncingPlatform && "animate-spin text-primary")} />
+          </button>
+          <span className="text-xs font-semibold text-muted-foreground">
+            {unreadAll > 0 ? (
+              <span className="text-rose-600 dark:text-rose-400 font-bold">
+                {unreadAll} unread
+              </span>
+            ) : (
+              `${filtered.length} chat${filtered.length !== 1 ? "s" : ""}`
+            )}
+          </span>
+        </div>
       </div>
 
       {/* Platform Tabs */}
@@ -192,8 +284,8 @@ export function ConversationList({
             </button>
           ))}
         </div>
-        
-        <select 
+
+        <select
           value={filters.channelId}
           onChange={(e) => setFilters({ channelId: e.target.value })}
           className="text-[10px] rounded-md border border-input bg-background/50 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50 text-muted-foreground max-w-[110px] truncate shrink-0"
@@ -202,17 +294,19 @@ export function ConversationList({
           {Array.from(
             new Map(
               allConversations
-                .filter(c => c.channels?.display_name)
-                .map(c => [c.channel_id, c.channels?.display_name])
+                .filter((c) => c.channels?.display_name)
+                .map((c) => [c.channel_id, c.channels?.display_name])
             ).entries()
           ).map(([id, name]) => (
-            <option key={id} value={id}>{name}</option>
+            <option key={id} value={id}>
+              {name}
+            </option>
           ))}
         </select>
       </div>
 
       {/* Conversation list */}
-      <div className="flex-1 overflow-y-auto divide-y divide-border/60">
+      <div className="flex-1 overflow-y-auto divide-y divide-border/60 flex flex-col">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/60 text-muted-foreground/60 mb-3">
@@ -230,93 +324,130 @@ export function ConversationList({
             </p>
           </div>
         ) : (
-          filtered.map((conversation) => {
-            const isUnread = conversation.unread_count > 0;
-            const isSelected = selectedId === conversation.id;
-            const contactName = conversation.contacts?.display_name || "Customer";
+          <div className="flex-1">
+            {filtered.map((conversation) => {
+              const isUnread = (conversation.unread_count || 0) > 0;
+              const isSelected = selectedId === conversation.id;
+              const contactName = conversation.contacts?.display_name || "Customer";
 
-            return (
-              <button
-                key={conversation.id}
-                onClick={() => onSelect(conversation)}
-                className={cn(
-                  "flex w-full items-start gap-3 p-3.5 text-left transition-all relative group",
-                  isSelected
-                    ? "bg-primary/10 dark:bg-primary/15 border-l-4 border-l-primary shadow-xs"
-                    : isUnread
-                    ? "bg-primary/[0.04] dark:bg-primary/[0.08] hover:bg-primary/[0.08] border-l-4 border-l-rose-500"
-                    : "hover:bg-muted/50 border-l-4 border-l-transparent"
-                )}
-              >
-                {/* Avatar with platform badge */}
-                <Avatar
-                  src={conversation.contacts?.avatar_url}
-                  name={contactName}
-                  platform={conversation.platform as Platform}
-                  size="md"
-                />
+              return (
+                <button
+                  key={conversation.id}
+                  onClick={() => onSelect(conversation)}
+                  onContextMenu={(e) => handleContextMenu(e, conversation)}
+                  className={cn(
+                    "flex w-full items-start gap-3 p-3.5 text-left transition-all relative group",
+                    isSelected
+                      ? "bg-primary/10 dark:bg-primary/15 border-l-4 border-l-primary shadow-xs"
+                      : isUnread
+                      ? "bg-primary/[0.04] dark:bg-primary/[0.08] hover:bg-primary/[0.08] border-l-4 border-l-rose-500"
+                      : "hover:bg-muted/50 border-l-4 border-l-transparent"
+                  )}
+                >
+                  {/* Avatar with platform badge */}
+                  <Avatar
+                    src={conversation.contacts?.avatar_url}
+                    name={contactName}
+                    platform={conversation.platform as Platform}
+                    size="md"
+                  />
 
-                {/* Content */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <div className="flex items-center gap-1.5 truncate">
-                      {isUnread && (
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50 animate-pulse" />
-                      )}
-                      <div className="flex flex-col min-w-0">
-                        <p
-                          className={cn(
-                            "truncate text-xs",
-                            isUnread
-                              ? "font-bold text-foreground"
-                              : "font-semibold text-foreground/80"
-                          )}
-                        >
-                          {contactName}
-                        </p>
-                        {conversation.channels?.display_name && (
-                          <span className="text-[9px] text-muted-foreground truncate leading-tight">
-                            via {conversation.channels.display_name}
-                          </span>
+                  {/* Content */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1.5 truncate">
+                        {isUnread && (
+                          <span className="h-2 w-2 shrink-0 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50 animate-pulse" />
                         )}
+                        <div className="flex flex-col min-w-0">
+                          <p
+                            className={cn(
+                              "truncate text-xs",
+                              isUnread
+                                ? "font-bold text-foreground"
+                                : "font-semibold text-foreground/80"
+                            )}
+                          >
+                            {contactName}
+                          </p>
+                          {conversation.channels?.display_name && (
+                            <span className="text-[9px] text-muted-foreground truncate leading-tight">
+                              via {conversation.channels.display_name}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <span
-                      suppressHydrationWarning
-                      className={cn(
-                        "flex-shrink-0 text-[10px]",
-                        isUnread
-                          ? "font-bold text-rose-600 dark:text-rose-400"
-                          : "text-muted-foreground"
-                      )}
-                    >
-                      {mounted
-                        ? formatTime(conversation.last_message_at)
-                        : ""}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between mt-1 gap-2">
-                    <p
-                      className={cn(
-                        "truncate text-xs leading-relaxed",
-                        isUnread
-                          ? "font-semibold text-foreground"
-                          : "text-muted-foreground"
-                      )}
-                    >
-                      {conversation.last_message_preview ?? "New conversation"}
-                    </p>
-                    {isUnread && (
-                      <span className="flex h-5 min-w-[20px] flex-shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-black text-white shadow-sm shadow-rose-500/40 animate-pulse">
-                        {conversation.unread_count}
+                      <span
+                        suppressHydrationWarning
+                        className={cn(
+                          "flex-shrink-0 text-[10px]",
+                          isUnread
+                            ? "font-bold text-rose-600 dark:text-rose-400"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {mounted
+                          ? formatTime(conversation.last_message_at)
+                          : ""}
                       </span>
-                    )}
+                    </div>
+
+                    <div className="flex items-center justify-between mt-1 gap-2">
+                      <p
+                        className={cn(
+                          "truncate text-xs leading-relaxed",
+                          isUnread
+                            ? "font-semibold text-foreground"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {conversation.last_message_preview ?? "New conversation"}
+                      </p>
+                      {isUnread && (
+                        <span className="flex h-5 min-w-[20px] flex-shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-black text-white shadow-sm shadow-rose-500/40 animate-pulse">
+                          {conversation.unread_count}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </button>
-            );
-          })
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* AJAX Load More / Deep-dive Platform Button */}
+        {filtered.length > 0 && (
+          <div className="p-3 bg-muted/10 border-t border-border/50 text-center space-y-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => loadMoreConversations(false)}
+              disabled={loadingMore || syncingPlatform}
+              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-foreground transition-all shadow-2xs disabled:opacity-50"
+            >
+              {loadingMore ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  <span>Loading older chats...</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>Load More Conversations ({allConversations.length})</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => loadMoreConversations(true)}
+              disabled={syncingPlatform || loadingMore}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline disabled:opacity-50"
+            >
+              <RefreshCw className={cn("h-3 w-3", syncingPlatform && "animate-spin")} />
+              <span>{syncingPlatform ? "Syncing from Meta..." : "Deep-dive: Fetch older chats from platform"}</span>
+            </button>
+          </div>
         )}
       </div>
     </div>
