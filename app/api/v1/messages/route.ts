@@ -86,6 +86,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const matchedLocalIds = new Set<string>();
+
     const messages = zernioMessages.map((m: any) => {
       // In Zernio SDK: direction is 'incoming' | 'outgoing'
       const isOutbound =
@@ -106,6 +108,10 @@ export async function GET(request: NextRequest) {
         (m.platformMessageId && localMsgByTextTime.get(m.platformMessageId)) ||
         (rawText && localMsgByTextTime.get(rawText));
 
+      if (matchedLocal) {
+        matchedLocalIds.add(matchedLocal.id);
+      }
+
       return {
         id: m.id || m._id || `msg-${Date.now()}`,
         conversation_id: conversationId,
@@ -124,6 +130,35 @@ export async function GET(request: NextRequest) {
         created_at: m.createdAt ?? m.sentAt ?? new Date().toISOString(),
       };
     });
+
+    // Append any unmatched local messages (e.g. AI bot responses that haven't synced yet, or internal notes)
+    if (localMessages) {
+      for (const lm of localMessages) {
+        if (!matchedLocalIds.has(lm.id)) {
+          messages.push({
+            id: lm.id,
+            conversation_id: lm.conversation_id,
+            direction: lm.direction,
+            text: lm.text,
+            attachments: lm.attachments,
+            quick_reply_payload: lm.quick_reply_payload,
+            postback_payload: lm.postback_payload,
+            callback_data: lm.callback_data,
+            platform_message_id: lm.platform_message_id,
+            sent_by_flow_id: lm.sent_by_flow_id,
+            sent_by_node_id: lm.sent_by_node_id,
+            sent_by_user_id: lm.sent_by_user_id,
+            status: lm.status ?? "delivered",
+            delivery_status: lm.delivery_status ?? "sent",
+            is_internal: lm.is_internal,
+            created_at: lm.created_at,
+          });
+        }
+      }
+    }
+    
+    // Sort combined messages by created_at ascending
+    messages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
     return NextResponse.json(messages);
   } catch (error) {
