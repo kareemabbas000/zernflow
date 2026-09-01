@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     // Fetch local message metadata (to retain bot badges / sent_by_flow_id)
     const { data: localMessages } = await supabase
       .from("messages")
-      .select("id, platform_message_id, sent_by_flow_id, direction, text, created_at, delivery_status")
+      .select("id, conversation_id, platform_message_id, sent_by_flow_id, sent_by_node_id, sent_by_user_id, direction, text, attachments, quick_reply_payload, postback_payload, callback_data, status, delivery_status, is_internal, created_at")
       .eq("conversation_id", conversationId);
 
     const localMsgByTextTime = new Map<string, any>();
@@ -118,15 +118,16 @@ export async function GET(request: NextRequest) {
         direction: isOutbound ? "outbound" : "inbound",
         text: rawText,
         attachments: Array.isArray(m.attachments) ? m.attachments.filter(Boolean) : (m.attachments ? [m.attachments] : null),
-        quick_reply_payload: null,
-        postback_payload: null,
-        callback_data: null,
+        quick_reply_payload: null as string | null,
+        postback_payload: null as string | null,
+        callback_data: null as string | null,
         platform_message_id: m.platformMessageId ?? m.id ?? null,
         sent_by_flow_id: matchedLocal?.sent_by_flow_id ?? null,
-        sent_by_node_id: null,
-        sent_by_user_id: null,
+        sent_by_node_id: null as string | null,
+        sent_by_user_id: null as string | null,
         status: isOutbound ? (m.status ?? "delivered") : "delivered",
         delivery_status: isOutbound ? (matchedLocal?.delivery_status ?? "sent") : "read",
+        is_internal: false,
         created_at: m.createdAt ?? m.sentAt ?? new Date().toISOString(),
       };
     });
