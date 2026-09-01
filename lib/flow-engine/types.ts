@@ -138,9 +138,11 @@ export interface AiResponseNodeData {
   label?: string;
   model: string;
   systemPrompt: string;
+  knowledgeBase?: string;
   temperature: number;
   maxTokens: number;
   contextMessages: number;
+  enabledTools?: string[];
   /**
    * The generated text is always stored in the ai_response variable. When false,
    * the node ONLY stores it (no send), so a later Send Message node can use

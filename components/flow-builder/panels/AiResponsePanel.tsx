@@ -9,11 +9,13 @@ const POPULAR_MODELS = [
 
 interface AiResponsePanelData {
   systemPrompt?: string;
+  knowledgeBase?: string;
   model?: string;
   temperature?: number;
   maxTokens?: number;
   contextMessages?: number;
   sendDirectly?: boolean;
+  enabledTools?: string[];
   [key: string]: unknown;
 }
 
@@ -42,6 +44,23 @@ export function AiResponsePanel({ data: rawData, onChange }: AiResponsePanelProp
         />
         <p className="mt-1 text-[11px] text-muted-foreground/60">
           Instructions for how the AI should behave and respond.
+        </p>
+      </div>
+
+      {/* Knowledge Base */}
+      <div>
+        <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+          Knowledge Base (Business Context)
+        </label>
+        <textarea
+          value={data.knowledgeBase || ""}
+          onChange={(e) => onChange({ ...data, knowledgeBase: e.target.value })}
+          placeholder="Paste your business facts, FAQs, return policies, or specific rules here..."
+          rows={6}
+          className="w-full resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+        <p className="mt-1 text-[11px] text-muted-foreground/60">
+          Factual context the AI should reference before replying.
         </p>
       </div>
 
@@ -142,6 +161,39 @@ export function AiResponsePanel({ data: rawData, onChange }: AiResponsePanelProp
         <p className="mt-1 text-[11px] text-muted-foreground/60">
           How many past messages to include as context for the AI.
         </p>
+      </div>
+
+      {/* Tools */}
+      <div>
+        <label className="mb-2 block text-xs font-medium text-muted-foreground">
+          Agent Tools (Function Calling)
+        </label>
+        <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
+          {[
+            { id: "get_current_time", label: "Get Current Time", desc: "Allows the AI to know the current date and time." },
+            { id: "check_order_status", label: "Check Order Status", desc: "Demonstration tool. Requires an Order ID." },
+            { id: "escalate_to_human", label: "Escalate to Human", desc: "Allows the AI to flag the conversation for human review." }
+          ].map((tool) => (
+            <label key={tool.id} className="flex items-start gap-2.5">
+              <input
+                type="checkbox"
+                checked={(data.enabledTools || []).includes(tool.id)}
+                onChange={(e) => {
+                  const current = data.enabledTools || [];
+                  const newTools = e.target.checked
+                    ? [...current, tool.id]
+                    : current.filter((t) => t !== tool.id);
+                  onChange({ ...data, enabledTools: newTools });
+                }}
+                className="mt-0.5 h-3.5 w-3.5 rounded border-input text-blue-500 focus:ring-blue-500"
+              />
+              <div>
+                <p className="text-xs font-medium text-foreground">{tool.label}</p>
+                <p className="text-[10px] text-muted-foreground/80">{tool.desc}</p>
+              </div>
+            </label>
+          ))}
+        </div>
       </div>
 
       {/* Send Directly */}

@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { PlatformIcon } from "@/components/platform-icon";
 import type { TriggerType, Platform } from "@/lib/types/database";
+import { PostSelectorModal } from "@/components/flow-builder/post-selector-modal";
 
 interface Keyword {
   value: string;
@@ -16,6 +17,7 @@ interface TriggerPanelData {
   keywords?: Keyword[];
   payload?: string;
   alsoMatchInDms?: boolean;
+  postIds?: string[];
   [key: string]: unknown;
 }
 
@@ -54,6 +56,10 @@ export function TriggerPanel({ data: rawData, onChange }: TriggerPanelProps) {
   const [channels, setChannels] = useState<ChannelOption[]>([]);
   const [newKeyword, setNewKeyword] = useState("");
   const [newMatchType, setNewMatchType] = useState<"exact" | "contains" | "startsWith">("contains");
+  const [isPostSelectorOpen, setIsPostSelectorOpen] = useState(false);
+  const [targetPostType, setTargetPostType] = useState<"all" | "specific">(
+    (data.postIds && data.postIds.length > 0) ? "specific" : "all"
+  );
 
   useEffect(() => {
     async function loadChannels() {
@@ -254,10 +260,114 @@ export function TriggerPanel({ data: rawData, onChange }: TriggerPanelProps) {
             </p>
           )}
 
+          {/* Target Post Selection (Comment Keywords Only) */}
+          {triggerType === "comment_keyword" && (
+            <div className="mt-6 border-t border-border pt-4">
+              <label className="mb-2 block text-xs font-semibold text-foreground">
+                Target Post
+              </label>
+              <div className="mb-3 space-y-2">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="radio"
+                    name="targetPostType"
+                    checked={targetPostType === "all"}
+                    onChange={() => {
+                      setTargetPostType("all");
+                      onChange({ ...data, postIds: [] });
+                    }}
+                    className="h-4 w-4 border-input text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <span className="text-sm font-medium text-foreground">Any Post</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="radio"
+                    name="targetPostType"
+                    checked={targetPostType === "specific"}
+                    onChange={() => setTargetPostType("specific")}
+                    className="h-4 w-4 border-input text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <span className="text-sm font-medium text-foreground">Specific Post(s)</span>
+                </label>
+              </div>
+
+              {targetPostType === "specific" && (
+                <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsPostSelectorOpen(true)}
+                      className="flex-1 rounded-lg bg-card border border-input py-1.5 text-xs font-semibold text-foreground shadow-sm hover:bg-muted"
+                    >
+                      Select Post
+                    </button>
+                  </div>
+                  
+                  {/* Selected Posts */}
+                  {data.postIds && data.postIds.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-foreground">Selected Post IDs:</p>
+                      {data.postIds.map((pid, idx) => (
+                        <div key={idx} className="flex items-center justify-between rounded border border-border bg-card p-1.5 px-2">
+                          <span className="truncate text-xs text-muted-foreground">{pid}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newIds = data.postIds?.filter(id => id !== pid) || [];
+                              onChange({ ...data, postIds: newIds });
+                              if (newIds.length === 0) setTargetPostType("all");
+                            }}
+                            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Manual fallback */}
+                  <div className="pt-2 border-t border-border/50">
+                    <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                      Or Paste Native Post ID
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Paste post ID..."
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const val = e.currentTarget.value.trim();
+                          if (val && !data.postIds?.includes(val)) {
+                            onChange({ ...data, postIds: [...(data.postIds || []), val] });
+                            e.currentTarget.value = "";
+                          }
+                        }
+                      }}
+                      className="w-full rounded border border-border bg-card px-2 py-1.5 text-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <PostSelectorModal
+                isOpen={isPostSelectorOpen}
+                onClose={() => setIsPostSelectorOpen(false)}
+                channelId={selectedChannelId}
+                onSelect={(postId) => {
+                  if (!data.postIds?.includes(postId)) {
+                    onChange({ ...data, postIds: [...(data.postIds || []), postId] });
+                  }
+                }}
+              />
+            </div>
+          )}
+
           {/* Comment keywords only: publish also writes a `keyword` trigger row so
               the same flow answers people who DM the keyword instead of commenting. */}
           {triggerType === "comment_keyword" && (
-            <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-card p-3">
+            <label className="mt-4 flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-card p-3">
               <input
                 type="checkbox"
                 checked={data.alsoMatchInDms === true}

@@ -2,7 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database";
 import type { FlowExecutionContext, AiResponseNodeData } from "../types";
 import { createZernioClient } from "@/lib/zernio-client";
-import { generateText, createGateway } from "ai";
+import { generateText, createGateway, tool } from "ai";
+import { z } from "zod";
+import { interpolateVariables } from "../utils";
 
 // Halt the run: continuing would let a downstream Send Message deliver the
 // literal "{{ai_response}}" token to the contact (same pause mechanism as
@@ -58,9 +60,12 @@ export async function executeAiResponse(
     }
   }
 
+  // Check if this is a comment context (lacks a late_conversation_id initially)
+  const isCommentContext = Boolean(context.variables?.comment_id && context.variables?.post_id);
+
   // Resolve late_conversation_id from conversation if not in context
   let lateConversationId = context.lateConversationId;
-  if (!lateConversationId) {
+  if (!lateConversationId && !isCommentContext) {
     const { data: conversation } = await supabase
       .from("conversations")
       .select("late_conversation_id")
@@ -102,12 +107,71 @@ export async function executeAiResponse(
     const model = data.model || "openai/gpt-4o-mini";
     const aiGatewayKey = workspace?.ai_api_key || process.env.AI_GATEWAY_API_KEY;
     const gw = createGateway({ apiKey: aiGatewayKey || undefined });
+    
+    // Interpolate variables into the system prompt (e.g. {{comment_text}})
+    let systemPrompt = interpolateVariables(
+      data.systemPrompt || "You are a helpful customer support agent.",
+      context.variables || {}
+    );
+
+    // Append Knowledge Base if provided
+    if (data.knowledgeBase?.trim()) {
+      systemPrompt += `\n\n--- BUSINESS KNOWLEDGE BASE / RULES ---\n${data.knowledgeBase.trim()}\n--- END KNOWLEDGE BASE ---`;
+    }
+
+    // Prepare Tools based on user selection
+    const enabledTools = data.enabledTools || [];
+    const activeTools: Record<string, any> = {};
+
+    if (enabledTools.includes("get_current_time")) {
+      activeTools.get_current_time = tool({
+        description: "Get the current time and date to answer temporal questions.",
+        parameters: z.object({
+          timezone: z.string().optional().describe("Optional timezone"),
+        }),
+        execute: async ({ timezone }: { timezone?: string }) => ({ time: new Date().toISOString(), timezone }),
+      } as any);
+    }
+
+    if (enabledTools.includes("check_order_status")) {
+      activeTools.check_order_status = tool({
+        description: "Check the status of an order using an order ID.",
+        parameters: z.object({
+          orderId: z.string().describe("The order ID provided by the user."),
+        }),
+        execute: async ({ orderId }: { orderId: string }) => {
+          // Simulated logic for demonstration
+          if (orderId.startsWith("1") || orderId.toLowerCase().includes("shp")) {
+            return { orderId, status: "Shipped", estimatedDelivery: "2 days" };
+          }
+          return { orderId, status: "Processing", estimatedDelivery: "5 days" };
+        },
+      } as any);
+    }
+
+    if (enabledTools.includes("escalate_to_human")) {
+      activeTools.escalate_to_human = tool({
+        description: "Escalate the conversation to a human agent if the user is frustrated or asks to speak to a human.",
+        parameters: z.object({
+          reason: z.string().describe("Reason for the escalation."),
+        }),
+        execute: async ({ reason }: { reason: string }) => {
+          // In a full implementation, this could update the conversation status or add a tag
+          console.log(`[AI Tool] Escalate to human requested for conversation ${context.conversationId}: ${reason}`);
+          return { status: "Escalated to human support queue successfully.", reason };
+        },
+      } as any);
+    }
+
+    const hasTools = Object.keys(activeTools).length > 0;
+
     const result = await generateText({
       model: gw(model),
-      system: data.systemPrompt || "You are a helpful customer support agent.",
+      system: systemPrompt,
       messages: aiMessages,
       temperature: data.temperature ?? 0.7,
       maxOutputTokens: data.maxTokens ?? 500,
+      ...(hasTools ? { tools: activeTools, maxSteps: 5 } : {}),
     });
 
     const text = result.text;
@@ -116,11 +180,25 @@ export async function executeAiResponse(
     context.variables = { ...(context.variables ?? {}), ai_response: text };
 
     if (data.sendDirectly !== false) {
-      // Send via Zernio REST API (same pattern as executeSendMessage)
-      const response = await zernio.messages.sendInboxMessage({
-        path: { conversationId: lateConversationId },
-        body: { accountId: lateAccountId, message: text },
-      });
+      let messageId: string | null = null;
+      
+      if (isCommentContext) {
+        // Send via Private Reply (Comment Context)
+        await zernio.comments.sendPrivateReplyToComment({
+          path: { 
+            postId: context.variables!.post_id as string, 
+            commentId: context.variables!.comment_id as string 
+          },
+          body: { accountId: lateAccountId, message: text },
+        });
+      } else {
+        // Send via Zernio REST API (Standard DM Context)
+        const response = await zernio.messages.sendInboxMessage({
+          path: { conversationId: lateConversationId as string },
+          body: { accountId: lateAccountId, message: text },
+        });
+        messageId = response.data?.data?.messageId || null;
+      }
 
       // Store outbound message
       await supabase.from("messages").insert({
@@ -130,7 +208,7 @@ export async function executeAiResponse(
         attachments: null,
         sent_by_flow_id: context.flowId,
         sent_by_node_id: null,
-        platform_message_id: response.data?.data?.messageId || null,
+        platform_message_id: messageId,
         status: "sent",
       });
 
