@@ -395,6 +395,7 @@ async function processMessageEvent(
   if (!isOutbound && !isAutomationPaused) {
     const incomingMessage = {
       text: msg.text || undefined,
+      attachments: msg.attachments && msg.attachments.length > 0 ? (msg.attachments as any) : undefined,
       postbackPayload: metadata?.postbackPayload || undefined,
       quickReplyPayload: metadata?.quickReplyPayload || undefined,
       callbackData: metadata?.callbackData || undefined,

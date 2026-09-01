@@ -169,6 +169,7 @@ export interface FlowExecutionContext {
   lateAccountId?: string;
   incomingMessage: {
     text?: string;
+    attachments?: Array<{ type?: string; url?: string; payload?: any }>;
     postbackPayload?: string;
     quickReplyPayload?: string;
     callbackData?: string;

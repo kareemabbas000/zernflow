@@ -7,6 +7,8 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { z } from "zod";
 import { interpolateVariables } from "../utils";
 
+import { transcribeAudio } from "@/lib/audio-transcriber";
+
 // Halt the run: continuing would let a downstream Send Message deliver the
 // literal "{{ai_response}}" token to the contact (same pause mechanism as
 // humanTakeover, but the session is cancelled rather than completed).
@@ -80,11 +82,51 @@ export async function executeAiResponse(
     lateConversationId = conversation.late_conversation_id;
   }
 
+  // ── Multi-Platform Audio / Voice Note Transcription ────────────────────────
+  let incomingUserText = context.incomingMessage.text || "";
+
+  // Check if incoming message contains a voice note / audio attachment
+  const audioAttachment = context.incomingMessage.attachments?.find((att: any) => {
+    if (!att) return false;
+    const type = (att.type || "").toLowerCase();
+    const url = (att.url || att.payload?.url || "").toLowerCase();
+    return (
+      type.includes("audio") ||
+      type.includes("voice") ||
+      url.includes(".ogg") ||
+      url.includes(".m4a") ||
+      url.includes(".mp3") ||
+      url.includes(".aac") ||
+      url.includes(".wav") ||
+      url.includes("ig_messaging_cdn")
+    );
+  });
+
+  if (audioAttachment) {
+    const audioUrl = audioAttachment.url || audioAttachment.payload?.url;
+    if (audioUrl) {
+      const transcription = await transcribeAudio({
+        audioUrl,
+        apiKey: workspace?.ai_api_key || process.env.OPENAI_API_KEY,
+      });
+
+      if (transcription?.text) {
+        incomingUserText = transcription.text;
+        context.incomingMessage.text = transcription.text;
+        context.variables = {
+          ...(context.variables ?? {}),
+          transcribed_audio: transcription.text,
+          voice_text: transcription.text,
+        };
+      }
+    }
+  }
+
   // Fetch last N messages from the conversation for context
   const contextMessages = data.contextMessages || 10;
   const { data: recentMessages } = await supabase
     .from("messages")
-    .select("direction, text")
+    .select("direction, text, attachments")
     .eq("conversation_id", context.conversationId)
     .order("created_at", { ascending: false })
     .limit(contextMessages);
@@ -96,23 +138,22 @@ export async function executeAiResponse(
     // Reverse to get chronological order (oldest first)
     const chronological = [...recentMessages].reverse();
     for (const msg of chronological) {
-      if (!msg.text) continue;
-      aiMessages.push({
-        role: msg.direction === "inbound" ? "user" : "assistant",
-        content: msg.text,
-      });
+      if (msg.text) {
+        aiMessages.push({
+          role: msg.direction === "inbound" ? "user" : "assistant",
+          content: msg.text,
+        });
+      }
     }
   }
 
-  // Ensure the current incoming message (or comment) is always included
-  // as the latest user message, since inbound messages might not be in the DB yet.
-  if (context.incomingMessage.text) {
-    // Prevent duplication if somehow it was already the last message in DB
+  // Ensure the current incoming message (or transcribed voice note) is included
+  if (incomingUserText) {
     const lastMsg = aiMessages[aiMessages.length - 1];
-    if (!lastMsg || lastMsg.role !== "user" || lastMsg.content !== context.incomingMessage.text) {
+    if (!lastMsg || lastMsg.role !== "user" || lastMsg.content !== incomingUserText) {
       aiMessages.push({
         role: "user",
-        content: context.incomingMessage.text,
+        content: incomingUserText,
       });
     }
   }
