@@ -827,36 +827,40 @@ export function MessageThread({
   return (
     <div className="flex h-full flex-col bg-background relative">
       {/* Header */}
-      <div className="flex h-14 items-center justify-between border-b border-border px-4 bg-background/90 backdrop-blur-md shrink-0 z-10">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="flex h-13 sm:h-14 items-center justify-between border-b border-border px-3 sm:px-4 bg-background/90 backdrop-blur-md shrink-0 z-10 gap-2">
+        {/* Left: Contact Info */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <Avatar
             src={conversation.contacts?.avatar_url}
             name={contactName}
             platform={conversation.platform as Platform}
             size="sm"
           />
-          <div className="min-w-0 flex flex-col">
-            <p className="text-sm font-bold text-foreground truncate">
+          <div className="min-w-0 flex flex-col justify-center">
+            <p className="text-xs sm:text-sm font-bold text-foreground truncate max-w-[120px] sm:max-w-[200px] md:max-w-[280px]">
               {contactName}
             </p>
-            <span className="text-[10px] text-muted-foreground capitalize flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              <span>{conversation.platform} • {conversation.status}</span>
+            <div className="text-[10px] sm:text-[11px] text-muted-foreground capitalize flex items-center gap-1.5 truncate">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+              <span>{conversation.platform}</span>
+              <span className="text-muted-foreground/40">•</span>
+              <span className="text-muted-foreground/80">{conversation.status}</span>
               {conversation.is_muted && (
-                <span className="flex items-center gap-0.5 text-amber-500 bg-amber-500/10 px-1.5 py-0.2 rounded font-semibold text-[9px]">
-                  <BellOff className="h-2.5 w-2.5" /> Muted
+                <span title="Conversation Muted" className="inline-flex items-center text-amber-500 ml-0.5">
+                  <BellOff className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 </span>
               )}
               {conversation.is_automation_paused && (
-                <span className="flex items-center gap-0.5 text-rose-500 bg-rose-500/10 px-1.5 py-0.2 rounded font-semibold text-[9px]">
-                  <BotOff className="h-2.5 w-2.5" /> AI Paused
+                <span title="AI Automation Paused" className="inline-flex items-center text-rose-500 ml-0.5">
+                  <BotOff className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 </span>
               )}
-            </span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right: Actions Toolbar */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* CRM Lead Stage Custom Popover */}
           <div className="relative">
             <button
@@ -868,7 +872,7 @@ export function MessageThread({
               }}
               disabled={updatingStage}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer shadow-2xs",
+                "flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer shadow-2xs",
                 LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.badgeClass ||
                   "bg-muted/60 text-muted-foreground border-border"
               )}
@@ -876,7 +880,7 @@ export function MessageThread({
             >
               <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.dot)} />
               <span className="capitalize">{LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.label || "Lead"}</span>
-              <ChevronDown className="h-3 w-3 opacity-60" />
+              <ChevronDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 opacity-60" />
             </button>
 
             {stageMenuOpen && (
@@ -934,7 +938,7 @@ export function MessageThread({
                     }}
                     disabled={assigning}
                     className={cn(
-                      "hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer shadow-2xs",
+                      "flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer shadow-2xs",
                       assignedMember
                         ? isAssignedToMe
                           ? "bg-primary/10 text-primary border-primary/30"
@@ -944,16 +948,16 @@ export function MessageThread({
                     title="Assigned team member"
                   >
                     {assignedMember ? (
-                      <div className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground shrink-0">
+                      <div className="flex h-3.5 w-3.5 sm:h-4 sm:w-4 items-center justify-center rounded-full bg-primary text-[8px] sm:text-[9px] font-bold text-primary-foreground shrink-0">
                         {assignedMember.name.slice(0, 1).toUpperCase()}
                       </div>
                     ) : (
-                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      <User className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
                     )}
-                    <span className="max-w-[80px] truncate">
+                    <span className="max-w-[65px] sm:max-w-[85px] truncate">
                       {assignedMember ? (isAssignedToMe ? "Me" : assignedMember.name) : "Unassigned"}
                     </span>
-                    <ChevronDown className="h-3 w-3 opacity-60" />
+                    <ChevronDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 opacity-60" />
                   </button>
 
                   {assigneeMenuOpen && (
@@ -969,7 +973,7 @@ export function MessageThread({
                           <button
                             type="button"
                             onClick={() => updateAssignee(currentUserId)}
-                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-primary hover:bg-primary/10 transition-colors font-semibold"
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-primary hover:bg-primary/10 transition-colors font-semibold cursor-pointer"
                           >
                             <UserCheck className="h-3.5 w-3.5" />
                             <span>Assign to Me</span>
@@ -980,7 +984,7 @@ export function MessageThread({
                           type="button"
                           onClick={() => updateAssignee(null)}
                           className={cn(
-                            "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left transition-colors",
+                            "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left transition-colors cursor-pointer",
                             !conversation.assigned_to
                               ? "bg-muted font-bold text-foreground"
                               : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -1037,19 +1041,19 @@ export function MessageThread({
             <button
               onClick={() => updateConversationStatus("closed")}
               title="Close chat"
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground transition-all shadow-2xs"
+              className="flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground transition-all shadow-2xs cursor-pointer"
             >
-              <CheckCircle className="h-3.5 w-3.5" />
-              <span>Close</span>
+              <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden md:inline">Close</span>
             </button>
           ) : (
             <button
               onClick={() => updateConversationStatus("open")}
               title="Reopen chat"
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-all shadow-2xs"
+              className="flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-all shadow-2xs cursor-pointer"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span>Reopen</span>
+              <RotateCcw className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden md:inline">Reopen</span>
             </button>
           )}
 
