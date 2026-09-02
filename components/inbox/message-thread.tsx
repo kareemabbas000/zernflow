@@ -31,6 +31,10 @@ import {
   Reply,
   BellOff,
   BotOff,
+  ChevronDown,
+  UserCheck,
+  UserPlus,
+  Shield,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadAttachment } from "@/lib/storage";
@@ -312,7 +316,18 @@ export function MessageThread({
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [assigning, setAssigning] = useState(false);
   const [updatingStage, setUpdatingStage] = useState(false);
-  const [members, setMembers] = useState<{user_id: string, users: {full_name: string | null}}[]>([]);
+  const [members, setMembers] = useState<{
+    userId: string;
+    name: string;
+    email: string;
+    role: string;
+    avatarUrl: string | null;
+  }[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Dropdown States
+  const [stageMenuOpen, setStageMenuOpen] = useState(false);
+  const [assigneeMenuOpen, setAssigneeMenuOpen] = useState(false);
   
   const [attachments, setAttachments] = useState<{url: string, type: string, name: string, path?: string, isVoiceNote?: boolean}[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
@@ -353,20 +368,28 @@ export function MessageThread({
     initFFmpeg();
   }, []);
 
-  // Fetch team members for assignment
+  // Fetch team members & current user for assignment
   useEffect(() => {
     if (!conversation?.workspace_id) return;
     async function loadMembers() {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("workspace_members")
-        .select("user_id, users:user_id(full_name)")
-        .eq("workspace_id", conversation!.workspace_id);
-      if (data) {
-        setMembers(data as any);
+      try {
+        const res = await fetch(`/api/v1/workspaces/${conversation!.workspace_id}/members`);
+        if (res.ok) {
+          const data = await res.json();
+          setMembers(data.members || []);
+        }
+      } catch (err) {
+        console.warn("Failed to load workspace members:", err);
       }
     }
     loadMembers();
+
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setCurrentUserId(data.user.id);
+      }
+    });
   }, [conversation?.workspace_id]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -573,21 +596,61 @@ export function MessageThread({
     async (userId: string | null) => {
       if (!conversation || assigning) return;
       setAssigning(true);
+      setAssigneeMenuOpen(false);
+
+      // Optimistic update in inbox store
+      upsertConversation({
+        ...conversation,
+        assigned_to: userId || null,
+      });
+
       try {
-        const res = await fetch(`/api/v1/conversations/${conversation.id}`, {
+        const res = await fetch(`/api/v1/conversations/${conversation.id}/assign`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ assigned_to: userId || null }),
+          body: JSON.stringify({ assignedTo: userId || null }),
         });
         if (!res.ok) throw new Error("Failed to assign");
-      } catch {
-        alert("Failed to assign conversation");
+      } catch (err) {
+        console.error("Failed to assign conversation:", err);
       } finally {
         setAssigning(false);
       }
     },
-    [conversation, assigning]
+    [conversation, assigning, upsertConversation]
   );
+
+  const toggleMute = useCallback(async () => {
+    if (!conversation) return;
+    const nextMuted = !conversation.is_muted;
+    upsertConversation({ ...conversation, is_muted: nextMuted });
+    setMenuOpen(false);
+    try {
+      await fetch(`/api/v1/conversations/${conversation.id}/mute`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_muted: nextMuted }),
+      });
+    } catch (err) {
+      console.error("Failed to toggle mute:", err);
+    }
+  }, [conversation, upsertConversation]);
+
+  const toggleAutomation = useCallback(async () => {
+    if (!conversation) return;
+    const nextPaused = !conversation.is_automation_paused;
+    upsertConversation({ ...conversation, is_automation_paused: nextPaused });
+    setMenuOpen(false);
+    try {
+      await fetch(`/api/v1/conversations/${conversation.id}/automation`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_automation_paused: nextPaused }),
+      });
+    } catch (err) {
+      console.error("Failed to toggle automation:", err);
+    }
+  }, [conversation, upsertConversation]);
 
   const updateLeadStage = useCallback(
     async (stage: string) => {
@@ -794,44 +857,187 @@ export function MessageThread({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* CRM Lead Stage Selector */}
-          <select
-            value={conversation.contacts?.lead_stage || "lead"}
-            onChange={(e) => updateLeadStage(e.target.value)}
-            disabled={updatingStage}
-            className={cn(
-              "h-7 rounded-md border px-2 text-xs font-semibold outline-none transition-all cursor-pointer",
-              LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.badgeClass ||
-                "bg-background/50 text-muted-foreground border-input"
-            )}
-            title="CRM Lead Stage"
-          >
-            {LEAD_STAGE_OPTIONS.map((opt) => (
-              <option key={opt.id} value={opt.id} className="bg-card text-foreground font-normal">
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          {/* CRM Lead Stage Custom Popover */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setStageMenuOpen(!stageMenuOpen);
+                setAssigneeMenuOpen(false);
+                setMenuOpen(false);
+              }}
+              disabled={updatingStage}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer shadow-2xs",
+                LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.badgeClass ||
+                  "bg-muted/60 text-muted-foreground border-border"
+              )}
+              title="CRM Lead Stage"
+            >
+              <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.dot)} />
+              <span className="capitalize">{LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.label || "Lead"}</span>
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
 
-          {/* Assignee select */}
-          <select
-            value={conversation.assigned_to || ""}
-            onChange={(e) => updateAssignee(e.target.value)}
-            disabled={assigning}
-            className="hidden sm:block h-7 w-28 rounded-md border border-input bg-background/50 px-2 text-xs text-muted-foreground outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-          >
-            <option value="">Unassigned</option>
-            {members.map(m => (
-              <option key={m.user_id} value={m.user_id}>{m.users.full_name}</option>
-            ))}
-          </select>
+            {stageMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setStageMenuOpen(false)} />
+                <div className="absolute right-0 mt-1.5 w-44 rounded-xl border border-border bg-card p-1.5 shadow-xl z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
+                  <p className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    CRM Lead Stage
+                  </p>
+                  <div className="space-y-0.5">
+                    {LEAD_STAGE_OPTIONS.map((opt) => {
+                      const isCurrent = (conversation.contacts?.lead_stage || "lead") === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            updateLeadStage(opt.id);
+                            setStageMenuOpen(false);
+                          }}
+                          className={cn(
+                            "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors cursor-pointer",
+                            isCurrent
+                              ? "bg-primary/10 text-primary font-bold"
+                              : "text-foreground hover:bg-muted font-medium"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className={cn("h-2 w-2 rounded-full", opt.dot)} />
+                            <span>{opt.label}</span>
+                          </div>
+                          {isCurrent && <Check className="h-3.5 w-3.5 text-primary" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Team Assignee Custom Popover */}
+          <div className="relative">
+            {(() => {
+              const assignedMember = members.find((m) => m.userId === conversation.assigned_to);
+              const isAssignedToMe = currentUserId && conversation.assigned_to === currentUserId;
+              return (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssigneeMenuOpen(!assigneeMenuOpen);
+                      setStageMenuOpen(false);
+                      setMenuOpen(false);
+                    }}
+                    disabled={assigning}
+                    className={cn(
+                      "hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer shadow-2xs",
+                      assignedMember
+                        ? isAssignedToMe
+                          ? "bg-primary/10 text-primary border-primary/30"
+                          : "bg-muted text-foreground border-border"
+                        : "bg-background/80 text-muted-foreground border-border hover:bg-muted"
+                    )}
+                    title="Assigned team member"
+                  >
+                    {assignedMember ? (
+                      <div className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground shrink-0">
+                        {assignedMember.name.slice(0, 1).toUpperCase()}
+                      </div>
+                    ) : (
+                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                    <span className="max-w-[80px] truncate">
+                      {assignedMember ? (isAssignedToMe ? "Me" : assignedMember.name) : "Unassigned"}
+                    </span>
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </button>
+
+                  {assigneeMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setAssigneeMenuOpen(false)} />
+                      <div className="absolute right-0 mt-1.5 w-52 rounded-xl border border-border bg-card p-1.5 shadow-xl z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
+                        <p className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                          Assign Conversation
+                        </p>
+
+                        {/* Quick Assign to Me */}
+                        {currentUserId && (
+                          <button
+                            type="button"
+                            onClick={() => updateAssignee(currentUserId)}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-primary hover:bg-primary/10 transition-colors font-semibold"
+                          >
+                            <UserCheck className="h-3.5 w-3.5" />
+                            <span>Assign to Me</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => updateAssignee(null)}
+                          className={cn(
+                            "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left transition-colors",
+                            !conversation.assigned_to
+                              ? "bg-muted font-bold text-foreground"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          )}
+                        >
+                          <span>Unassigned</span>
+                          {!conversation.assigned_to && <Check className="h-3.5 w-3.5" />}
+                        </button>
+
+                        {members.length > 0 && (
+                          <>
+                            <div className="my-1 border-t border-border/50" />
+                            <div className="max-h-48 overflow-y-auto space-y-0.5">
+                              {members.map((m) => {
+                                const isSelected = conversation.assigned_to === m.userId;
+                                return (
+                                  <button
+                                    key={m.userId}
+                                    type="button"
+                                    onClick={() => updateAssignee(m.userId)}
+                                    className={cn(
+                                      "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left transition-colors cursor-pointer",
+                                      isSelected
+                                        ? "bg-primary/10 text-primary font-bold"
+                                        : "text-foreground hover:bg-muted"
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary shrink-0">
+                                        {m.name.slice(0, 1).toUpperCase()}
+                                      </div>
+                                      <div className="min-w-0 flex flex-col">
+                                        <span className="truncate text-xs">{m.name}</span>
+                                        <span className="text-[9px] text-muted-foreground capitalize">{m.role}</span>
+                                      </div>
+                                    </div>
+                                    {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </>
+              );
+            })()}
+          </div>
 
           {/* Status quick toggle */}
           {conversation.status === "open" ? (
             <button
               onClick={() => updateConversationStatus("closed")}
               title="Close chat"
-              className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground transition-all shadow-2xs"
             >
               <CheckCircle className="h-3.5 w-3.5" />
               <span>Close</span>
@@ -840,7 +1046,7 @@ export function MessageThread({
             <button
               onClick={() => updateConversationStatus("open")}
               title="Reopen chat"
-              className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-all"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-all shadow-2xs"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               <span>Reopen</span>
@@ -879,6 +1085,42 @@ export function MessageThread({
                   </button>
 
                   <button
+                    onClick={toggleMute}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors cursor-pointer"
+                  >
+                    {conversation.is_muted ? (
+                      <>
+                        <BellOff className="h-3.5 w-3.5 text-primary" />
+                        <span>Unmute Notifications</span>
+                      </>
+                    ) : (
+                      <>
+                        <BellOff className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>Mute Notifications</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={toggleAutomation}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors cursor-pointer"
+                  >
+                    {conversation.is_automation_paused ? (
+                      <>
+                        <Bot className="h-3.5 w-3.5 text-emerald-500" />
+                        <span>Resume AI Bot</span>
+                      </>
+                    ) : (
+                      <>
+                        <BotOff className="h-3.5 w-3.5 text-rose-500" />
+                        <span>Pause AI Bot</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="my-1 border-t border-border/60" />
+
+                  <button
                     onClick={() => updateConversationStatus("snoozed")}
                     className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors"
                   >
@@ -901,7 +1143,7 @@ export function MessageThread({
                       setMenuOpen(false);
                       setDeleteConfirmOpen(true);
                     }}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-rose-600 hover:bg-rose-500/10 transition-colors"
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     <span>Delete Chat</span>

@@ -18,66 +18,70 @@ export async function GET(request: NextRequest) {
 
     const cookieStore = await cookies();
     const searchParams = request.nextUrl.searchParams;
-    let workspaceId = searchParams.get("workspaceId") || cookieStore.get(WORKSPACE_COOKIE)?.value;
-
-    if (!workspaceId) {
-      const { data: firstWs } = await supabase
-        .from("workspace_members")
-        .select("workspace_id")
-        .eq("user_id", user.id)
-        .limit(1)
-        .maybeSingle();
-      workspaceId = firstWs?.workspace_id;
-    }
-
-    if (!workspaceId) {
-      return NextResponse.json({ error: "No workspace selected" }, { status: 400 });
-    }
-
-    // Verify membership
-    const { data: membership } = await supabase
-      .from("workspace_members")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("workspace_id", workspaceId)
-      .maybeSingle();
-
-    if (!membership) {
-      return NextResponse.json({ error: "Unauthorized for this workspace" }, { status: 403 });
-    }
-
     const channelId = searchParams.get("channelId");
     const platformFilter = searchParams.get("platform");
 
-    // Fetch active channels for this workspace
-    let channelQuery = supabase
-      .from("channels")
-      .select("id, platform, zernio_account_id, late_account_id, display_name, is_active")
-      .eq("workspace_id", workspaceId);
+    // Get all workspaces the user has access to
+    const { data: userMemberships } = await supabase
+      .from("workspace_members")
+      .select("workspace_id, role")
+      .eq("user_id", user.id);
 
+    const userWsIds = (userMemberships || []).map((m) => m.workspace_id);
+
+    let workspaceId = searchParams.get("workspaceId") || cookieStore.get(WORKSPACE_COOKIE)?.value || userWsIds[0];
+
+    // Resolve channel(s)
+    let channels: any[] = [];
     if (channelId && channelId !== "all") {
-      channelQuery = channelQuery.eq("id", channelId);
-    } else if (platformFilter && platformFilter !== "all") {
-      channelQuery = channelQuery.eq("platform", platformFilter);
+      const { data: singleCh } = await supabase
+        .from("channels")
+        .select("id, platform, zernio_account_id, late_account_id, display_name, is_active, workspace_id")
+        .eq("id", channelId)
+        .maybeSingle();
+
+      if (singleCh) {
+        channels = [singleCh];
+        if (singleCh.workspace_id) {
+          workspaceId = singleCh.workspace_id;
+        }
+      }
     }
 
-    const { data: channels } = await channelQuery;
+    if (channels.length === 0) {
+      let channelQuery = supabase
+        .from("channels")
+        .select("id, platform, zernio_account_id, late_account_id, display_name, is_active, workspace_id");
+
+      if (workspaceId) {
+        channelQuery = channelQuery.eq("workspace_id", workspaceId);
+      } else if (userWsIds.length > 0) {
+        channelQuery = channelQuery.in("workspace_id", userWsIds);
+      }
+
+      if (platformFilter && platformFilter !== "all") {
+        channelQuery = channelQuery.eq("platform", platformFilter);
+      }
+
+      const { data: listCh } = await channelQuery;
+      channels = listCh || [];
+    }
 
     // Resilient Zernio Client & Profile setup
     let zernio: any;
     let profileId: string | null = null;
-    try {
-      const prof = await ensureWorkspaceZernioProfile(supabase, workspaceId);
-      zernio = prof.zernio;
-      profileId = prof.profileId;
-    } catch (profErr) {
-      logger.warn("[posts/route] ensureWorkspaceZernioProfile fallback to direct key:", { error: String(profErr) });
-      const { data: ws } = await supabase
-        .from("workspaces")
-        .select("late_api_key_encrypted")
-        .eq("id", workspaceId)
-        .maybeSingle();
-      zernio = createZernioClient(ws?.late_api_key_encrypted || process.env.ZERNIO_API_KEY);
+    if (workspaceId) {
+      try {
+        const prof = await ensureWorkspaceZernioProfile(supabase, workspaceId);
+        zernio = prof.zernio;
+        profileId = prof.profileId;
+      } catch (profErr) {
+        logger.warn("[posts/route] ensureWorkspaceZernioProfile fallback to direct key:", { error: String(profErr) });
+      }
+    }
+
+    if (!zernio) {
+      zernio = createZernioClient(process.env.ZERNIO_API_KEY);
     }
 
     const postMap = new Map<string, any>();
