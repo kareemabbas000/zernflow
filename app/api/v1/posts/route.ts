@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { ensureWorkspaceZernioProfile } from "@/lib/zernio-client";
+import { createZernioClient, ensureWorkspaceZernioProfile } from "@/lib/zernio-client";
 import { WORKSPACE_COOKIE } from "@/lib/workspace";
 import { logger } from "@/lib/logger";
 
@@ -17,7 +17,18 @@ export async function GET(request: NextRequest) {
     }
 
     const cookieStore = await cookies();
-    const workspaceId = cookieStore.get(WORKSPACE_COOKIE)?.value;
+    const searchParams = request.nextUrl.searchParams;
+    let workspaceId = searchParams.get("workspaceId") || cookieStore.get(WORKSPACE_COOKIE)?.value;
+
+    if (!workspaceId) {
+      const { data: firstWs } = await supabase
+        .from("workspace_members")
+        .select("workspace_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+      workspaceId = firstWs?.workspace_id;
+    }
 
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace selected" }, { status: 400 });
@@ -35,7 +46,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized for this workspace" }, { status: 403 });
     }
 
-    const searchParams = request.nextUrl.searchParams;
     const channelId = searchParams.get("channelId");
     const platformFilter = searchParams.get("platform");
 
@@ -53,8 +63,22 @@ export async function GET(request: NextRequest) {
 
     const { data: channels } = await channelQuery;
 
-    // Ensure we have a valid Zernio profile for this workspace
-    const { profileId, zernio } = await ensureWorkspaceZernioProfile(supabase, workspaceId);
+    // Resilient Zernio Client & Profile setup
+    let zernio: any;
+    let profileId: string | null = null;
+    try {
+      const prof = await ensureWorkspaceZernioProfile(supabase, workspaceId);
+      zernio = prof.zernio;
+      profileId = prof.profileId;
+    } catch (profErr) {
+      logger.warn("[posts/route] ensureWorkspaceZernioProfile fallback to direct key:", { error: String(profErr) });
+      const { data: ws } = await supabase
+        .from("workspaces")
+        .select("late_api_key_encrypted")
+        .eq("id", workspaceId)
+        .maybeSingle();
+      zernio = createZernioClient(ws?.late_api_key_encrypted || process.env.ZERNIO_API_KEY);
+    }
 
     const postMap = new Map<string, any>();
 

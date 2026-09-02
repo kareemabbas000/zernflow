@@ -71,10 +71,10 @@ export function PostSelectorModal({
       }
 
       const res = await fetch(url.toString());
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error("Failed to fetch posts from Meta");
+        throw new Error(data.error || data.message || "Failed to fetch posts from Meta");
       }
-      const data = await res.json();
       setPosts(data.posts || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred fetching posts");

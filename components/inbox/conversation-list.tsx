@@ -14,7 +14,10 @@ import {
   ChevronDown,
   Sparkles,
   MoreVertical,
+  BellOff,
+  BotOff,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useInboxStore,
   selectConversations,
@@ -90,6 +93,23 @@ export function ConversationList({
   useEffect(() => setMounted(true), []);
 
   // ── Right-Click Context Menu State ─────────────────────────────
+  const queryClient = useQueryClient();
+
+  const prefetchMessages = useCallback(
+    (conversationId: string) => {
+      queryClient.prefetchQuery({
+        queryKey: ["messages", conversationId],
+        queryFn: async () => {
+          const res = await fetch(`/api/v1/messages?conversationId=${conversationId}`);
+          if (!res.ok) throw new Error("Failed to fetch messages");
+          return res.json();
+        },
+        staleTime: 1000 * 30,
+      });
+    },
+    [queryClient]
+  );
+
   const [contextMenuState, setContextMenuState] = useState<{
     x: number;
     y: number;
@@ -358,6 +378,7 @@ export function ConversationList({
                 <div
                   key={conversation.id}
                   onClick={() => onSelect(conversation)}
+                  onMouseEnter={() => prefetchMessages(conversation.id)}
                   onContextMenu={(e) => handleContextMenu(e, conversation)}
                   onTouchStart={(e) => handleTouchStart(e, conversation)}
                   onTouchEnd={handleTouchEnd}
@@ -419,6 +440,16 @@ export function ConversationList({
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">
+                        {conversation.is_muted && (
+                          <span title="Muted">
+                            <BellOff className="h-3 w-3 text-amber-500 shrink-0" />
+                          </span>
+                        )}
+                        {conversation.is_automation_paused && (
+                          <span title="AI Bot Paused">
+                            <BotOff className="h-3 w-3 text-rose-500 shrink-0" />
+                          </span>
+                        )}
                         <span
                           suppressHydrationWarning
                           className={cn(

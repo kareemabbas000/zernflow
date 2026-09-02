@@ -196,31 +196,92 @@ export function ConversationContextMenu({
   const menuItemsContent = (
     <div onClick={(e) => e.stopPropagation()} className="w-full">
       {/* Header with Contact Name */}
-      <div className="px-3.5 py-2.5 border-b border-border/60 text-xs font-bold text-foreground truncate flex items-center justify-between bg-muted/20">
-        <span className="truncate">{contactName}</span>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
+      <div className="px-3 py-2 border-b border-border/60 text-xs font-bold text-foreground truncate flex items-center justify-between bg-muted/30">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="truncate">{contactName}</span>
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-mono bg-background/80 border border-border/60 px-1 py-0.2 rounded">
             {conversation.platform}
           </span>
-          {isMobile && (
-            <button
-              onClick={onClose}
-              className="p-1 text-muted-foreground hover:text-foreground rounded-lg"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
         </div>
+        {isMobile && (
+          <button
+            onClick={onClose}
+            className="p-1 text-muted-foreground hover:text-foreground rounded-lg"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
 
-      {/* CRM Lead Stage Quick Selector */}
-      <div className="px-3 py-2 border-b border-border/50 bg-muted/10">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center justify-between">
-          <span>CRM Lead Stage</span>
+      {/* Quick Action Icon Toolbar (4 Primary Toggles in One Sleek Row) */}
+      <div className="grid grid-cols-4 gap-1 p-1.5 border-b border-border/50 bg-muted/10">
+        {/* Toggle Read */}
+        <button
+          type="button"
+          onClick={handleToggleRead}
+          title={isUnread ? "Mark as Read" : "Mark as Unread"}
+          className="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+        >
+          {isUnread ? (
+            <CheckCheck className="h-4 w-4 text-blue-500" />
+          ) : (
+            <Mail className="h-4 w-4 text-rose-500" />
+          )}
+          <span className="text-[9px] mt-0.5 font-medium">{isUnread ? "Read" : "Unread"}</span>
+        </button>
+
+        {/* Toggle Status (Close / Reopen) */}
+        <button
+          type="button"
+          onClick={(e) => handleUpdateStatus(e, conversation.status === "open" ? "closed" : "open")}
+          title={conversation.status === "open" ? "Close Chat" : "Reopen Chat"}
+          className="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+        >
+          {conversation.status === "open" ? (
+            <CheckCircle className="h-4 w-4 text-emerald-500" />
+          ) : (
+            <RotateCcw className="h-4 w-4 text-primary" />
+          )}
+          <span className="text-[9px] mt-0.5 font-medium">{conversation.status === "open" ? "Close" : "Reopen"}</span>
+        </button>
+
+        {/* Toggle Mute */}
+        <button
+          type="button"
+          onClick={handleToggleMute}
+          title={isMuted ? "Unmute Notifications" : "Mute Notifications"}
+          className={cn(
+            "flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted transition-all cursor-pointer",
+            isMuted ? "text-amber-500 bg-amber-500/10 font-bold" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {isMuted ? <BellOff className="h-4 w-4 text-amber-500" /> : <Bell className="h-4 w-4" />}
+          <span className="text-[9px] mt-0.5 font-medium">{isMuted ? "Unmute" : "Mute"}</span>
+        </button>
+
+        {/* Toggle AI Automation */}
+        <button
+          type="button"
+          onClick={handleToggleAutomation}
+          title={isAutomationPaused ? "Resume AI Bot" : "Pause AI Bot"}
+          className={cn(
+            "flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-muted transition-all cursor-pointer",
+            isAutomationPaused ? "text-rose-500 bg-rose-500/10 font-bold" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {isAutomationPaused ? <BotOff className="h-4 w-4 text-rose-500" /> : <Bot className="h-4 w-4 text-emerald-500" />}
+          <span className="text-[9px] mt-0.5 font-medium">{isAutomationPaused ? "Resume" : "Pause AI"}</span>
+        </button>
+      </div>
+
+      {/* CRM Lead Stage Quick Grid */}
+      <div className="px-2.5 py-1.5 border-b border-border/50 bg-muted/5">
+        <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+          <span>Lead Stage</span>
           <span className="capitalize font-semibold text-primary">
             {conversation.contacts?.lead_stage || "lead"}
           </span>
-        </p>
+        </div>
         <div className="grid grid-cols-3 gap-1">
           {LEAD_STAGE_OPTIONS.map((opt) => {
             const isCurrent = (conversation.contacts?.lead_stage || "lead") === opt.id;
@@ -230,10 +291,10 @@ export function ConversationContextMenu({
                 type="button"
                 onClick={(e) => handleSetLeadStage(e, opt.id)}
                 className={cn(
-                  "flex items-center justify-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-semibold border transition-all cursor-pointer",
+                  "flex items-center justify-center gap-1 px-1 py-1 rounded-md text-[9px] font-semibold border transition-all cursor-pointer",
                   isCurrent
                     ? "bg-primary/15 text-primary border-primary/40 shadow-2xs font-bold"
-                    : "bg-background/60 text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground"
+                    : "bg-background/60 text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground"
                 )}
               >
                 <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", opt.dot)} />
@@ -244,114 +305,33 @@ export function ConversationContextMenu({
         </div>
       </div>
 
-      <div className="p-1.5 space-y-0.5">
-        {/* Mark as Read / Unread */}
-        <button
-          onClick={handleToggleRead}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-foreground hover:bg-muted active:bg-muted transition-colors text-xs font-medium cursor-pointer"
-        >
-          {isUnread ? (
-            <>
-              <CheckCheck className="h-4 w-4 text-blue-500 shrink-0" />
-              <span>Mark as Read</span>
-            </>
-          ) : (
-            <>
-              <Mail className="h-4 w-4 text-rose-500 shrink-0" />
-              <span>Mark as Unread</span>
-            </>
-          )}
-        </button>
-
-        {/* Status Actions */}
-        {conversation.status === "open" ? (
-          <button
-            onClick={(e) => handleUpdateStatus(e, "closed")}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-foreground hover:bg-muted active:bg-muted transition-colors text-xs font-medium cursor-pointer"
-          >
-            <CheckCircle className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span>Mark as Closed</span>
-          </button>
-        ) : (
-          <button
-            onClick={(e) => handleUpdateStatus(e, "open")}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-primary hover:bg-muted active:bg-muted transition-colors text-xs font-medium cursor-pointer"
-          >
-            <RotateCcw className="h-4 w-4 shrink-0" />
-            <span>Reopen Chat</span>
-          </button>
-        )}
-
+      {/* Secondary Actions */}
+      <div className="p-1 space-y-0.5 text-xs">
         <button
           onClick={(e) => handleUpdateStatus(e, "snoozed")}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-foreground hover:bg-muted active:bg-muted transition-colors text-xs font-medium cursor-pointer"
+          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-muted active:bg-muted transition-colors font-medium cursor-pointer"
         >
-          <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+          <Clock className="h-3.5 w-3.5 text-amber-500 shrink-0" />
           <span>Snooze Chat</span>
         </button>
 
         <button
           onClick={(e) => handleUpdateStatus(e, "archived")}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-foreground hover:bg-muted active:bg-muted transition-colors text-xs font-medium cursor-pointer"
+          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-muted active:bg-muted transition-colors font-medium cursor-pointer"
         >
-          <Archive className="h-4 w-4 text-indigo-500 shrink-0" />
+          <Archive className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
           <span>Archive Chat</span>
         </button>
-      </div>
 
-      <div className="my-1 border-t border-border/50" />
-
-      <div className="p-1.5 space-y-0.5">
-        {/* Pause / Resume Automation */}
-        <button
-          onClick={handleToggleAutomation}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-foreground hover:bg-muted active:bg-muted transition-colors text-xs font-medium cursor-pointer"
-        >
-          {isAutomationPaused ? (
-            <>
-              <Bot className="h-4 w-4 text-emerald-500 shrink-0" />
-              <span>Resume AI & Flows</span>
-            </>
-          ) : (
-            <>
-              <BotOff className="h-4 w-4 text-amber-500 shrink-0" />
-              <span>Pause AI & Flows</span>
-            </>
-          )}
-        </button>
-
-        {/* Mute Notifications */}
-        <button
-          onClick={handleToggleMute}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-foreground hover:bg-muted active:bg-muted transition-colors text-xs font-medium cursor-pointer"
-        >
-          {isMuted ? (
-            <>
-              <Bell className="h-4 w-4 text-primary shrink-0" />
-              <span>Unmute Notifications</span>
-            </>
-          ) : (
-            <>
-              <BellOff className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span>Mute Notifications</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      <div className="my-1 border-t border-border/50" />
-
-      <div className="p-1.5 space-y-0.5">
-        {/* Copy Username / ID */}
         <button
           onClick={(e) => handleCopy(e, contactName, "name")}
-          className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted transition-colors text-xs font-medium cursor-pointer"
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted transition-colors font-medium cursor-pointer"
         >
-          <span className="flex items-center gap-2.5">
-            <Copy className="h-4 w-4 shrink-0" />
+          <span className="flex items-center gap-2">
+            <Copy className="h-3.5 w-3.5 shrink-0" />
             <span>Copy Name</span>
           </span>
-          {copiedText === "name" && <Check className="h-3.5 w-3.5 text-emerald-500" />}
+          {copiedText === "name" && <Check className="h-3 w-3 text-emerald-500" />}
         </button>
 
         {/* Delete */}
@@ -360,10 +340,10 @@ export function ConversationContextMenu({
             e.stopPropagation();
             setDeleteConfirm(true);
           }}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-rose-600 hover:bg-rose-500/10 active:bg-rose-500/20 transition-colors text-xs font-semibold cursor-pointer"
+          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-rose-500 hover:bg-rose-500/10 active:bg-rose-500/15 transition-colors font-medium cursor-pointer"
         >
-          <Trash2 className="h-4 w-4 shrink-0" />
-          <span>Delete Conversation</span>
+          <Trash2 className="h-3.5 w-3.5 shrink-0" />
+          <span>Delete Chat</span>
         </button>
       </div>
     </div>

@@ -29,6 +29,8 @@ import {
   Square,
   RefreshCw,
   Reply,
+  BellOff,
+  BotOff,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadAttachment } from "@/lib/storage";
@@ -774,9 +776,19 @@ export function MessageThread({
             <p className="text-sm font-bold text-foreground truncate">
               {contactName}
             </p>
-            <span className="text-[10px] text-muted-foreground capitalize flex items-center gap-1">
+            <span className="text-[10px] text-muted-foreground capitalize flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              {conversation.platform} • {conversation.status}
+              <span>{conversation.platform} • {conversation.status}</span>
+              {conversation.is_muted && (
+                <span className="flex items-center gap-0.5 text-amber-500 bg-amber-500/10 px-1.5 py-0.2 rounded font-semibold text-[9px]">
+                  <BellOff className="h-2.5 w-2.5" /> Muted
+                </span>
+              )}
+              {conversation.is_automation_paused && (
+                <span className="flex items-center gap-0.5 text-rose-500 bg-rose-500/10 px-1.5 py-0.2 rounded font-semibold text-[9px]">
+                  <BotOff className="h-2.5 w-2.5" /> AI Paused
+                </span>
+              )}
             </span>
           </div>
         </div>
