@@ -95,21 +95,55 @@ export async function POST(request: NextRequest) {
       parsedProfile = userProfile;
     }
 
-    // 5. Complete headless connection in Zernio
+    const targetPlatform: Platform =
+      validatedState.platform && isSupportedPlatform(validatedState.platform)
+        ? (validatedState.platform as Platform)
+        : "facebook";
+
+    // Check if the workspace already has an active channel for this platform
+    const { data: existingSamePlatformChannels } = await serviceClient
+      .from("channels")
+      .select("id, platform, late_account_id, zernio_account_id, metadata")
+      .eq("workspace_id", workspace.id)
+      .eq("platform", targetPlatform)
+      .eq("is_active", true);
+
+    const isAdditionalChannel = (existingSamePlatformChannels ?? []).some(
+      (c) => (c.metadata as any)?.pageId && (c.metadata as any)?.pageId !== pageId
+    );
+
+    let targetProfileId = profileId;
     const zernio = getPlatformZernioClient();
+
+    // If an existing channel is already connected for this platform, provision a dedicated sub-profile
+    // so Zernio creates an independent SocialAccount rather than replacing the existing page.
+    if (isAdditionalChannel) {
+      try {
+        const subProfileRes = await (zernio.profiles as any).createProfile({
+          body: { name: `${workspace.name} - ${pageName || "Channel"}` },
+        });
+        const subProfileId =
+          subProfileRes?.data?.profile?._id ||
+          subProfileRes?.data?.profile?.id ||
+          subProfileRes?.data?._id;
+        if (subProfileId) {
+          targetProfileId = subProfileId;
+        }
+      } catch (profErr) {
+        console.warn("[headless/select-page] Dedicated profile creation warning:", profErr);
+      }
+    }
+
+    // 5. Complete headless connection in Zernio
     const selectRes = await zernio.connect.facebook.selectFacebookPage({
       body: {
-        profileId,
+        profileId: targetProfileId,
         pageId,
         tempToken,
         userProfile: parsedProfile,
       },
     });
 
-    const targetPlatform: Platform =
-      validatedState.platform && isSupportedPlatform(validatedState.platform)
-        ? (validatedState.platform as Platform)
-        : "facebook";
     const account = selectRes.data?.account;
     const accountId = account?.accountId || pageId;
 
@@ -141,9 +175,14 @@ export async function POST(request: NextRequest) {
           status: "connected",
           connected_at: new Date().toISOString(),
           disconnected_at: null,
-          metadata: { pageId, pageName: displayName, targetPlatform },
+          metadata: {
+            pageId,
+            pageName: displayName,
+            targetPlatform,
+            zernio_profile_id: targetProfileId,
+          },
         },
-        { onConflict: "workspace_id, platform, late_account_id" }
+        { onConflict: "workspace_id, late_account_id" }
       )
       .select("*")
       .single();

@@ -141,6 +141,7 @@ export function ConversationList({
 
   const handleContextMenu = (e: React.MouseEvent, conversation: Conversation) => {
     e.preventDefault();
+    e.stopPropagation();
     setContextMenuState({
       x: e.clientX,
       y: e.clientY,
@@ -211,7 +212,7 @@ export function ConversationList({
   );
 
   return (
-    <div className="flex h-full flex-col border-r border-border bg-background select-none relative">
+    <div className="flex h-full w-full max-w-full min-w-0 flex-col border-r border-border bg-background select-none relative overflow-hidden">
       {/* Right Click Context Menu */}
       {contextMenuState && (
         <ConversationContextMenu
@@ -331,15 +332,14 @@ export function ConversationList({
         </div>
       </div>
 
-      {/* Status & Channel filter */}
-      <div className="flex items-center justify-between px-3 pb-2 shrink-0 gap-2 overflow-x-auto scrollbar-none">
-        <div className="flex gap-1 shrink-0">
-          {(["all", "open", "closed", "snoozed", "archived"] as const).map((status) => (
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/60 bg-muted/15 shrink-0 gap-1.5 min-w-0">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden min-w-0 flex-1">
+          {["all", "open", "closed", "snoozed", "archived"].map((status) => (
             <button
               key={status}
               onClick={() => setFilters({ status: status as any })}
               className={cn(
-                "rounded-md px-2 py-1 text-[11px] font-semibold capitalize transition-all",
+                "rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize transition-all shrink-0",
                 filters.status === status
                   ? "bg-muted text-foreground font-bold shadow-xs border border-border"
                   : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -350,16 +350,16 @@ export function ConversationList({
           ))}
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <select
             value={filters.channelId}
             onChange={(e) => setFilters({ channelId: e.target.value })}
-            className="text-[10px] font-medium rounded-lg border border-input bg-background/80 hover:bg-background px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground max-w-[130px] truncate shrink-0 shadow-xs cursor-pointer transition-colors"
+            className="text-[10px] font-medium rounded-lg border border-input bg-background/80 hover:bg-background px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground max-w-[105px] truncate shrink-0 shadow-xs cursor-pointer transition-colors"
             title="Filter by connected page or account"
           >
             <option value="all">
               {filters.platform !== "all"
-                ? `All ${filters.platform.toUpperCase()} Channels`
+                ? `All ${filters.platform.toUpperCase()}`
                 : "All Channels"}
             </option>
             {channelsForActivePlatform.map((ch) => (
@@ -371,7 +371,7 @@ export function ConversationList({
           {filters.channelId !== "all" && (
             <button
               onClick={() => setFilters({ channelId: "all" })}
-              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 text-[10px]"
+              className="p-0.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 text-[10px]"
               title="Reset channel filter"
             >
               <X className="h-3 w-3" />

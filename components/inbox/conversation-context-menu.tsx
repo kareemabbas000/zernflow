@@ -82,14 +82,19 @@ export function ConversationContextMenu({
   const isMuted = conversation.is_muted || false;
   const contactName = conversation.contacts?.display_name || "Customer";
 
+  const openTimeRef = useRef(Date.now());
+  useEffect(() => {
+    openTimeRef.current = Date.now();
+  }, [menuPosition]);
+
   // Position calculation for desktop
   const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1000;
   const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 800;
   const menuWidth = 260;
   const menuHeight = 390;
 
-  const posX = menuPosition.x + menuWidth > viewportWidth ? viewportWidth - menuWidth - 20 : Math.max(20, menuPosition.x);
-  const posY = menuPosition.y + menuHeight > viewportHeight ? viewportHeight - menuHeight - 20 : Math.max(20, menuPosition.y);
+  const posX = Math.min(Math.max(16, menuPosition.x), Math.max(16, viewportWidth - menuWidth - 16));
+  const posY = Math.min(Math.max(16, menuPosition.y), Math.max(16, viewportHeight - menuHeight - 16));
 
   const handleToggleRead = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -360,11 +365,13 @@ export function ConversationContextMenu({
         className="fixed inset-0 z-[99998] bg-black/20 sm:bg-transparent"
         onClick={(e) => {
           e.stopPropagation();
+          if (Date.now() - openTimeRef.current < 200) return;
           onClose();
         }}
         onContextMenu={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          if (Date.now() - openTimeRef.current < 200) return;
           onClose();
         }}
       />

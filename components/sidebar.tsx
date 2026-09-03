@@ -167,7 +167,7 @@ export function Sidebar({
   return (
     <div
       className={cn(
-        "flex h-full flex-col border-r border-sidebar-border bg-sidebar select-none transition-all duration-200",
+        "flex h-full flex-col border-r border-sidebar-border bg-sidebar select-none transition-all duration-200 shrink-0",
         sidebarCollapsed ? "w-16" : "w-64"
       )}
     >

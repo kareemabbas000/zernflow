@@ -80,17 +80,35 @@ export async function POST(request: NextRequest) {
       workspace.name
     );
 
-    // 2. List accounts for this profile from Zernio
-    const res = await zernio.accounts.listAccounts({
-      query: { profileId } as any,
-    });
-    const lateAccounts = res.data?.accounts ?? [];
-
-    // 3. Get existing channels for this workspace
+    // 2. Get existing channels for this workspace
     const { data: existingChannels } = await serviceClient
       .from("channels")
       .select("*")
       .eq("workspace_id", workspace.id);
+
+    // Collect primary workspace profile and any dedicated sub-profiles for additional channels
+    const profileIdsToSync = new Set<string>([profileId]);
+    for (const ch of existingChannels ?? []) {
+      const subProfId = (ch.metadata as any)?.zernio_profile_id;
+      if (subProfId && typeof subProfId === "string") {
+        profileIdsToSync.add(subProfId);
+      }
+    }
+
+    // 3. List accounts across all relevant profiles for this workspace
+    const lateAccounts: any[] = [];
+    for (const pId of profileIdsToSync) {
+      try {
+        const res = await zernio.accounts.listAccounts({
+          query: { profileId: pId } as any,
+        });
+        if (res.data?.accounts) {
+          lateAccounts.push(...res.data.accounts);
+        }
+      } catch (accErr) {
+        console.warn(`[channels/sync] Profile ${pId} account list warning:`, accErr);
+      }
+    }
 
     const existingByPlatformAndId = new Map(
       (existingChannels ?? []).map((c) => [`${c.platform}:${c.zernio_account_id || c.late_account_id}`, c])

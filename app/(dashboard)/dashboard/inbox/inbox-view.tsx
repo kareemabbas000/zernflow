@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -118,14 +118,31 @@ export function InboxView({
     }
   }
 
+  // Prevent horizontal scrolling on inbox root container from trackpad gestures
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const preventHorizontalScroll = () => {
+      if (el.scrollLeft !== 0) {
+        el.scrollLeft = 0;
+      }
+    };
+    el.addEventListener("scroll", preventHorizontalScroll);
+    return () => el.removeEventListener("scroll", preventHorizontalScroll);
+  }, []);
+
   const effectiveMessages = queryMessages || storeMessages;
 
   return (
-    <div className="relative flex h-full overflow-hidden bg-background">
+    <div
+      ref={containerRef}
+      className="relative flex h-full w-full min-w-0 overflow-hidden overflow-x-hidden bg-background"
+    >
       {/* Left panel: Conversation list */}
       <div
         className={cn(
-          "flex flex-col border-r border-border bg-background transition-transform duration-300 ease-in-out absolute inset-0 z-10 md:relative md:w-84 md:translate-x-0 md:shrink-0",
+          "flex flex-col border-r border-border bg-background transition-transform duration-300 ease-in-out absolute inset-0 z-10 md:relative md:w-80 lg:w-84 md:translate-x-0 md:shrink-0 min-w-0 overflow-hidden",
           isMobile && selectedId ? "-translate-x-full" : "translate-x-0"
         )}
       >
@@ -182,7 +199,7 @@ export function InboxView({
       {/* Center panel: Message thread */}
       <div 
         className={cn(
-          "flex min-h-0 flex-1 flex-col bg-background transition-transform duration-300 ease-in-out absolute inset-0 z-20 md:relative md:translate-x-0",
+          "flex min-h-0 min-w-0 flex-1 flex-col bg-background transition-transform duration-300 ease-in-out absolute inset-0 z-20 md:relative md:translate-x-0 overflow-hidden",
           isMobile ? (selectedId && !contactPanelOpen ? "translate-x-0" : selectedId && contactPanelOpen ? "-translate-x-full" : "translate-x-full") : ""
         )}
       >
@@ -280,8 +297,12 @@ export function InboxView({
       {/* Right panel: Contact info */}
       <div
         className={cn(
-          "bg-background transition-transform duration-300 ease-in-out absolute inset-0 z-30 md:relative md:w-84 md:shrink-0 md:translate-x-0",
-          isMobile ? (contactPanelOpen && selectedId ? "translate-x-0" : "translate-x-full") : (!contactPanelOpen ? "hidden" : "block")
+          "bg-background transition-all duration-300 ease-in-out absolute inset-0 z-30",
+          isMobile
+            ? (contactPanelOpen && selectedId ? "translate-x-0" : "translate-x-full")
+            : !contactPanelOpen
+            ? "hidden"
+            : "md:absolute md:inset-y-0 md:right-0 md:z-30 md:w-80 lg:w-84 md:shadow-2xl md:border-l md:border-border xl:relative xl:shadow-none xl:z-auto xl:w-84 xl:shrink-0"
         )}
       >
         {selectedConversation?.contact_id && (
