@@ -1,0 +1,22 @@
+{
+  "Landing": {
+    "nav_omnichannel": "Omnichannel",
+    "nav_inbox": "Unified Inbox",
+    "nav_ai": "AI Copilot",
+    "nav_flow": "Flow Studio",
+    "nav_crm": "Contacts CRM",
+    "nav_pricing": "Pricing",
+    "sign_in": "Sign In",
+    "start_free": "Start Free",
+    "badge": "AI-Powered Omnichannel Communication Platform",
+    "headline_1": "Every Conversation.",
+    "headline_2": "One Intelligent Workspace.",
+    "sub_headline": "Manage customer conversations across Facebook, Instagram, WhatsApp, X, and Telegram from one powerful inbox. Automate repetitive conversations, deploy AI agents, and keep your team connected with every customer.",
+    "start_trial": "Start Free Trial",
+    "explore": "Explore Platform",
+    "pricing_title": "Simple, transparent pricing",
+    "pricing_sub": "Choose the plan that fits your business needs.",
+    "footer_tagline": "AI-powered omnichannel communication and customer engagement for modern businesses.",
+    "developed_by": "Developed by Kareem Abbas"
+  }
+}

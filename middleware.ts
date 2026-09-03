@@ -2,6 +2,13 @@ import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { withRateLimit } from "@/lib/rate-limiter";
 import { createServerClient } from "@supabase/ssr";
+import createMiddleware from "next-intl/middleware";
+
+const intlMiddleware = createMiddleware({
+  locales: ['en', 'ar'],
+  defaultLocale: 'en',
+  localePrefix: 'as-needed'
+});
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -26,12 +33,20 @@ export async function middleware(request: NextRequest) {
     if (rateLimitResponse) return rateLimitResponse;
   }
 
-  // 3. Process Session & Basic Auth (already handles /api skips)
-  const supabaseResponse = await updateSession(request);
+  // Next-intl middleware for non-API routes
+  let response = NextResponse.next();
+  if (!isApiRoute) {
+    response = intlMiddleware(request);
+  }
+
+  // 3. Process Session & Basic Auth
+  // We'll run the updated session logic (needs to be adapted to handle the response)
+  const supabaseResponse = await updateSession(request, response);
   
   // 4. Suspended User Check for Dashboard/Admin routes
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin")) {
-    // We create a fresh client just to read the cookies that updateSession might have refreshed
+  // Strip locale for checks
+  const pathWithoutLocale = pathname.replace(/^\/(en|ar)/, '');
+  if (pathWithoutLocale.startsWith("/dashboard") || pathWithoutLocale.startsWith("/admin")) {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -51,9 +66,9 @@ export async function middleware(request: NextRequest) {
         .eq("id", user.id)
         .single();
         
-      if (profile?.status === "suspended" && pathname !== "/suspended") {
+      if (profile?.status === "suspended" && pathWithoutLocale !== "/suspended") {
         const url = request.nextUrl.clone();
-        url.pathname = "/suspended";
+        url.pathname = "/suspended"; // next-intl will handle this if needed, or we redirect explicitly
         return NextResponse.redirect(url);
       }
     }

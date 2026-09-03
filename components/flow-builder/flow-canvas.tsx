@@ -438,9 +438,9 @@ function FlowCanvasInner({ flow }: FlowCanvasProps) {
       </div>
 
       {/* Canvas area */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         <NodePalette />
-        <div ref={reactFlowWrapper} className="flex-1">
+        <div ref={reactFlowWrapper} className="flex-1 w-full h-full">
           <ReactFlow
             nodes={nodes}
             edges={edges}

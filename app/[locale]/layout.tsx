@@ -8,25 +8,30 @@ const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
 });
 
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages, setRequestLocale } from "next-intl/server";
+import { notFound } from "next/navigation";
+import { locales } from "../../i18n";
+
 export const metadata: Metadata = {
   title: {
-    default: "KA COMM — AI-Powered Omnichannel Communication",
-    template: "%s | KA COMM",
+    default: "FlowStage — AI-Powered Omnichannel Communication",
+    template: "%s | FlowStage",
   },
   description:
     "Manage customer conversations across Facebook, Instagram, WhatsApp, X, and Telegram with a unified inbox, visual automations, and AI agents.",
-  metadataBase: new URL("https://kacomm.com"),
+  metadataBase: new URL("https://flowstage.com"),
   openGraph: {
-    title: "KA COMM — AI-Powered Omnichannel Communication",
+    title: "FlowStage — AI-Powered Omnichannel Communication",
     description:
       "Every conversation in one intelligent workspace. Seamless messaging across Facebook, Instagram, WhatsApp, X, and Telegram.",
-    url: "https://kacomm.com",
-    siteName: "KA COMM",
+    url: "https://flowstage.com",
+    siteName: "FlowStage",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "KA COMM — AI-Powered Omnichannel Communication",
+    title: "FlowStage — AI-Powered Omnichannel Communication",
     description:
       "Manage all your customer conversations from one intelligent workspace with AI and automation.",
   },
@@ -37,13 +42,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }) {
+  const { locale } = await params;
+  if (!locales.includes(locale)) notFound();
+
+  setRequestLocale(locale);
+  const messages = await getMessages();
+
+  const dir = locale === "ar" ? "rtl" : "ltr";
+
   return (
-    <html lang="en" className={plusJakarta.variable} suppressHydrationWarning>
+    <html lang={locale} dir={dir} className={plusJakarta.variable} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -52,7 +67,9 @@ export default function RootLayout({
         />
       </head>
       <body className={`${plusJakarta.className} font-sans min-h-screen bg-background text-foreground antialiased`}>
-        {children}
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+        </NextIntlClientProvider>
       </body>
     </html>
   );
