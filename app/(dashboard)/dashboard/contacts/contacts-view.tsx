@@ -54,6 +54,10 @@ function formatDate(dateStr: string | null): string {
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
+import { ExportContactsModal } from "@/components/contacts/export-contacts-modal";
+import { ImportContactsModal } from "@/components/contacts/import-contacts-modal";
+import { useRouter } from "next/navigation";
+
 export function ContactsView({
   contacts,
   tags,
@@ -63,6 +67,7 @@ export function ContactsView({
   tags: Tag[];
   workspaceId: string;
 }) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [showSegmentBuilder, setShowSegmentBuilder] = useState(false);
@@ -72,10 +77,18 @@ export function ContactsView({
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
   
+  // Modals state
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
   const [localContacts, setLocalContacts] = useState(contacts);
   useEffect(() => {
     setLocalContacts(contacts);
   }, [contacts]);
+
+  const handleRefreshContacts = () => {
+    router.refresh();
+  };
 
   const filtered = localContacts.filter((contact) => {
     // Search filter
@@ -161,11 +174,18 @@ export function ContactsView({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" className="gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setIsExportModalOpen(true)}
+            >
               <Download className="h-4 w-4" />
               Export
             </Button>
-            <Button className="gap-2">
+            <Button
+              className="gap-2 shadow-sm"
+              onClick={() => setIsImportModalOpen(true)}
+            >
               <Users className="h-4 w-4" />
               Import Contacts
             </Button>
@@ -222,9 +242,14 @@ export function ContactsView({
               <span className="text-sm font-medium text-muted-foreground px-2">
                 {selectedContacts.size} selected
               </span>
-              <Button variant="secondary" size="sm" className="gap-2">
-                <Tags className="h-3.5 w-3.5" />
-                Add Tags
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setIsExportModalOpen(true)}
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export ({selectedContacts.size})
               </Button>
             </div>
           )}
@@ -516,6 +541,23 @@ export function ContactsView({
           )}
         </div>
       </div>
+      {/* Export Contacts Modal */}
+      <ExportContactsModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        contacts={localContacts}
+        filteredContacts={filtered}
+        selectedContactIds={selectedContacts}
+        totalWorkspaceContacts={contacts.length}
+      />
+
+      {/* Import Contacts Modal */}
+      <ImportContactsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        workspaceId={workspaceId}
+        onSuccess={handleRefreshContacts}
+      />
     </div>
   );
 }

@@ -85,8 +85,8 @@ export function ConversationContextMenu({
   // Position calculation for desktop
   const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1000;
   const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 800;
-  const menuWidth = 240;
-  const menuHeight = 370;
+  const menuWidth = 260;
+  const menuHeight = 390;
 
   const posX = menuPosition.x + menuWidth > viewportWidth ? viewportWidth - menuWidth - 20 : Math.max(20, menuPosition.x);
   const posY = menuPosition.y + menuHeight > viewportHeight ? viewportHeight - menuHeight - 20 : Math.max(20, menuPosition.y);
@@ -276,13 +276,13 @@ export function ConversationContextMenu({
 
       {/* CRM Lead Stage Quick Grid */}
       <div className="px-2.5 py-1.5 border-b border-border/50 bg-muted/5">
-        <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+        <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
           <span>Lead Stage</span>
-          <span className="capitalize font-semibold text-primary">
+          <span className="capitalize font-semibold text-primary text-[10px]">
             {conversation.contacts?.lead_stage || "lead"}
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-1">
+        <div className="grid grid-cols-2 gap-1">
           {LEAD_STAGE_OPTIONS.map((opt) => {
             const isCurrent = (conversation.contacts?.lead_stage || "lead") === opt.id;
             return (
@@ -290,15 +290,19 @@ export function ConversationContextMenu({
                 key={opt.id}
                 type="button"
                 onClick={(e) => handleSetLeadStage(e, opt.id)}
+                title={`Set stage to ${opt.label}`}
                 className={cn(
-                  "flex items-center justify-center gap-1 px-1 py-1 rounded-md text-[9px] font-semibold border transition-all cursor-pointer",
+                  "flex items-center justify-between px-2 py-1 rounded-md text-[10px] font-medium border transition-all cursor-pointer",
                   isCurrent
-                    ? "bg-primary/15 text-primary border-primary/40 shadow-2xs font-bold"
-                    : "bg-background/60 text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground"
+                    ? "bg-primary/15 text-primary border-primary/40 shadow-xs font-semibold"
+                    : "bg-background/60 text-muted-foreground border-border/40 hover:bg-muted hover:text-foreground"
                 )}
               >
-                <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", opt.dot)} />
-                <span className="truncate">{opt.label}</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", opt.dot)} />
+                  <span className="truncate">{opt.label}</span>
+                </div>
+                {isCurrent && <Check className="h-3 w-3 shrink-0 text-primary" />}
               </button>
             );
           })}
@@ -381,7 +385,7 @@ export function ConversationContextMenu({
         // Desktop Floating Context Menu
         <div
           style={{ top: posY, left: posX }}
-          className="fixed z-[99999] w-60 rounded-2xl border border-border bg-popover/95 p-1 text-xs shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100 select-none"
+          className="fixed z-[99999] w-[260px] rounded-2xl border border-border bg-popover/95 p-1 text-xs shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100 select-none"
         >
           {menuItemsContent}
         </div>
