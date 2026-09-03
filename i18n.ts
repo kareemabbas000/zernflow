@@ -4,10 +4,10 @@ import {notFound} from 'next/navigation';
 export const locales = ['en', 'ar'];
 
 export default getRequestConfig(async ({locale}) => {
-  if (!locales.includes(locale as any)) notFound();
+  if (!locale || !locales.includes(locale)) notFound();
 
   return {
-    locale,
+    locale: locale,
     messages: (await import(`./messages/${locale}.json`)).default
   };
 });
