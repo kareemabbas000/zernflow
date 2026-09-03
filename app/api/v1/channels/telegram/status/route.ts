@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
               chatType: data.chatType,
             },
           },
-          { onConflict: "workspace_id, late_account_id" }
+          { onConflict: "workspace_id, platform, late_account_id" }
         )
         .select("*")
         .single();

@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
             zernio_profile_id: targetProfileId,
           },
         },
-        { onConflict: "workspace_id, late_account_id" }
+        { onConflict: "workspace_id, platform, late_account_id" }
       )
       .select("*")
       .single();

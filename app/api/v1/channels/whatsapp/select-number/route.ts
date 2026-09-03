@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
             verifiedName,
           },
         },
-        { onConflict: "workspace_id, late_account_id" }
+        { onConflict: "workspace_id, platform, late_account_id" }
       )
       .select("*")
       .single();
