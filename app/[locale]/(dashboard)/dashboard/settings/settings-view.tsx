@@ -268,24 +268,30 @@ export function SettingsView({
             </Link>
           </section>
 
-          {/* About KA COMM & Legal Attribution */}
+          {/* About FlowStage & Legal Attribution */}
           <section className="rounded-3xl border border-border/80 bg-muted/20 p-6 space-y-3">
             <div className="flex items-center justify-between">
-              <BrandLogo size="sm" />
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded bg-gradient-to-tr from-purple-600 to-blue-500 p-[1px]">
+                   <div className="w-full h-full bg-[#050505] rounded flex items-center justify-center">
+                      <Sparkles className="h-3 w-3 text-white" />
+                   </div>
+                </div>
+                <span className="font-bold text-foreground">FlowStage</span>
+              </div>
               <Link
                 href="/legal/open-source"
                 className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
               >
                 <Scale className="h-3.5 w-3.5" />
-                Open Source Notices
+                Legal Notices
               </Link>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              KA COMM is an AI-powered omnichannel communication and customer engagement SaaS.
+              FlowStage is an AI-powered omnichannel communication and customer engagement SaaS.
             </p>
             <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
-              <span>© 2026 KA COMM</span>
-              <span className="font-semibold text-foreground">Developed by Kareem Abbas</span>
+              <span>© {new Date().getFullYear()} FlowStage Inc.</span>
             </div>
           </section>
 

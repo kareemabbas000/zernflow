@@ -50,6 +50,7 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  console.log("LAYOUT LOCALE IS:", locale, "PARAMS ARE:", await params);
   if (!locales.includes(locale)) notFound();
 
   setRequestLocale(locale);

@@ -99,7 +99,7 @@ export function WorkspaceSwitcher({
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border border-border bg-popover p-1 shadow-lg">
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-xl border border-white/10 bg-[#0a0a0a]/90 backdrop-blur-xl p-1.5 shadow-2xl shadow-black/50">
           {/* Workspace list */}
           {workspaces.map((ws) => {
             const isActive = ws.id === current.id;
@@ -110,29 +110,29 @@ export function WorkspaceSwitcher({
                 onClick={() => handleSwitch(ws.id)}
                 disabled={!!switching}
                 className={cn(
-                  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                  "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm transition-all duration-200",
                   isActive
-                    ? "bg-accent text-accent-foreground"
-                    : "text-popover-foreground hover:bg-accent"
+                    ? "bg-white/10 text-white"
+                    : "text-slate-400 hover:bg-white/5 hover:text-white"
                 )}
               >
                 <img
                   src={avatarUrl(ws.id, 24)}
                   alt=""
-                  className="h-6 w-6 rounded"
+                  className="h-6 w-6 rounded-md shadow-sm"
                 />
-                <span className="flex-1 truncate text-left">{ws.name}</span>
+                <span className="flex-1 truncate text-left font-medium">{ws.name}</span>
                 {isLoading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : isActive ? (
-                  <Check className="h-3.5 w-3.5" />
+                  <Check className="h-4 w-4 text-white" />
                 ) : null}
               </button>
             );
           })}
 
           {/* Divider */}
-          <div className="my-1 border-t border-border" />
+          <div className="my-1.5 border-t border-white/5" />
 
           {/* Create workspace */}
           {creating ? (
@@ -143,14 +143,14 @@ export function WorkspaceSwitcher({
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Workspace name"
-                className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-purple-500/50 transition-all"
                 disabled={switching === "new"}
               />
-              <div className="mt-1.5 flex gap-1.5">
+              <div className="mt-2 flex gap-1.5">
                 <button
                   type="submit"
                   disabled={!newName.trim() || switching === "new"}
-                  className="flex-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-white text-black px-2 py-1.5 text-xs font-bold disabled:opacity-50 hover:bg-slate-200 transition-colors"
                 >
                   {switching === "new" ? (
                     <Loader2 className="mx-auto h-3.5 w-3.5 animate-spin" />
@@ -164,7 +164,7 @@ export function WorkspaceSwitcher({
                     setCreating(false);
                     setNewName("");
                   }}
-                  className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
+                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-400 hover:bg-white/10 hover:text-white transition-all"
                 >
                   Cancel
                 </button>
@@ -173,9 +173,9 @@ export function WorkspaceSwitcher({
           ) : (
             <button
               onClick={() => setCreating(true)}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-400 hover:bg-white/5 hover:text-white transition-all duration-200 font-medium"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
               Create workspace
             </button>
           )}

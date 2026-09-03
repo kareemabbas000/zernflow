@@ -18,14 +18,13 @@ import {
   Sun,
   ShieldAlert,
   Menu,
-  X,
   ChevronLeft,
   ChevronRight,
+  Zap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { BrandLogo } from "@/components/brand-logo";
 import { WorkspaceSwitcher } from "@/components/workspace-switcher";
 import { useInboxStore } from "@/lib/stores/inbox-store";
 import { useUIStore, selectIsMobile, selectIsDesktop } from "@/lib/stores/ui-store";
@@ -47,23 +46,17 @@ function subscribeToThemeClass(callback: () => void) {
 }
 
 const navigation = [
-  {
-    name: "Live Inbox",
-    href: "/dashboard/inbox",
-    icon: MessageSquare,
-    badge: "Live",
-  },
-  { name: "Automations", href: "/dashboard/flows", icon: GitBranch },
+  { name: "Live Inbox", href: "/dashboard/inbox", icon: MessageSquare, badge: "Live" },
+  { name: "Flow Studio", href: "/dashboard/flows", icon: GitBranch },
   { name: "Contacts CRM", href: "/dashboard/contacts", icon: Users },
   { name: "Broadcasts", href: "/dashboard/broadcasts", icon: Radio },
   { name: "Sequences", href: "/dashboard/sequences", icon: ListOrdered },
-  { name: "Growth & AI", href: "/dashboard/growth", icon: Sparkles },
+  { name: "AI Copilot", href: "/dashboard/growth", icon: Sparkles },
   { name: "Channels", href: "/dashboard/channels", icon: Plug },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-// ── Mobile Bottom Navigation ─────────────────────────────────────────────
 const mobileNavItems = [
   { name: "Inbox", href: "/dashboard/inbox", icon: MessageSquare },
   { name: "Flows", href: "/dashboard/flows", icon: GitBranch },
@@ -86,17 +79,12 @@ export function Sidebar({
   const router = useRouter();
   const supabase = createClient();
 
-  // ── Store state ─────────────────────────────────────────────────
   const unreadCount = useInboxStore((s) => s.unreadCount);
   const isMobile = useUIStore(selectIsMobile);
-  const isDesktop = useUIStore(selectIsDesktop);
-  const sidebarOpen = useUIStore((s) => s.sidebarOpen);
   const sidebarCollapsed = useUIStore((s) => s.sidebarCollapsed);
-  const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
   const setSidebarCollapsed = useUIStore((s) => s.setSidebarCollapsed);
   const setBreakpoint = useUIStore((s) => s.setBreakpoint);
 
-  // ── Responsive breakpoint detection ─────────────────────────────
   useEffect(() => {
     function handleResize() {
       const w = window.innerWidth;
@@ -113,7 +101,7 @@ export function Sidebar({
   const dark = useSyncExternalStore(
     subscribeToThemeClass,
     () => document.documentElement.classList.contains("dark"),
-    () => false
+    () => true
   );
 
   function toggleTheme() {
@@ -128,10 +116,9 @@ export function Sidebar({
     window.location.href = "/login";
   }
 
-  // ── Mobile: Bottom Navigation Bar ───────────────────────────────
   if (isMobile) {
     return (
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-border bg-card/95 backdrop-blur-md safe-bottom">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-white/10 bg-[#050505]/80 backdrop-blur-xl safe-bottom">
         {mobileNavItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const isInbox = item.href === "/dashboard/inbox";
@@ -141,16 +128,14 @@ export function Sidebar({
               key={item.name}
               href={item.href}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-0.5 px-3 py-1 transition-colors",
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground"
+                "relative flex flex-col items-center justify-center gap-0.5 px-3 py-1 transition-all duration-300",
+                isActive ? "text-white" : "text-slate-500 hover:text-slate-300"
               )}
             >
               <div className="relative">
-                <item.icon className="h-5 w-5" />
+                <item.icon className={cn("h-5 w-5 transition-transform", isActive && "scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]")} />
                 {isInbox && unreadCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white">
+                  <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-purple-500 px-1 text-[9px] font-black text-white shadow-lg shadow-purple-500/50">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
@@ -163,64 +148,34 @@ export function Sidebar({
     );
   }
 
-  // ── Desktop/Tablet: Full or Collapsed Sidebar ───────────────────
   return (
     <div
       className={cn(
-        "flex h-full flex-col border-r border-sidebar-border bg-sidebar select-none transition-all duration-200 shrink-0",
-        sidebarCollapsed ? "w-16" : "w-64"
+        "flex h-full flex-col bg-[#050505]/80 backdrop-blur-2xl border-r border-white/5 select-none transition-all duration-300 shrink-0 relative z-40",
+        sidebarCollapsed ? "w-20" : "w-64"
       )}
     >
       {/* Brand Header */}
-      <div className="border-b border-sidebar-border px-3 py-3.5 flex items-center justify-between shrink-0">
-        <Link
-          href="/dashboard/inbox"
-          className="hover:opacity-90 transition-opacity"
-        >
-          {sidebarCollapsed ? (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-black">
-              K
-            </div>
-          ) : (
-            <BrandLogo size="sm" />
-          )}
+      <div className="border-b border-white/5 px-4 py-4 flex items-center justify-between shrink-0 h-16">
+        <Link href="/dashboard/inbox" className="hover:opacity-80 transition-opacity flex items-center gap-3 overflow-hidden">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-purple-600 to-blue-500 p-[1px] shrink-0">
+             <div className="w-full h-full bg-[#050505] rounded-lg flex items-center justify-center">
+                <Zap className="text-white h-4 w-4" />
+             </div>
+          </div>
+          {!sidebarCollapsed && <span className="text-lg font-bold tracking-tight text-white whitespace-nowrap">FlowStage</span>}
         </Link>
-        {!sidebarCollapsed && (
-          <button
-            onClick={() => setSidebarCollapsed(true)}
-            className="rounded-md p-1 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-        )}
       </div>
 
       {/* Workspace Switcher */}
       {!sidebarCollapsed && (
-        <div className="border-b border-sidebar-border px-3 py-2.5 bg-sidebar-accent/30 shrink-0">
+        <div className="border-b border-white/5 px-4 py-3 bg-white/[0.02] shrink-0">
           <WorkspaceSwitcher current={workspace} workspaces={workspaces} />
         </div>
       )}
 
-      {/* Collapse expand button */}
-      {sidebarCollapsed && (
-        <div className="border-b border-sidebar-border px-2 py-2.5 flex justify-center shrink-0">
-          <button
-            onClick={() => setSidebarCollapsed(false)}
-            className="rounded-md p-1.5 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
       {/* Main Navigation */}
-      <nav className="flex-1 space-y-1 p-2 overflow-y-auto">
-        {!sidebarCollapsed && (
-          <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/50">
-            Communication & AI
-          </div>
-        )}
+      <nav className="flex-1 space-y-1 p-3 overflow-y-auto overflow-x-hidden custom-scrollbar">
         {navigation.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const isInbox = item.href === "/dashboard/inbox";
@@ -232,15 +187,15 @@ export function Sidebar({
                 href={item.href}
                 title={item.name}
                 className={cn(
-                  "group relative flex items-center justify-center rounded-xl p-2.5 transition-all",
+                  "group relative flex items-center justify-center rounded-xl p-3 mb-1 transition-all duration-300",
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
-                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    ? "bg-white/10 text-white shadow-lg border border-white/10"
+                    : "text-slate-400 hover:bg-white/5 hover:text-white"
                 )}
               >
-                <item.icon className="h-4.5 w-4.5" />
+                <item.icon className="h-5 w-5" />
                 {isInbox && unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[8px] font-black text-white animate-pulse">
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-purple-500 px-1 text-[8px] font-black text-white animate-pulse shadow-lg shadow-purple-500/50">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
@@ -253,37 +208,23 @@ export function Sidebar({
               key={item.name}
               href={item.href}
               className={cn(
-                "group flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition-all",
+                "group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium mb-1 transition-all duration-300",
                 isActive
-                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25 font-bold"
-                  : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  ? "bg-white/10 text-white shadow-lg border border-white/10"
+                  : "text-slate-400 hover:bg-white/5 hover:text-white border border-transparent"
               )}
             >
               <div className="flex items-center gap-3">
-                <item.icon
-                  className={cn(
-                    "h-4 w-4 transition-transform group-hover:scale-110",
-                    isActive
-                      ? "text-primary-foreground"
-                      : "text-sidebar-foreground/60"
-                  )}
-                />
+                <item.icon className={cn("h-4.5 w-4.5 transition-transform group-hover:scale-110", isActive ? "text-white" : "text-slate-500 group-hover:text-white")} />
                 <span>{item.name}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 {isInbox && unreadCount > 0 ? (
-                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-black text-white shadow-sm shadow-rose-500/40 animate-pulse">
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-purple-500 px-1.5 text-[10px] font-black text-white shadow-lg shadow-purple-500/40 animate-pulse">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 ) : item.badge ? (
-                  <span
-                    className={cn(
-                      "rounded-full px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide",
-                      isActive
-                        ? "bg-white/20 text-white"
-                        : "bg-primary/10 text-primary group-hover:bg-primary/20"
-                    )}
-                  >
+                  <span className="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20">
                     {item.badge}
                   </span>
                 ) : null}
@@ -294,72 +235,50 @@ export function Sidebar({
       </nav>
 
       {/* Sidebar Footer */}
-      <div className="border-t border-sidebar-border p-2 space-y-2 bg-sidebar shrink-0">
+      <div className="border-t border-white/5 p-3 space-y-2 bg-[#050505] shrink-0">
         {isSuperAdmin && !sidebarCollapsed && (
           <Link
             href="/admin"
-            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-all border border-red-500/20"
           >
             <ShieldAlert className="h-4 w-4 shrink-0" />
-            KA COMM Admin
+            Platform Admin
           </Link>
         )}
 
         {sidebarCollapsed ? (
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex flex-col items-center gap-2">
             <button
-              onClick={toggleTheme}
-              title={dark ? "Light mode" : "Dark mode"}
-              className="rounded-lg p-2 text-sidebar-foreground/70 hover:bg-sidebar-accent transition-colors"
+              onClick={() => setSidebarCollapsed(false)}
+              className="rounded-xl p-2.5 text-slate-400 hover:bg-white/5 hover:text-white transition-all w-full flex justify-center"
             >
-              {dark ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
+              <ChevronRight className="h-5 w-5" />
             </button>
             <button
               onClick={handleSignOut}
               title="Sign out"
-              className="rounded-lg p-2 text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive transition-colors"
+              className="rounded-xl p-2.5 text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all w-full flex justify-center"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-5 w-5" />
             </button>
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-2 gap-1">
-              <button
-                onClick={toggleTheme}
-                className="flex items-center justify-center gap-1.5 rounded-lg border border-sidebar-border px-2 py-1.5 text-[11px] font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-              >
-                {dark ? (
-                  <Sun className="h-3.5 w-3.5" />
-                ) : (
-                  <Moon className="h-3.5 w-3.5" />
-                )}
-                {dark ? "Light" : "Dark"}
-              </button>
-              <button
-                onClick={handleSignOut}
-                className="flex items-center justify-center gap-1.5 rounded-lg border border-sidebar-border px-2 py-1.5 text-[11px] font-medium text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                Sign out
-              </button>
-            </div>
-
-            {/* Permanent KA COMM Attribution */}
-            <div className="pt-2 border-t border-sidebar-border/60 text-center">
-              <p className="text-[10px] font-semibold text-sidebar-foreground/60">
-                © 2026{" "}
-                <span className="font-bold text-foreground">KA COMM</span>
-              </p>
-              <p className="text-[10px] font-medium text-primary/90 mt-0.5">
-                Developed by Kareem Abbas
-              </p>
-            </div>
-          </>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarCollapsed(true)}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2.5 text-xs font-medium text-slate-400 hover:bg-white/5 hover:text-white transition-all"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Collapse
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2.5 text-xs font-medium text-slate-400 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 transition-all"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </button>
+          </div>
         )}
       </div>
     </div>
