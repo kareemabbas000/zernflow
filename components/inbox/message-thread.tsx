@@ -53,6 +53,14 @@ import type { Database, ConversationStatus, Platform } from "@/lib/types/databas
 type Message = Database["public"]["Tables"]["messages"]["Row"] & { is_internal?: boolean };
 type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
   contacts: Database["public"]["Tables"]["contacts"]["Row"] | null;
+  channels?: {
+    id: string;
+    display_name: string | null;
+    platform: string;
+    username?: string | null;
+    profile_picture?: string | null;
+    is_active?: boolean;
+  } | null;
 };
 
 const POPULAR_EMOJIS = [
@@ -837,9 +845,20 @@ export function MessageThread({
             size="sm"
           />
           <div className="min-w-0 flex flex-col justify-center">
-            <p className="text-xs sm:text-sm font-bold text-foreground truncate max-w-[120px] sm:max-w-[200px] md:max-w-[280px]">
-              {contactName}
-            </p>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <p className="text-xs sm:text-sm font-bold text-foreground truncate max-w-[120px] sm:max-w-[200px] md:max-w-[280px]">
+                {contactName}
+              </p>
+              {conversation.channels?.display_name && (
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-[9.5px] font-bold text-primary shrink-0"
+                  title={`Via channel: ${conversation.channels.display_name}${conversation.channels.username ? ` (@${conversation.channels.username})` : ""}`}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                  <span className="truncate max-w-[90px] sm:max-w-[140px]">{conversation.channels.display_name}</span>
+                </span>
+              )}
+            </div>
             <div className="text-[10px] sm:text-[11px] text-muted-foreground capitalize flex items-center gap-1.5 truncate">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
               <span>{conversation.platform}</span>

@@ -26,17 +26,29 @@ import { useConversationMessages } from "@/lib/hooks/use-inbox-queries";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/lib/types/database";
 
+export type ChannelInfo = {
+  id: string;
+  display_name: string | null;
+  platform: string;
+  username?: string | null;
+  profile_picture?: string | null;
+  is_active?: boolean;
+};
+
 type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
   contacts: Database["public"]["Tables"]["contacts"]["Row"] | null;
+  channels?: ChannelInfo | null;
 };
 type Message = Database["public"]["Tables"]["messages"]["Row"];
 
 export function InboxView({
   conversations: initialConversations,
   workspaceId,
+  channels = [],
 }: {
   conversations: Conversation[];
   workspaceId: string;
+  channels?: ChannelInfo[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -189,6 +201,7 @@ export function InboxView({
         <div className="flex-1 min-h-0">
           <ConversationList
             conversations={displayConversations}
+            channels={channels}
             workspaceId={workspaceId}
             selectedId={selectedId}
             onSelect={handleSelectConversation}

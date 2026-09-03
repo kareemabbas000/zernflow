@@ -27,7 +27,14 @@ import type { Database } from "@/lib/types/database";
 
 type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
   contacts: Database["public"]["Tables"]["contacts"]["Row"] | null;
-  channels?: { id: string; display_name: string; platform: string; is_active: boolean };
+  channels?: {
+    id: string;
+    display_name: string | null;
+    platform: string;
+    username?: string | null;
+    profile_picture?: string | null;
+    is_active?: boolean;
+  } | null;
 };
 
 export function ConversationContextMenu({

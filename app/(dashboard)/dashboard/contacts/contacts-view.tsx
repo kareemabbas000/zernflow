@@ -32,13 +32,32 @@ import { Avatar } from "@/components/ui/avatar";
 import { PlatformIcon } from "@/components/platform-icon";
 import type { Platform } from "@/lib/types/database";
 
+type ChannelItem = {
+  id: string;
+  display_name: string | null;
+  platform: string;
+  username?: string | null;
+  profile_picture?: string | null;
+  is_active?: boolean;
+};
+
 type Tag = Database["public"]["Tables"]["tags"]["Row"];
 type ContactWithTags = Database["public"]["Tables"]["contacts"]["Row"] & {
   contact_tags: {
     tag_id: string;
     tags: Tag | null;
   }[];
-  conversations?: { platform: string }[];
+  conversations?: {
+    platform: string;
+    channel_id?: string | null;
+    channels?: {
+      id: string;
+      display_name: string | null;
+      platform: string;
+      username?: string | null;
+      profile_picture?: string | null;
+    } | null;
+  }[];
 };
 
 function formatDate(dateStr: string | null): string {
@@ -61,15 +80,18 @@ import { useRouter } from "next/navigation";
 export function ContactsView({
   contacts,
   tags,
+  channels = [],
   workspaceId,
 }: {
   contacts: ContactWithTags[];
   tags: Tag[];
+  channels?: ChannelItem[];
   workspaceId: string;
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [selectedChannelId, setSelectedChannelId] = useState<string>("all");
   const [showSegmentBuilder, setShowSegmentBuilder] = useState(false);
   const [segmentFilter, setSegmentFilter] = useState<SegmentFilter>(
     createEmptyFilter()
@@ -104,6 +126,13 @@ export function ContactsView({
         (ct) => ct.tag_id === selectedTagId
       );
       if (!hasTag) return false;
+    }
+    // Channel filter
+    if (selectedChannelId !== "all") {
+      const matchesChannel = contact.conversations?.some(
+        (c) => c.channel_id === selectedChannelId || c.channels?.id === selectedChannelId
+      );
+      if (!matchesChannel) return false;
     }
     return true;
   });
@@ -266,6 +295,63 @@ export function ContactsView({
           </div>
         )}
 
+        {/* Channel Filter Pills */}
+        {channels.length > 0 && (
+          <div className="mt-4 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none [scrollbar-width:none]">
+            <span className="text-xs font-bold text-muted-foreground mr-1 shrink-0 flex items-center gap-1 uppercase tracking-wider">
+              Channel:
+            </span>
+            <button
+              onClick={() => setSelectedChannelId("all")}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-medium transition-all shrink-0 cursor-pointer border",
+                selectedChannelId === "all"
+                  ? "bg-foreground text-background font-bold border-foreground shadow-xs"
+                  : "bg-background/80 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+              )}
+            >
+              All Channels ({contacts.length})
+            </button>
+            {channels.map((ch) => {
+              const isSelected = selectedChannelId === ch.id;
+              const count = contacts.filter((c) =>
+                c.conversations?.some((cv) => cv.channel_id === ch.id || cv.channels?.id === ch.id)
+              ).length;
+              return (
+                <button
+                  key={ch.id}
+                  onClick={() => setSelectedChannelId(isSelected ? "all" : ch.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all shrink-0 cursor-pointer border",
+                    isSelected
+                      ? "bg-primary text-primary-foreground font-bold border-primary shadow-xs"
+                      : "bg-background/80 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  {ch.profile_picture ? (
+                    <img
+                      src={ch.profile_picture}
+                      alt=""
+                      className="h-3 w-3 rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <PlatformIcon platform={ch.platform as any} className="h-3 w-3 shrink-0" size={12} />
+                  )}
+                  <span>{ch.display_name || (ch.username ? `@${ch.username.replace(/^@/, "")}` : "Channel")}</span>
+                  <span
+                    className={cn(
+                      "px-1 py-0.2 rounded-full text-[9px] font-bold",
+                      isSelected ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Tag pills */}
         {tags.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
@@ -385,6 +471,25 @@ export function ContactsView({
                                     {contact.email}
                                   </p>
                                 )}
+                                {contact.conversations?.[0]?.channels?.display_name && (
+                                  <div className="mt-1">
+                                    <span
+                                      className="inline-flex items-center gap-1 rounded bg-muted/80 px-1.5 py-0.5 text-[9px] font-semibold text-foreground/80 border border-border/60 max-w-[140px] truncate"
+                                      title={`Connected via ${contact.conversations[0].channels.display_name}`}
+                                    >
+                                      {contact.conversations[0].channels.profile_picture ? (
+                                        <img
+                                          src={contact.conversations[0].channels.profile_picture}
+                                          alt=""
+                                          className="h-2 w-2 rounded-full object-cover shrink-0"
+                                        />
+                                      ) : (
+                                        <PlatformIcon platform={contact.conversations[0].platform as any} className="h-2 w-2 shrink-0" size={8} />
+                                      )}
+                                      <span className="truncate">{contact.conversations[0].channels.display_name}</span>
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <GripVertical className="h-4 w-4 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -473,8 +578,19 @@ export function ContactsView({
                               >
                                 {contact.display_name ?? "Unknown"}
                               </Link>
-                              <div className="text-xs text-muted-foreground mt-0.5 capitalize font-medium">
-                                {(contact as any).lead_stage || "Lead"}
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-xs text-muted-foreground capitalize font-medium">
+                                  {(contact as any).lead_stage || "Lead"}
+                                </span>
+                                {contact.conversations?.[0]?.channels?.display_name && (
+                                  <span
+                                    className="inline-flex items-center gap-1 rounded px-1.5 py-0.2 bg-muted/80 text-[9.5px] font-semibold text-foreground/80 border border-border/60 max-w-[130px] truncate"
+                                    title={`Connected via ${contact.conversations[0].channels.display_name}`}
+                                  >
+                                    <PlatformIcon platform={contact.conversations[0].platform as any} className="h-2.5 w-2.5 shrink-0" size={10} />
+                                    <span className="truncate">{contact.conversations[0].channels.display_name}</span>
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>

@@ -33,7 +33,14 @@ import type { Database, Platform, ConversationStatus } from "@/lib/types/databas
 
 type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
   contacts: Database["public"]["Tables"]["contacts"]["Row"] | null;
-  channels?: { id: string; display_name: string; platform: string; is_active: boolean };
+  channels?: {
+    id: string;
+    display_name: string | null;
+    platform: string;
+    username?: string | null;
+    profile_picture?: string | null;
+    is_active?: boolean;
+  } | null;
 };
 
 function formatTime(dateStr: string | null): string {
@@ -53,13 +60,24 @@ function formatTime(dateStr: string | null): string {
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
+export type ChannelItem = {
+  id: string;
+  display_name: string | null;
+  platform: string;
+  username?: string | null;
+  profile_picture?: string | null;
+  is_active?: boolean;
+};
+
 export function ConversationList({
   conversations: _initialConversations,
+  channels: propChannels = [],
   workspaceId,
   selectedId,
   onSelect,
 }: {
   conversations: Conversation[];
+  channels?: ChannelItem[];
   workspaceId: string;
   selectedId: string | null;
   onSelect: (conversation: Conversation) => void;
@@ -92,26 +110,68 @@ export function ConversationList({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Extract unique channels across all conversations
+  // Extract unique channels across propChannels and allConversations
   const availableChannels = useMemo(() => {
-    const map = new Map<string, { id: string; name: string; platform: string }>();
+    const map = new Map<
+      string,
+      { id: string; name: string; platform: string; username?: string | null; profilePicture?: string | null }
+    >();
+
+    // 1. Seed with verified workspace channels from props
+    for (const ch of propChannels) {
+      if (ch.id) {
+        map.set(ch.id, {
+          id: ch.id,
+          name: ch.display_name || (ch.username ? `@${ch.username.replace(/^@/, "")}` : "Channel"),
+          platform: ch.platform,
+          username: ch.username,
+          profilePicture: ch.profile_picture,
+        });
+      }
+    }
+
+    // 2. Supplement with any channels found in conversation data
     for (const c of allConversations) {
-      if (c.channels?.display_name && c.channel_id) {
+      if (c.channels?.display_name && c.channel_id && !map.has(c.channel_id)) {
         map.set(c.channel_id, {
           id: c.channel_id,
           name: c.channels.display_name,
           platform: c.platform,
+          username: (c.channels as any)?.username,
+          profilePicture: (c.channels as any)?.profile_picture,
         });
       }
     }
     return Array.from(map.values());
-  }, [allConversations]);
+  }, [propChannels, allConversations]);
 
   // Channels matching currently active platform tab (or all)
   const channelsForActivePlatform = useMemo(() => {
     if (filters.platform === "all") return availableChannels;
     return availableChannels.filter((ch) => ch.platform === filters.platform);
   }, [availableChannels, filters.platform]);
+
+  // Unread count per channel
+  const unreadByChannel = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const c of allConversations) {
+      if (c.channel_id && (c.unread_count || 0) > 0) {
+        map[c.channel_id] = (map[c.channel_id] || 0) + (c.unread_count || 0);
+      }
+    }
+    return map;
+  }, [allConversations]);
+
+  // Total conversations per channel
+  const countByChannel = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const c of allConversations) {
+      if (c.channel_id) {
+        map[c.channel_id] = (map[c.channel_id] || 0) + 1;
+      }
+    }
+    return map;
+  }, [allConversations]);
 
   // ── Right-Click Context Menu State ─────────────────────────────
   const queryClient = useQueryClient();
@@ -310,6 +370,81 @@ export function ConversationList({
         })}
       </div>
 
+      {/* Dynamic Multi-Channel Switcher Bar */}
+      {channelsForActivePlatform.length > 1 && (
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/25 border-b border-border/60 overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 animate-in fade-in duration-150">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 shrink-0 select-none">
+            {filters.platform === "all" ? "Channels:" : "Pages:"}
+          </span>
+
+          {/* All for active scope */}
+          <button
+            onClick={() => setFilters({ channelId: "all" })}
+            className={cn(
+              "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all shrink-0 cursor-pointer",
+              filters.channelId === "all"
+                ? "bg-foreground text-background font-bold shadow-xs"
+                : "bg-background/80 hover:bg-background text-muted-foreground hover:text-foreground border border-border/70"
+            )}
+          >
+            <span>{filters.platform === "all" ? "All Channels" : `All ${filters.platform.toUpperCase()}`}</span>
+            <span
+              className={cn(
+                "px-1 py-0.2 rounded-full text-[9px] font-bold",
+                filters.channelId === "all"
+                  ? "bg-background/20 text-background"
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              {filters.platform === "all"
+                ? allConversations.length
+                : allConversations.filter((c) => c.platform === filters.platform).length}
+            </span>
+          </button>
+
+          {/* Individual Channel Pills */}
+          {channelsForActivePlatform.map((ch) => {
+            const isSelected = filters.channelId === ch.id;
+            const unread = unreadByChannel[ch.id] || 0;
+            const count = countByChannel[ch.id] || 0;
+
+            return (
+              <button
+                key={ch.id}
+                onClick={() => setFilters({ channelId: ch.id })}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all shrink-0 cursor-pointer border",
+                  isSelected
+                    ? "bg-card border-primary text-foreground font-bold shadow-xs ring-1.5 ring-primary/40"
+                    : "bg-background/80 hover:bg-background border-border/70 text-muted-foreground hover:text-foreground"
+                )}
+                title={`Filter to ${ch.name}${ch.username ? ` (@${ch.username.replace(/^@/, "")})` : ""}`}
+              >
+                {ch.profilePicture ? (
+                  <img
+                    src={ch.profilePicture}
+                    alt=""
+                    className="h-3.5 w-3.5 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <PlatformIcon platform={ch.platform as any} className="h-3 w-3 shrink-0" size={12} />
+                )}
+                <span className="truncate max-w-[110px]">{ch.name}</span>
+                {unread > 0 ? (
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-500 text-white animate-pulse">
+                    {unread}
+                  </span>
+                ) : count > 0 ? (
+                  <span className="px-1 py-0.2 rounded-full text-[9px] font-medium bg-muted text-muted-foreground">
+                    {count}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Search */}
       <div className="p-3 pb-2 shrink-0">
         <div className="relative">
@@ -463,9 +598,23 @@ export function ConversationList({
                             )}
                           </div>
                           {conversation.channels?.display_name && (
-                            <span className="text-[9px] text-muted-foreground truncate leading-tight">
-                              via {conversation.channels.display_name}
-                            </span>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span
+                                className="inline-flex items-center gap-1 rounded-md bg-muted/80 hover:bg-muted px-1.5 py-0.5 text-[9.5px] font-semibold text-foreground/80 border border-border/70 max-w-[130px] truncate shrink-0 shadow-2xs"
+                                title={`Connected via ${conversation.channels.display_name}`}
+                              >
+                                {conversation.channels.profile_picture ? (
+                                  <img
+                                    src={conversation.channels.profile_picture}
+                                    alt=""
+                                    className="h-2.5 w-2.5 rounded-full object-cover shrink-0"
+                                  />
+                                ) : (
+                                  <PlatformIcon platform={conversation.platform as any} className="h-2.5 w-2.5 shrink-0" size={10} />
+                                )}
+                                <span className="truncate">{conversation.channels.display_name}</span>
+                              </span>
+                            </div>
                           )}
                         </div>
                       </div>
