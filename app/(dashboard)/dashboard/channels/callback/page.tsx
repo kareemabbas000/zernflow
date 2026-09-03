@@ -277,12 +277,12 @@ function CallbackContent() {
 
         setTimeout(() => {
           router.push(`/dashboard/channels?connected=${encodeURIComponent(platform)}`);
-        }, 1500);
+        }, 400);
       } catch (err) {
         console.error("Direct sync error:", err);
         setViewState("error");
         setErrorMessage("Connection completed. Redirecting to channel dashboard...");
-        setTimeout(() => router.push("/dashboard/channels"), 2000);
+        setTimeout(() => router.push("/dashboard/channels"), 600);
       }
     }
 
@@ -320,7 +320,7 @@ function CallbackContent() {
 
       setViewState("success");
       setMessage(`"${selectedItem?.name || "Facebook Page"}" connected successfully!`);
-      setTimeout(() => router.push("/dashboard/channels?connected=facebook"), 1500);
+      setTimeout(() => router.push("/dashboard/channels?connected=facebook"), 400);
     } catch (err) {
       console.error(err);
       setIsSubmitting(false);
@@ -359,7 +359,7 @@ function CallbackContent() {
 
       setViewState("success");
       setMessage(`Instagram account connected successfully!`);
-      setTimeout(() => router.push("/dashboard/channels?connected=instagram"), 1500);
+      setTimeout(() => router.push("/dashboard/channels?connected=instagram"), 400);
     } catch (err) {
       console.error(err);
       setIsSubmitting(false);
@@ -398,7 +398,7 @@ function CallbackContent() {
 
       setViewState("success");
       setMessage(`WhatsApp Business number connected successfully!`);
-      setTimeout(() => router.push("/dashboard/channels?connected=whatsapp"), 1500);
+      setTimeout(() => router.push("/dashboard/channels?connected=whatsapp"), 400);
     } catch (err) {
       console.error(err);
       setIsSubmitting(false);
@@ -446,42 +446,91 @@ function CallbackContent() {
             </div>
           )}
 
-          <div className="mt-6 space-y-3 max-h-[360px] overflow-y-auto pr-1">
-            {filteredItems.map((page) => {
-              const isSelected = selectedId === page.id;
-              return (
-                <div
-                  key={page.id}
-                  onClick={() => !isSubmitting && setSelectedId(page.id)}
-                  className={`group relative flex items-center gap-4 rounded-xl border p-4 cursor-pointer transition-all ${
-                    isSelected
-                      ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm"
-                      : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
-                  }`}
+          {/* Live Search Bar for Facebook Pages */}
+          <div className="relative mt-4">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search Facebook pages by name or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-8 text-sm outline-none focus:border-primary transition-colors"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-2.5 text-xs text-muted-foreground hover:text-foreground p-0.5 rounded-full hover:bg-muted"
+                title="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground px-1">
+            <span>Showing {filteredItems.length} of {items.length} {items.length === 1 ? "page" : "pages"}</span>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="text-primary hover:underline text-xs"
+              >
+                Reset search
+              </button>
+            )}
+          </div>
+
+          <div className="mt-3 space-y-3 max-h-[360px] overflow-y-auto pr-1">
+            {filteredItems.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">
+                <Search className="mx-auto h-8 w-8 opacity-40 mb-2" />
+                <p className="text-sm font-medium">No Facebook pages match "{searchQuery}"</p>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="mt-2 text-xs text-primary hover:underline font-semibold"
                 >
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-border bg-muted">
-                    {page.profilePicture ? (
-                      <img src={page.profilePicture} alt={page.name} className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = "none"; }} />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center font-bold text-muted-foreground">{page.name.charAt(0)}</div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-sm truncate text-foreground">{page.name}</h4>
-                      {page.category && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{page.category}</span>}
+                  Clear search filter
+                </button>
+              </div>
+            ) : (
+              filteredItems.map((page) => {
+                const isSelected = selectedId === page.id;
+                return (
+                  <div
+                    key={page.id}
+                    onClick={() => !isSubmitting && setSelectedId(page.id)}
+                    className={`group relative flex items-center gap-4 rounded-xl border p-4 cursor-pointer transition-all ${
+                      isSelected
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm"
+                        : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
+                    }`}
+                  >
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-border bg-muted">
+                      {page.profilePicture ? (
+                        <img src={page.profilePicture} alt={page.name} className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = "none"; }} />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center font-bold text-muted-foreground">{page.name.charAt(0)}</div>
+                      )}
                     </div>
-                    {page.username && <p className="text-xs text-muted-foreground truncate mt-0.5">@{page.username}</p>}
-                    <p className="text-[11px] text-muted-foreground/70 mt-0.5">ID: {page.id}</p>
-                  </div>
 
-                  <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${isSelected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"}`}>
-                    {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-sm truncate text-foreground">{page.name}</h4>
+                        {page.category && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{page.category}</span>}
+                      </div>
+                      {page.username && <p className="text-xs text-muted-foreground truncate mt-0.5">@{page.username}</p>}
+                      <p className="text-[11px] text-muted-foreground/70 mt-0.5">ID: {page.id}</p>
+                    </div>
+
+                    <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${isSelected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"}`}>
+                      {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           <div className="mt-8 flex items-center justify-between gap-3 border-t border-border pt-6">
@@ -530,18 +579,40 @@ function CallbackContent() {
             </div>
           </div>
 
-          {items.length > 3 && (
-            <div className="relative mt-4">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search Instagram accounts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-primary"
-              />
-            </div>
-          )}
+          {/* Live Search Bar for Instagram Accounts */}
+          <div className="relative mt-4">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search Instagram accounts by handle, name, or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-8 text-sm outline-none focus:border-primary transition-colors"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-2.5 text-xs text-muted-foreground hover:text-foreground p-0.5 rounded-full hover:bg-muted"
+                title="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground px-1">
+            <span>Showing {filteredItems.length} of {items.length} {items.length === 1 ? "account" : "accounts"}</span>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="text-primary hover:underline text-xs"
+              >
+                Reset search
+              </button>
+            )}
+          </div>
 
           {errorMessage && (
             <div className="mt-4 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
@@ -550,41 +621,55 @@ function CallbackContent() {
             </div>
           )}
 
-          <div className="mt-6 space-y-3 max-h-[360px] overflow-y-auto pr-1">
-            {filteredItems.map((account) => {
-              const isSelected = selectedId === account.id;
-              return (
-                <div
-                  key={account.id}
-                  onClick={() => !isSubmitting && setSelectedId(account.id)}
-                  className={`group relative flex items-center gap-4 rounded-xl border p-4 cursor-pointer transition-all ${
-                    isSelected
-                      ? "border-pink-500 bg-pink-500/5 ring-2 ring-pink-500/20 shadow-sm"
-                      : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
-                  }`}
+          <div className="mt-3 space-y-3 max-h-[360px] overflow-y-auto pr-1">
+            {filteredItems.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">
+                <Search className="mx-auto h-8 w-8 opacity-40 mb-2" />
+                <p className="text-sm font-medium">No Instagram accounts match "{searchQuery}"</p>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="mt-2 text-xs text-primary hover:underline font-semibold"
                 >
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-border bg-muted">
-                    {account.profilePicture ? (
-                      <img src={account.profilePicture} alt={account.name} className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = "none"; }} />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center font-bold text-muted-foreground">{account.name.charAt(0)}</div>
-                    )}
-                  </div>
+                  Clear search filter
+                </button>
+              </div>
+            ) : (
+              filteredItems.map((account) => {
+                const isSelected = selectedId === account.id;
+                return (
+                  <div
+                    key={account.id}
+                    onClick={() => !isSubmitting && setSelectedId(account.id)}
+                    className={`group relative flex items-center gap-4 rounded-xl border p-4 cursor-pointer transition-all ${
+                      isSelected
+                        ? "border-pink-500 bg-pink-500/5 ring-2 ring-pink-500/20 shadow-sm"
+                        : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
+                    }`}
+                  >
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-border bg-muted">
+                      {account.profilePicture ? (
+                        <img src={account.profilePicture} alt={account.name} className="h-full w-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = "none"; }} />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center font-bold text-muted-foreground">{account.name.charAt(0)}</div>
+                      )}
+                    </div>
 
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-sm truncate text-foreground">{account.name}</h4>
-                    <p className="text-xs text-pink-600 dark:text-pink-400 font-medium truncate mt-0.5">
-                      @{account.username || account.name.toLowerCase().replace(/\s+/g, "")}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-0.5">ID: {account.id}</p>
-                  </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm truncate text-foreground">{account.name}</h4>
+                      <p className="text-xs text-pink-600 dark:text-pink-400 font-medium truncate mt-0.5">
+                        @{account.username || account.name.toLowerCase().replace(/\s+/g, "")}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground/70 mt-0.5">ID: {account.id}</p>
+                    </div>
 
-                  <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${isSelected ? "border-pink-600 bg-pink-600 text-white" : "border-muted-foreground/40"}`}>
-                    {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
+                    <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${isSelected ? "border-pink-600 bg-pink-600 text-white" : "border-muted-foreground/40"}`}>
+                      {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           <div className="mt-8 flex items-center justify-between gap-3 border-t border-border pt-6">
@@ -603,7 +688,7 @@ function CallbackContent() {
                 </>
               ) : (
                 <>
-                  Connect Instagram Account
+                  Connect Selected Account
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
@@ -633,6 +718,41 @@ function CallbackContent() {
             </div>
           </div>
 
+          {/* Live Search Bar for WhatsApp Numbers */}
+          <div className="relative mt-4">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search by phone number, name, or WABA ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-8 text-sm outline-none focus:border-primary transition-colors"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-2.5 text-xs text-muted-foreground hover:text-foreground p-0.5 rounded-full hover:bg-muted"
+                title="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground px-1">
+            <span>Showing {filteredItems.length} of {items.length} {items.length === 1 ? "number" : "numbers"}</span>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="text-primary hover:underline text-xs"
+              >
+                Reset search
+              </button>
+            )}
+          </div>
+
           {errorMessage && (
             <div className="mt-4 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
               <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -640,44 +760,58 @@ function CallbackContent() {
             </div>
           )}
 
-          <div className="mt-6 space-y-3 max-h-[360px] overflow-y-auto pr-1">
-            {filteredItems.map((num) => {
-              const isSelected = selectedId === num.id;
-              return (
-                <div
-                  key={num.id}
-                  onClick={() => !isSubmitting && setSelectedId(num.id)}
-                  className={`group relative flex items-center gap-4 rounded-xl border p-4 cursor-pointer transition-all ${
-                    isSelected
-                      ? "border-emerald-500 bg-emerald-500/5 ring-2 ring-emerald-500/20 shadow-sm"
-                      : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
-                  }`}
+          <div className="mt-3 space-y-3 max-h-[360px] overflow-y-auto pr-1">
+            {filteredItems.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">
+                <Search className="mx-auto h-8 w-8 opacity-40 mb-2" />
+                <p className="text-sm font-medium">No WhatsApp numbers match "{searchQuery}"</p>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="mt-2 text-xs text-primary hover:underline font-semibold"
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 font-bold">
-                    <Phone className="h-5 w-5" />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-sm truncate text-foreground">{num.name || "WhatsApp Business"}</h4>
-                      {num.qualityRating && (
-                        <span className="shrink-0 rounded-full bg-emerald-500/10 text-emerald-600 px-2 py-0.5 text-[10px] font-semibold">
-                          {num.qualityRating} QUALITY
-                        </span>
-                      )}
+                  Clear search filter
+                </button>
+              </div>
+            ) : (
+              filteredItems.map((num) => {
+                const isSelected = selectedId === num.id;
+                return (
+                  <div
+                    key={num.id}
+                    onClick={() => !isSubmitting && setSelectedId(num.id)}
+                    className={`group relative flex items-center gap-4 rounded-xl border p-4 cursor-pointer transition-all ${
+                      isSelected
+                        ? "border-emerald-500 bg-emerald-500/5 ring-2 ring-emerald-500/20 shadow-sm"
+                        : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
+                    }`}
+                  >
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 font-bold">
+                      <Phone className="h-5 w-5" />
                     </div>
-                    <p className="text-sm font-mono font-medium text-emerald-600 dark:text-emerald-400 mt-0.5">
-                      {num.displayPhoneNumber}
-                    </p>
-                    {num.category && <p className="text-[11px] text-muted-foreground/70 mt-0.5">{num.category}</p>}
-                  </div>
 
-                  <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${isSelected ? "border-emerald-600 bg-emerald-600 text-white" : "border-muted-foreground/40"}`}>
-                    {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-sm truncate text-foreground">{num.name || "WhatsApp Business"}</h4>
+                        {num.qualityRating && (
+                          <span className="shrink-0 rounded-full bg-emerald-500/10 text-emerald-600 px-2 py-0.5 text-[10px] font-semibold">
+                            {num.qualityRating} QUALITY
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-mono font-medium text-emerald-600 dark:text-emerald-400 mt-0.5">
+                        {num.displayPhoneNumber}
+                      </p>
+                      {num.category && <p className="text-[11px] text-muted-foreground/70 mt-0.5">{num.category}</p>}
+                    </div>
+
+                    <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${isSelected ? "border-emerald-600 bg-emerald-600 text-white" : "border-muted-foreground/40"}`}>
+                      {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           <div className="mt-8 flex items-center justify-between gap-3 border-t border-border pt-6">

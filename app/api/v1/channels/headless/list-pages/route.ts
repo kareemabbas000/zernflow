@@ -92,7 +92,8 @@ export async function POST(request: NextRequest) {
         if (isInstagram && p.id && p.access_token) {
           try {
             const igRes = await fetch(
-              `https://graph.facebook.com/v20.0/${p.id}?fields=instagram_business_account{id,username,name,profile_picture_url}&access_token=${p.access_token}`
+              `https://graph.facebook.com/v20.0/${p.id}?fields=instagram_business_account{id,username,name,profile_picture_url}&access_token=${p.access_token}`,
+              { signal: AbortSignal.timeout(3000) }
             );
             if (igRes.ok) {
               const igData = await igRes.json();

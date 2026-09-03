@@ -156,19 +156,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 7. Auto-register webhook
+    // 7. Auto-register webhook & backfill asynchronously in after()
     try {
       const host = request.headers.get("host") || "localhost:3001";
       const proto = request.headers.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
       const appUrl = `${proto}://${host}`.replace(/\/$/, "");
-      const secret = await getOrCreateWorkspaceWebhookSecret(serviceClient, workspace.id);
-      await ensureWebhookRegistered(zernio, {
-        appUrl,
-        secret,
-        events: ["message.received", "comment.received"],
+
+      after(async () => {
+        try {
+          const secret = await getOrCreateWorkspaceWebhookSecret(serviceClient, workspace.id);
+          await ensureWebhookRegistered(zernio, {
+            appUrl,
+            secret,
+            events: ["message.received", "comment.received"],
+          });
+        } catch (whErr) {
+          console.warn("[headless/select-page] Async webhook registration warning:", whErr);
+        }
+
+        if (channel) {
+          try {
+            await backfillInboxConversations({
+              supabase: serviceClient,
+              zernio,
+              workspaceId: workspace.id,
+              channels: [channel],
+            });
+          } catch (backfillErr) {
+            console.warn("[headless/select-page] Backfill warning:", backfillErr);
+          }
+        }
       });
     } catch (whErr) {
-      console.warn("[headless/select-page] Webhook registration warning:", whErr);
+      console.warn("[headless/select-page] Webhook background registration warning:", whErr);
     }
 
     // 8. Stamp audit log
@@ -185,26 +205,6 @@ export async function POST(request: NextRequest) {
         username,
       },
     });
-
-    // 9. Backfill conversations asynchronously in the background
-    try {
-      if (channel) {
-        after(async () => {
-          try {
-            await backfillInboxConversations({
-              supabase: serviceClient,
-              zernio,
-              workspaceId: workspace.id,
-              channels: [channel],
-            });
-          } catch (backfillErr) {
-            console.warn("[headless/select-page] Backfill warning:", backfillErr);
-          }
-        });
-      }
-    } catch (e) {
-      console.warn("after() failed:", e);
-    }
 
     return NextResponse.json({
       success: true,
