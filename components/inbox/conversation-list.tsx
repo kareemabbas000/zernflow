@@ -92,6 +92,27 @@ export function ConversationList({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // Extract unique channels across all conversations
+  const availableChannels = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; platform: string }>();
+    for (const c of allConversations) {
+      if (c.channels?.display_name && c.channel_id) {
+        map.set(c.channel_id, {
+          id: c.channel_id,
+          name: c.channels.display_name,
+          platform: c.platform,
+        });
+      }
+    }
+    return Array.from(map.values());
+  }, [allConversations]);
+
+  // Channels matching currently active platform tab (or all)
+  const channelsForActivePlatform = useMemo(() => {
+    if (filters.platform === "all") return availableChannels;
+    return availableChannels.filter((ch) => ch.platform === filters.platform);
+  }, [availableChannels, filters.platform]);
+
   // ── Right-Click Context Menu State ─────────────────────────────
   const queryClient = useQueryClient();
 
@@ -329,24 +350,34 @@ export function ConversationList({
           ))}
         </div>
 
-        <select
-          value={filters.channelId}
-          onChange={(e) => setFilters({ channelId: e.target.value })}
-          className="text-[10px] rounded-md border border-input bg-background/50 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50 text-muted-foreground max-w-[110px] truncate shrink-0"
-        >
-          <option value="all">All Channels</option>
-          {Array.from(
-            new Map(
-              allConversations
-                .filter((c) => c.channels?.display_name)
-                .map((c) => [c.channel_id, c.channels?.display_name])
-            ).entries()
-          ).map(([id, name]) => (
-            <option key={id} value={id}>
-              {name}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <select
+            value={filters.channelId}
+            onChange={(e) => setFilters({ channelId: e.target.value })}
+            className="text-[10px] font-medium rounded-lg border border-input bg-background/80 hover:bg-background px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground max-w-[130px] truncate shrink-0 shadow-xs cursor-pointer transition-colors"
+            title="Filter by connected page or account"
+          >
+            <option value="all">
+              {filters.platform !== "all"
+                ? `All ${filters.platform.toUpperCase()} Channels`
+                : "All Channels"}
             </option>
-          ))}
-        </select>
+            {channelsForActivePlatform.map((ch) => (
+              <option key={ch.id} value={ch.id}>
+                {ch.name}
+              </option>
+            ))}
+          </select>
+          {filters.channelId !== "all" && (
+            <button
+              onClick={() => setFilters({ channelId: "all" })}
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 text-[10px]"
+              title="Reset channel filter"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Conversation list */}

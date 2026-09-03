@@ -183,19 +183,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 4. Remove or deactivate channels whose Zernio accounts no longer exist
+    // 4. Update status of channels instead of deleting them so multi-channel setups are preserved
     let deactivated = 0;
-    for (const channel of existingChannels ?? []) {
-      const accId = channel.zernio_account_id || channel.late_account_id;
-      if (!lateAccountIds.has(accId)) {
-        await serviceClient
-          .from("channels")
-          .delete()
-          .eq("id", channel.id);
-
-        deactivated++;
-      }
-    }
+    // We intentionally DO NOT delete existing channels here.
+    // In headless multi-page and multi-account architectures (multiple FB pages, IG accounts, WhatsApp numbers),
+    // account syncing must NEVER wipe previously connected channels. Channels are only removed when explicitly deleted by the user.
 
     // 5. Auto-register workspace webhook
     try {
