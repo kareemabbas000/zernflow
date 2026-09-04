@@ -48,7 +48,7 @@ const MockupStudio = () => (
           </div>
         </div>
         <div className="bg-[var(--surface-2)] rounded-md p-2 text-[10px] font-mono text-[var(--ink-2)]">
-          &gt; prompt: "Be helpful, concise..."
+          &gt; prompt: &quot;Be helpful, concise...&quot;
         </div>
       </motion.div>
 
@@ -91,7 +91,7 @@ const MockupCopilot = () => (
         <label className="text-xs font-bold text-[var(--ink-2)] uppercase tracking-wider">System Prompt</label>
         <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 text-sm text-[var(--ink)] font-medium leading-relaxed">
           You are a helpful customer support agent for Zenith.
-          <span className="text-[var(--lilac)]"> @knowledge_base</span> is attached. If you don't know the answer, output "ESCALATE".
+          <span className="text-[var(--lilac)]"> @knowledge_base</span> is attached. If you don&apos;t know the answer, output &quot;ESCALATE&quot;.
         </div>
       </div>
       
@@ -102,7 +102,7 @@ const MockupCopilot = () => (
             <Sparkles className="w-3 h-3 text-white" />
           </div>
           <p className="text-sm text-[var(--ink-2)]">
-            "Hi Alex! Your order #4492 is currently out for delivery and should arrive by 8 PM today."
+            &quot;Hi Alex! Your order #4492 is currently out for delivery and should arrive by 8 PM today.&quot;
           </p>
         </div>
       </div>

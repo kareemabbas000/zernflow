@@ -82,7 +82,7 @@ export function ConversationContextMenu({
     };
   }, [menuPosition, onClose]);
 
-  const openTimeRef = useRef(Date.now());
+  const openTimeRef = useRef<number>(0);
   useEffect(() => {
     openTimeRef.current = Date.now();
   }, [menuPosition]);

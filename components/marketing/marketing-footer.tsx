@@ -32,7 +32,7 @@ export function MarketingFooter() {
               Losing leads overnight
             </Link>
             <Link href="/solutions/cant-log-off" className="text-[var(--ink-3)] text-sm font-medium hover:text-[var(--lime)] transition-colors">
-              Can't log off
+              Can&apos;t log off
             </Link>
             <Link href="/solutions/dev-bottleneck" className="text-[var(--ink-3)] text-sm font-medium hover:text-[var(--lime)] transition-colors">
               Waiting on engineering
