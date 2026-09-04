@@ -52,11 +52,10 @@ const testimonials = [
   },
 ]
 
-// Duplicate for infinite scroll
-const duplicatedTestimonials = [...testimonials, ...testimonials]
-
-export function MarketingSocialProof() {
+export function MarketingSocialProof({ customContent }: { customContent?: any[] }) {
   const [isHovered, setIsHovered] = React.useState(false)
+  const activeTestimonials = customContent?.length ? customContent : testimonials
+  const duplicatedTestimonials = [...activeTestimonials, ...activeTestimonials]
   
   return (
     <section className="bg-[var(--paper)] overflow-hidden py-12 border-b border-[var(--border)]">

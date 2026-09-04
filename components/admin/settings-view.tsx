@@ -46,6 +46,10 @@ interface AdminSettingsProps {
     cronConfigured: boolean;
     aiGatewayConfigured: boolean;
   };
+  marketingSettings?: {
+    social_proof_enabled: boolean;
+    social_proof_content: any[] | null;
+  };
   currentAdminId?: string;
 }
 
@@ -54,15 +58,18 @@ export function AdminSettingsView({
   features: initialFeatures,
   apiKeys: initialApiKeys = {},
   systemStatus,
+  marketingSettings: initialMarketingSettings = { social_proof_enabled: true, social_proof_content: null },
   currentAdminId,
 }: AdminSettingsProps) {
   const [branding, setBranding] = useState(initialBranding);
   const [features, setFeatures] = useState(initialFeatures);
   const [apiKeys, setApiKeys] = useState(initialApiKeys);
+  const [marketingSettings, setMarketingSettings] = useState(initialMarketingSettings);
 
   const [savingBranding, setSavingBranding] = useState(false);
   const [savingFeatures, setSavingFeatures] = useState(false);
   const [savingApiKeys, setSavingApiKeys] = useState(false);
+  const [savingMarketingSettings, setSavingMarketingSettings] = useState(false);
 
   const [adminPassword, setAdminPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
@@ -104,6 +111,22 @@ export function AdminSettingsView({
       setFeedback({ message: "Platform feature rules saved", type: "success" });
     }
     setSavingFeatures(false);
+    setTimeout(() => setFeedback(null), 4000);
+  }
+
+  async function handleSaveMarketingSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingMarketingSettings(true);
+    setFeedback(null);
+
+    const res = await updatePlatformSettingsAdmin("marketing_settings", marketingSettings);
+
+    if (res.error) {
+      setFeedback({ message: res.error, type: "error" });
+    } else {
+      setFeedback({ message: "Marketing settings saved", type: "success" });
+    }
+    setSavingMarketingSettings(false);
     setTimeout(() => setFeedback(null), 4000);
   }
 
@@ -441,6 +464,65 @@ export function AdminSettingsView({
             >
               {savingFeatures && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Save Policies
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Marketing Settings */}
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold">Landing Page Marketing</h2>
+        </div>
+
+        <form onSubmit={handleSaveMarketingSettings} className="space-y-4 pt-2">
+          <div className="flex items-center justify-between rounded-lg border border-border bg-background p-3.5">
+            <div>
+              <p className="text-xs font-medium">Enable Social Proof Section</p>
+              <p className="text-[10px] text-muted-foreground">Show testimonials on the landing page</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={marketingSettings.social_proof_enabled}
+              onChange={(e) => setMarketingSettings({ ...marketingSettings, social_proof_enabled: e.target.checked })}
+              className="h-4 w-4 rounded accent-primary"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Social Proof JSON Content</label>
+            <p className="text-[10px] text-muted-foreground mb-1">Leave empty or invalid JSON to use default content.</p>
+            <textarea
+              value={marketingSettings.social_proof_content ? JSON.stringify(marketingSettings.social_proof_content, null, 2) : ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) {
+                  setMarketingSettings({ ...marketingSettings, social_proof_content: null });
+                  return;
+                }
+                try {
+                  const parsed = JSON.parse(val);
+                  setMarketingSettings({ ...marketingSettings, social_proof_content: parsed });
+                } catch (err) {
+                  // Ignore invalid JSON while typing, only store if valid
+                  // To be fully robust, we would use a controlled string state, but this works for simple edits
+                }
+              }}
+              rows={8}
+              placeholder="[{ ...testimonial object }]"
+              className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-ring resize-y"
+            />
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={savingMarketingSettings}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {savingMarketingSettings && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              Save Marketing Settings
             </button>
           </div>
         </form>

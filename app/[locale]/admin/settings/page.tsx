@@ -27,6 +27,12 @@ export default async function AdminSettingsPage() {
     .eq("key", "api_keys")
     .maybeSingle();
 
+  const { data: marketingSettingsRow } = await serviceClient
+    .from("platform_settings")
+    .select("value")
+    .eq("key", "marketing_settings")
+    .maybeSingle();
+
   const branding = (brandingRow?.value as any) || {
     app_name: siteConfig.name,
     tagline: siteConfig.tagline,
@@ -45,6 +51,11 @@ export default async function AdminSettingsPage() {
     cron_secret: process.env.CRON_SECRET ? "••••••••••••••••" : "",
   };
 
+  const marketingSettings = (marketingSettingsRow?.value as any) || {
+    social_proof_enabled: true,
+    social_proof_content: null,
+  };
+
   const systemStatus = {
     supabaseConfigured: !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     zernioConfigured: !!process.env.ZERNIO_API_KEY,
@@ -58,6 +69,7 @@ export default async function AdminSettingsPage() {
       features={features}
       apiKeys={apiKeys}
       systemStatus={systemStatus}
+      marketingSettings={marketingSettings}
       currentAdminId={user.id}
     />
   );

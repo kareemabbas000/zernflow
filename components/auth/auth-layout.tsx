@@ -20,9 +20,9 @@ export function AuthLayout({ children, title, subtitle, testimonial }: AuthLayou
   return (
     <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] font-sans selection:bg-[var(--brand)]/30 flex">
       {/* Left Panel: Form */}
-      <div className="flex-1 flex flex-col justify-center px-6 sm:px-12 lg:px-24 xl:px-32 relative">
-        <div className="absolute top-8 left-8 lg:left-12">
-          <Link href="/" className="flex items-center gap-2 group">
+      <div className="flex-1 flex flex-col px-6 sm:px-12 lg:px-24 xl:px-32 relative">
+        <div className="pt-8 pb-12">
+          <Link href="/" className="flex items-center gap-2 group w-fit">
             <BrandLogo size="md" showText={false} />
             <span className="font-display text-xl font-bold tracking-tight text-[var(--ink)] group-hover:text-[var(--brand)] transition-colors">
               FlowStage
@@ -30,7 +30,7 @@ export function AuthLayout({ children, title, subtitle, testimonial }: AuthLayou
           </Link>
         </div>
 
-        <div className="w-full max-w-sm mx-auto mt-20 lg:mt-0">
+        <div className="flex-1 flex flex-col justify-center w-full max-w-sm mx-auto pb-24 lg:pb-0">
           <h1 className="font-display text-3xl font-black tracking-tight text-[var(--ink)] mb-2">
             {title}
           </h1>

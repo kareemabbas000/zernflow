@@ -9,6 +9,8 @@ import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BrandLogo } from "@/components/brand-logo"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { LanguageSwitcher } from "@/components/language-switcher"
 
 export function MarketingNav() {
   const { scrollY } = useScroll()
@@ -58,6 +60,10 @@ export function MarketingNav() {
         </nav>
 
         <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-6">
+          <div className="flex items-center gap-2 mr-2">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
           <Link href="/login" className="text-sm font-semibold leading-6 text-[var(--ink)] hover:text-[var(--brand)] transition-colors">
             Sign in
           </Link>
@@ -110,6 +116,10 @@ export function MarketingNav() {
                     </Link>
                   </div>
                   <div className="py-6 flex flex-col gap-4">
+                    <div className="flex items-center gap-4 px-3 mb-2">
+                      <LanguageSwitcher />
+                      <ThemeToggle />
+                    </div>
                     <Link
                       href="/login"
                       className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-[var(--ink)] hover:bg-[var(--surface-2)]"

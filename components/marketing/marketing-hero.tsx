@@ -13,7 +13,7 @@ const floatingCards = [
     content: "Hey, is my order shipped?",
     sender: "Alex M.",
     time: "Just now",
-    color: "bg-white",
+    color: "bg-[var(--surface)]",
     icon: "bg-[var(--success)]",
     position: "left-[10%] top-[20%]",
     delay: 0,
@@ -24,7 +24,7 @@ const floatingCards = [
     content: "Booked a demo for tomorrow! 🎉",
     sender: "Sarah J.",
     time: "2m ago",
-    color: "bg-white",
+    color: "bg-[var(--surface)]",
     icon: "bg-[var(--brand)]",
     position: "right-[8%] top-[10%]",
     delay: 1.2,
@@ -35,7 +35,7 @@ const floatingCards = [
     content: "Can I upgrade my plan?",
     sender: "David R.",
     time: "5m ago",
-    color: "bg-white",
+    color: "bg-[var(--surface)]",
     icon: "bg-[var(--warning)]",
     position: "left-[5%] bottom-[20%]",
     delay: 0.8,
@@ -46,7 +46,7 @@ const floatingCards = [
     content: "Thanks for the quick reply!",
     sender: "Emily T.",
     time: "10m ago",
-    color: "bg-white",
+    color: "bg-[var(--surface)]",
     icon: "bg-[var(--lilac)]",
     position: "right-[5%] bottom-[25%]",
     delay: 2,
@@ -56,7 +56,7 @@ const floatingCards = [
 
 export function MarketingHero() {
   return (
-    <section className="relative overflow-hidden pt-32 pb-24 lg:pt-48 lg:pb-32 px-6">
+    <section className="relative overflow-hidden pt-24 pb-20 lg:pt-36 lg:pb-28 px-6">
       {/* Background Gradients */}
       <div className="absolute inset-0 -z-10 bg-[var(--paper)]">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] opacity-40 blur-[100px] bg-gradient-to-tr from-[var(--butter)] via-[var(--lilac)] to-[var(--lime)] rounded-full mix-blend-multiply pointer-events-none" />
@@ -65,17 +65,6 @@ export function MarketingHero() {
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center max-w-3xl mx-auto flex flex-col items-center">
-          {/* Pill Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-white/50 backdrop-blur-sm px-4 py-1.5 text-sm font-semibold text-[var(--ink-2)] mb-8 shadow-sm"
-          >
-            <Sparkles className="h-4 w-4 text-[var(--brand)]" />
-            <span>Meet FlowStage 2.0</span>
-          </motion.div>
-
           {/* Headline (Max 6 Words) */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}

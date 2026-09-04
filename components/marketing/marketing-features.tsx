@@ -126,7 +126,7 @@ const MockupInbox = () => (
           <div key={i} className={`p-2 md:p-3 rounded-lg flex items-center gap-3 ${c.active ? 'bg-[var(--surface-2)] border border-[var(--border)]' : 'hover:bg-[var(--surface)] border border-transparent'}`}>
             <div className="w-8 h-8 rounded-full bg-[var(--brand)] text-white flex items-center justify-center font-bold text-xs shrink-0 relative">
               {c.name.charAt(0)}
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[var(--surface)] flex items-center justify-center">
                 <Globe className={`w-2.5 h-2.5 ${c.channel === 'whatsapp' ? 'text-[var(--success)]' : c.channel === 'instagram' ? 'text-[var(--coral)]' : 'text-[var(--brand)]'}`} />
               </div>
             </div>
