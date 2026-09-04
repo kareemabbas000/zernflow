@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   ChevronRight,
   Wifi,
+  Sparkles
 } from "lucide-react";
 import { ConversationList } from "@/components/inbox/conversation-list";
 import { MessageThread } from "@/components/inbox/message-thread";
@@ -25,6 +26,7 @@ import { useGlobalLiveSync, useRealtime } from "@/components/providers/global-li
 import { useConversationMessages } from "@/lib/hooks/use-inbox-queries";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/lib/types/database";
+import { motion, AnimatePresence } from "framer-motion";
 
 export type ChannelInfo = {
   id: string;
@@ -154,20 +156,20 @@ export function InboxView({
       {/* Left panel: Conversation list */}
       <div
         className={cn(
-          "flex flex-col border-r border-border bg-background transition-transform duration-300 ease-in-out absolute inset-0 z-10 md:relative md:w-80 lg:w-84 md:translate-x-0 md:shrink-0 min-w-0 overflow-hidden",
+          "flex flex-col border-r border-border bg-background transition-transform duration-300 ease-in-out absolute inset-0 z-10 md:relative md:w-80 lg:w-96 md:translate-x-0 md:shrink-0 min-w-0 overflow-hidden",
           isMobile && selectedId ? "-translate-x-full" : "translate-x-0"
         )}
       >
         {/* Top Controls */}
-        <div className="flex items-center justify-between px-3.5 py-2 border-b border-border/60 bg-muted/20 text-xs shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-muted/20 text-xs shrink-0">
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
               className={cn(
-                "flex items-center gap-1 px-2 py-1 rounded-md transition-all",
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all",
                 soundEnabled
-                  ? "text-primary hover:bg-primary/10 font-semibold"
-                  : "text-muted-foreground hover:bg-muted"
+                  ? "text-primary hover:bg-primary/10 font-bold bg-primary/5"
+                  : "text-muted-foreground hover:bg-muted font-semibold"
               )}
               title={
                 soundEnabled
@@ -176,9 +178,9 @@ export function InboxView({
               }
             >
               {soundEnabled ? (
-                <Volume2 className="h-3.5 w-3.5" />
+                <Volume2 className="h-4 w-4" />
               ) : (
-                <VolumeX className="h-3.5 w-3.5" />
+                <VolumeX className="h-4 w-4" />
               )}
               <span className="text-[11px] hidden sm:inline">
                 {soundEnabled ? "Sound On" : "Muted"}
@@ -189,10 +191,10 @@ export function InboxView({
           <div className="flex items-center gap-1">
             <button
               onClick={handleEnableNotifications}
-              className="flex items-center gap-1 px-2 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-muted-foreground font-semibold hover:text-foreground hover:bg-muted transition-colors"
               title="Enable desktop notifications"
             >
-              <Bell className="h-3.5 w-3.5" />
+              <Bell className="h-4 w-4" />
               <span className="text-[11px] hidden sm:inline">Alerts</span>
             </button>
           </div>
@@ -238,64 +240,71 @@ export function InboxView({
 
         {/* Desktop: Contact panel toggle */}
         {!isMobile && selectedConversation && !contactPanelOpen && (
-          <div className="flex shrink-0 justify-end border-b border-border px-3 py-1.5 bg-background">
+          <div className="flex shrink-0 justify-end border-b border-border px-4 py-2 bg-background/50 backdrop-blur-md">
             <button
               onClick={() => setContactPanelOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors border border-border/50"
+              className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-bold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors border border-border/50 shadow-sm"
               aria-label="Show contact CRM info"
             >
-              <User className="h-3.5 w-3.5 text-primary" />
+              <User className="h-4 w-4 text-primary" />
               <span>Contact CRM</span>
             </button>
           </div>
         )}
 
-        <div className="min-h-0 flex-1">
+        <div className="min-h-0 flex-1 relative overflow-hidden">
+          {/* Ambient background glow inside thread */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10" />
+
           {displayConversations.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/60 mb-4">
-                <MessageSquare className="h-8 w-8 text-muted-foreground/40" />
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex h-full flex-col items-center justify-center px-6 text-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 mb-6 shadow-inner relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent" />
+                <MessageSquare className="h-10 w-10 text-primary relative z-10" />
               </div>
-              <h3 className="text-base font-semibold text-foreground">
-                Live Inbox Ready
+              <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                Live Inbox Ready <Sparkles className="h-5 w-5 text-amber-500" />
               </h3>
-              <p className="mt-1 max-w-xs text-xs text-muted-foreground leading-relaxed">
+              <p className="mt-3 max-w-sm text-sm text-muted-foreground leading-relaxed">
                 Connect your social channels. Inbound customer messages from
                 Facebook, Instagram, WhatsApp, X, and Telegram appear here in
                 real-time.
               </p>
               <Link
                 href="/dashboard/channels"
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all shadow-md shadow-primary/20"
+                className="mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5"
               >
                 Connect Channels
               </Link>
-            </div>
+            </motion.div>
           ) : !selectedConversation ? (
-            <div className="flex h-full flex-col items-center justify-center px-6 text-center text-muted-foreground">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/60 mb-4">
-                <MessageSquare className="h-8 w-8 opacity-30" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-full flex-col items-center justify-center px-6 text-center text-muted-foreground">
+              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-muted/50 mb-6 shadow-inner">
+                <MessageSquare className="h-10 w-10 opacity-40" />
               </div>
-              <p className="text-sm font-medium">
-                Select a conversation to view messages
+              <p className="text-base font-bold text-foreground">
+                Select a conversation
               </p>
-            </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Choose a chat from the left to view messages
+              </p>
+            </motion.div>
           ) : messagesLoading && effectiveMessages.length === 0 ? (
-            <div className="flex h-full flex-col p-5 space-y-4">
+            <div className="flex h-full flex-col p-6 space-y-6">
               <div className="flex justify-start">
-                <Skeleton className="h-10 w-2/3 rounded-2xl rounded-tl-xs" />
+                <Skeleton className="h-12 w-2/3 rounded-2xl rounded-tl-sm bg-muted/60" />
               </div>
               <div className="flex justify-end">
-                <Skeleton className="h-10 w-1/2 rounded-2xl rounded-tr-xs bg-primary/20" />
+                <Skeleton className="h-12 w-1/2 rounded-2xl rounded-tr-sm bg-primary/20" />
               </div>
               <div className="flex justify-start">
-                <Skeleton className="h-16 w-3/4 rounded-2xl rounded-tl-xs" />
+                <Skeleton className="h-20 w-3/4 rounded-2xl rounded-tl-sm bg-muted/60" />
               </div>
               <div className="flex justify-start">
-                <Skeleton className="h-8 w-1/3 rounded-2xl rounded-tl-xs" />
+                <Skeleton className="h-10 w-1/3 rounded-2xl rounded-tl-sm bg-muted/60" />
               </div>
               <div className="flex justify-end">
-                <Skeleton className="h-12 w-2/3 rounded-2xl rounded-tr-xs bg-primary/20" />
+                <Skeleton className="h-16 w-2/3 rounded-2xl rounded-tr-sm bg-primary/20" />
               </div>
             </div>
           ) : (
@@ -315,7 +324,7 @@ export function InboxView({
             ? (contactPanelOpen && selectedId ? "translate-x-0" : "translate-x-full")
             : !contactPanelOpen
             ? "hidden"
-            : "md:absolute md:inset-y-0 md:right-0 md:z-30 md:w-80 lg:w-84 md:shadow-2xl md:border-l md:border-border xl:relative xl:shadow-none xl:z-auto xl:w-84 xl:shrink-0"
+            : "md:absolute md:inset-y-0 md:right-0 md:z-30 md:w-80 lg:w-96 md:shadow-2xl md:border-l md:border-border xl:relative xl:shadow-none xl:z-auto xl:w-96 xl:shrink-0"
         )}
       >
         {selectedConversation?.contact_id && (

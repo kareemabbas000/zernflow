@@ -23,6 +23,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Database, Json } from "@/lib/types/database";
 import { PLATFORM_LABELS } from "@/lib/platforms";
 import { PostSelectorModal } from "@/components/flow-builder/post-selector-modal";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Channel = Database["public"]["Tables"]["channels"]["Row"];
 type CommentLog = Database["public"]["Tables"]["comment_logs"]["Row"];
@@ -47,6 +48,16 @@ interface TriggerConfig {
   postIds?: string[];
   replyText?: string;
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+};
 
 export function GrowthView({
   workspaceId,
@@ -304,28 +315,32 @@ export function GrowthView({
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-background relative overflow-hidden">
+      {/* Ambient glow */}
+      <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] bg-primary/10 rounded-full blur-[150px] pointer-events-none -z-10" />
+
       {/* Header */}
-      <div className="border-b border-border px-8 py-6">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="border-b border-border/40 bg-background/50 backdrop-blur-xl px-8 py-6 shrink-0 relative z-10">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
+            <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
+              <Sparkles className="h-7 w-7 text-primary" />
               Growth Tools
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground">
               Comment-to-DM automation for lead capture and engagement
             </p>
           </div>
           <button
             onClick={() => { setEditingId(null); setShowCreate(true); }}
             disabled={channels.length === 0 || flows.length === 0}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-all shadow-md shadow-primary/20"
           >
             <Plus className="h-4 w-4" />
             New Comment Rule
           </button>
         </div>
-      </div>
+      </motion.div>
 
       <div className="flex-1 overflow-auto p-8">
         {/* Stats cards */}

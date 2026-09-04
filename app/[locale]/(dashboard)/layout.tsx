@@ -44,6 +44,10 @@ export default async function DashboardLayout({
     <QueryProvider>
       <GlobalLiveSyncProvider workspaceId={workspace.id}>
         <ResponsiveLayoutWrapper>
+          <div className="absolute inset-0 pointer-events-none -z-50 overflow-hidden">
+             <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px]" />
+             <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[120px]" />
+          </div>
           <CommandPalette />
           <Sidebar
             workspace={workspace}
@@ -51,7 +55,9 @@ export default async function DashboardLayout({
             workspaces={workspaces}
             isSuperAdmin={isSuperAdmin}
           />
-          <main className="min-h-0 min-w-0 flex-1 overflow-hidden overflow-x-hidden">{children}</main>
+          <main className="min-h-0 min-w-0 flex-1 overflow-hidden overflow-x-hidden relative bg-background/50">
+            {children}
+          </main>
         </ResponsiveLayoutWrapper>
       </GlobalLiveSyncProvider>
     </QueryProvider>

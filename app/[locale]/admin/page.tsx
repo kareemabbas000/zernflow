@@ -79,7 +79,7 @@ export default async function AdminOverviewPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/admin/audit-logs"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-muted transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/60 backdrop-blur-xl px-3 py-2 text-xs font-medium hover:bg-muted transition-colors"
           >
             <Activity className="h-3.5 w-3.5 text-muted-foreground" />
             Audit Logs
@@ -96,7 +96,7 @@ export default async function AdminOverviewPage() {
 
       {/* Quick Actions */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Link href="/admin/workspaces?action=create" className="group rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition-colors flex items-start gap-3">
+        <Link href="/admin/workspaces?action=create" className="group rounded-xl border border-border bg-card/60 backdrop-blur-xl p-4 hover:border-primary/50 transition-colors flex items-start gap-3">
           <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <Building2 className="h-4 w-4" />
           </div>
@@ -105,7 +105,7 @@ export default async function AdminOverviewPage() {
             <p className="text-[11px] text-muted-foreground mt-0.5">Provision a new tenant environment</p>
           </div>
         </Link>
-        <Link href="/admin/users?action=invite" className="group rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition-colors flex items-start gap-3">
+        <Link href="/admin/users?action=invite" className="group rounded-xl border border-border bg-card/60 backdrop-blur-xl p-4 hover:border-primary/50 transition-colors flex items-start gap-3">
           <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 flex items-center justify-center shrink-0">
             <Users className="h-4 w-4" />
           </div>
@@ -114,7 +114,7 @@ export default async function AdminOverviewPage() {
             <p className="text-[11px] text-muted-foreground mt-0.5">Send a platform registration link</p>
           </div>
         </Link>
-        <Link href="/admin/settings?action=maintenance" className="group rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition-colors flex items-start gap-3">
+        <Link href="/admin/settings?action=maintenance" className="group rounded-xl border border-border bg-card/60 backdrop-blur-xl p-4 hover:border-primary/50 transition-colors flex items-start gap-3">
           <div className="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-950/50 flex items-center justify-center shrink-0">
             <Wrench className="h-4 w-4" />
           </div>
@@ -130,7 +130,7 @@ export default async function AdminOverviewPage() {
         {kpis.map((kpi) => (
           <div
             key={kpi.name}
-            className="relative overflow-hidden rounded-xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md"
+            className="relative overflow-hidden rounded-xl border border-border bg-card/60 backdrop-blur-xl p-5 shadow-sm transition-all hover:shadow-md"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">{kpi.name}</span>
@@ -157,7 +157,7 @@ export default async function AdminOverviewPage() {
       </div>
 
       {/* Channels by Platform Breakdown */}
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+      <div className="rounded-xl border border-border bg-card/60 backdrop-blur-xl p-6 shadow-sm">
         <h2 className="text-base font-semibold">Connected Accounts by Platform</h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Distribution of active social accounts across all workspaces
@@ -187,7 +187,7 @@ export default async function AdminOverviewPage() {
       {/* Two Column Layout: Recent Users & Recent Workspaces */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Signups */}
-        <div className="rounded-xl border border-border bg-card shadow-sm flex flex-col">
+        <div className="rounded-xl border border-border bg-card/60 backdrop-blur-xl shadow-sm flex flex-col">
           <div className="flex items-center justify-between border-b border-border p-5">
             <div>
               <h2 className="text-sm font-semibold">Recent Users</h2>
@@ -240,7 +240,7 @@ export default async function AdminOverviewPage() {
         </div>
 
         {/* Recent Workspaces */}
-        <div className="rounded-xl border border-border bg-card shadow-sm flex flex-col">
+        <div className="rounded-xl border border-border bg-card/60 backdrop-blur-xl shadow-sm flex flex-col">
           <div className="flex items-center justify-between border-b border-border p-5">
             <div>
               <h2 className="text-sm font-semibold">Recent Workspaces</h2>
@@ -294,7 +294,7 @@ export default async function AdminOverviewPage() {
       </div>
 
       {/* Recent Audit Logs Timeline */}
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+      <div className="rounded-xl border border-border bg-card/60 backdrop-blur-xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-sm font-semibold">Recent Administrative & System Activity</h2>

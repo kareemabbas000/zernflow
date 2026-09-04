@@ -18,10 +18,14 @@ import {
   Layers,
   Info,
   Scale,
+  Building,
+  Key,
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { BrandLogo } from "@/components/brand-logo";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface WorkspaceSettings {
   id: string;
@@ -31,6 +35,16 @@ interface WorkspaceSettings {
   hasAiKey: boolean;
   globalKeywords: string[];
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+};
 
 export function SettingsView({
   workspace,
@@ -102,233 +116,293 @@ export function SettingsView({
   }
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex h-full flex-col bg-background relative overflow-hidden">
+      {/* Ambient glow */}
+      <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary/10 rounded-full blur-[150px] pointer-events-none -z-10" />
+
       {/* Header */}
-      <div className="border-b border-border px-8 py-6 bg-card/40">
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Workspace Settings</h1>
-        <p className="mt-1 text-xs text-muted-foreground">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="border-b border-border bg-background/50 backdrop-blur-xl px-8 py-6 shrink-0 relative z-10">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+          <Settings className="h-7 w-7 text-primary animate-spin-slow" />
+          Workspace Settings
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
           Manage workspace preferences, AI configurations, and global keywords
         </p>
-      </div>
+      </motion.div>
 
       {/* Settings form */}
-      <div className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-2xl space-y-8 px-8 py-8">
+      <div className="flex-1 overflow-auto relative z-10">
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="mx-auto max-w-3xl space-y-8 px-8 py-8">
           {/* General Workspace Details */}
-          <section className="rounded-3xl border border-border bg-card p-6 shadow-sm space-y-5">
-            <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-bold text-foreground">General Preferences</h2>
-            </div>
-            <div className="space-y-4">
+          <motion.section variants={itemVariants} className="group relative rounded-3xl border border-border bg-card/60 backdrop-blur-xl p-8 shadow-xl shadow-primary/5 transition-all duration-300 hover:border-primary/30">
+            <div className="absolute -left-6 -top-6 w-32 h-32 rounded-full bg-primary/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            
+            <div className="flex items-center gap-3 mb-6 relative z-10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shadow-inner">
+                <Building className="h-5 w-5 text-primary" />
+              </div>
               <div>
-                <label className="text-xs font-bold text-foreground uppercase tracking-wider">
+                <h2 className="text-lg font-bold text-foreground">General Preferences</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Core identity and billing details</p>
+              </div>
+            </div>
+
+            <div className="space-y-6 relative z-10">
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">
                   Workspace Name
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary transition-all"
+                  className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary focus:bg-background transition-all"
                 />
               </div>
 
-              <div className="flex items-center justify-between rounded-2xl border border-border bg-muted/20 p-3.5">
-                <div className="flex items-center gap-2.5">
-                  <Layers className="h-4 w-4 text-muted-foreground" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-border bg-muted/30 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background shadow-sm border border-border">
+                    <Layers className="h-5 w-5 text-muted-foreground" />
+                  </div>
                   <div>
-                    <p className="text-xs font-bold text-foreground">Workspace Identifier</p>
-                    <p className="text-[11px] font-mono text-muted-foreground">{workspace.id}</p>
+                    <p className="text-sm font-bold text-foreground">Workspace Identifier</p>
+                    <p className="text-xs font-mono text-muted-foreground mt-0.5">{workspace.id}</p>
                   </div>
                 </div>
-                <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary capitalize">
-                  {workspace.plan} Plan
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-bold text-primary capitalize shadow-sm">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    {workspace.plan} Plan
+                  </span>
+                </div>
               </div>
             </div>
-          </section>
+          </motion.section>
 
           {/* AI Gateway API Key */}
-          <section className="rounded-3xl border border-border bg-card p-6 shadow-sm space-y-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#00C2FF]" />
-              <h2 className="text-sm font-bold text-foreground">AI Copilot &amp; LLM Configuration</h2>
+          <motion.section variants={itemVariants} className="group relative rounded-3xl border border-border bg-card/60 backdrop-blur-xl p-8 shadow-xl shadow-primary/5 transition-all duration-300 hover:border-blue-500/30">
+            <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-blue-500/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            
+            <div className="flex items-center gap-3 mb-6 relative z-10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 shadow-inner">
+                <Key className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">AI Copilot &amp; LLM Configuration</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Custom AI key for generative responses</p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Custom AI key for OpenAI, Anthropic, or Vercel AI Gateway for contextual auto-responses.
-              {workspace.hasAiKey && " A custom key is configured."}
-            </p>
+            
+            <div className="relative z-10 space-y-4">
+              <div className="relative">
+                <input
+                  type={showAiKey ? "text" : "password"}
+                  value={aiKey}
+                  onChange={(e) => setAiKey(e.target.value)}
+                  placeholder={
+                    workspace.hasAiKey
+                      ? "Enter a new key to replace current key"
+                      : "sk-ant-... or sk-... (optional)"
+                  }
+                  className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 pr-12 text-sm font-mono placeholder:text-muted-foreground placeholder:font-sans outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-background transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAiKey(!showAiKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  {showAiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
 
-            <div className="relative">
-              <input
-                type={showAiKey ? "text" : "password"}
-                value={aiKey}
-                onChange={(e) => setAiKey(e.target.value)}
-                placeholder={
-                  workspace.hasAiKey
-                    ? "Enter a new key to replace current key"
-                    : "sk-ant-... or sk-... (optional)"
-                }
-                className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 pr-10 text-sm font-mono placeholder:text-muted-foreground placeholder:font-sans outline-none focus:ring-2 focus:ring-primary transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowAiKey(!showAiKey)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showAiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+              {workspace.hasAiKey && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-lg inline-flex">
+                  <Check className="h-4 w-4" />
+                  Custom AI key active and verified
+                </motion.div>
+              )}
             </div>
-
-            {workspace.hasAiKey && (
-              <p className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                <Check className="h-3.5 w-3.5" />
-                Custom AI key active
-              </p>
-            )}
-          </section>
+          </motion.section>
 
           {/* Global Keywords */}
-          <section className="rounded-3xl border border-border bg-card p-6 shadow-sm space-y-4">
-            <div className="flex items-center gap-2">
-              <Hash className="h-4 w-4 text-[#FF3D81]" />
-              <h2 className="text-sm font-bold text-foreground">Global Automation Keywords</h2>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Keywords that trigger global opt-in/out or conversation actions across all connected channels.
-            </p>
-
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newKeyword}
-                onChange={(e) => setNewKeyword(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addKeyword();
-                  }
-                }}
-                placeholder="e.g. stop, help, pricing"
-                className="flex-1 rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary transition-all"
-              />
-              <button
-                type="button"
-                onClick={addKeyword}
-                disabled={!newKeyword.trim()}
-                className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-
-            {keywords.length > 0 ? (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {keywords.map((kw) => (
-                  <span
-                    key={kw}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold text-primary"
-                  >
-                    #{kw}
-                    <button
-                      type="button"
-                      onClick={() => removeKeyword(kw)}
-                      className="rounded-full p-0.5 hover:bg-primary/10 text-primary"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
+          <motion.section variants={itemVariants} className="group relative rounded-3xl border border-border bg-card/60 backdrop-blur-xl p-8 shadow-xl shadow-primary/5 transition-all duration-300 hover:border-pink-500/30">
+            <div className="absolute -left-6 -bottom-6 w-32 h-32 rounded-full bg-pink-500/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            
+            <div className="flex items-center gap-3 mb-6 relative z-10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-500/10 shadow-inner">
+                <Hash className="h-5 w-5 text-pink-500" />
               </div>
-            ) : (
-              <p className="text-xs text-muted-foreground/70">
-                No global keywords configured yet
-              </p>
-            )}
-          </section>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Global Automation Keywords</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Triggers across all connected channels</p>
+              </div>
+            </div>
+
+            <div className="space-y-6 relative z-10">
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={newKeyword}
+                  onChange={(e) => setNewKeyword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addKeyword();
+                    }
+                  }}
+                  placeholder="e.g. stop, help, pricing"
+                  className="flex-1 rounded-xl border border-input bg-background/50 px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-pink-500 focus:bg-background transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={addKeyword}
+                  disabled={!newKeyword.trim()}
+                  className="rounded-xl bg-pink-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-pink-500/25 hover:bg-pink-600 hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none transition-all"
+                >
+                  <Plus className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="min-h-[40px]">
+                {keywords.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    <AnimatePresence>
+                      {keywords.map((kw) => (
+                        <motion.span
+                          key={kw}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-pink-500/20 bg-pink-500/10 px-3 py-1.5 text-xs font-bold text-pink-600 dark:text-pink-400"
+                        >
+                          #{kw}
+                          <button
+                            type="button"
+                            onClick={() => removeKeyword(kw)}
+                            className="rounded-full p-0.5 hover:bg-pink-500/20 text-pink-600 dark:text-pink-400 transition-colors"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </motion.span>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center p-6 border border-dashed border-border rounded-xl bg-muted/20">
+                    <p className="text-sm font-semibold text-muted-foreground/70">
+                      No global keywords configured yet
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.section>
 
           {/* Team Management */}
-          <section className="rounded-3xl border border-border bg-card p-6 shadow-sm flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-bold text-foreground">Team &amp; Permissions</h2>
+          <motion.section variants={itemVariants} className="group relative rounded-3xl border border-border bg-card/60 backdrop-blur-xl p-8 shadow-xl shadow-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-6 transition-all duration-300 hover:border-purple-500/30">
+            <div className="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-purple-500/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-500/10 shadow-inner shrink-0">
+                <Users className="h-6 w-6 text-purple-500" />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Invite team members and collaborate within this workspace.
-              </p>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Team &amp; Permissions</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Invite members and manage roles
+                </p>
+              </div>
             </div>
+            
             <Link
               href="/dashboard/settings/team"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-4 py-2 text-xs font-bold text-foreground hover:bg-muted transition-colors"
+              className="relative z-10 inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-6 py-3 text-sm font-bold text-foreground shadow-sm hover:bg-muted hover:border-muted-foreground/30 hover:-translate-y-0.5 transition-all w-full sm:w-auto"
             >
-              <Shield className="h-3.5 w-3.5" />
+              <Shield className="h-4 w-4" />
               Manage Team
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </Link>
-          </section>
+          </motion.section>
 
           {/* About FlowStage & Legal Attribution */}
-          <section className="rounded-3xl border border-border/80 bg-muted/20 p-6 space-y-3">
+          <motion.section variants={itemVariants} className="rounded-3xl border border-border/80 bg-muted/30 p-8 space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded bg-gradient-to-tr from-purple-600 to-blue-500 p-[1px]">
-                   <div className="w-full h-full bg-[#050505] rounded flex items-center justify-center">
-                      <Sparkles className="h-3 w-3 text-white" />
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-purple-600 to-blue-500 p-[1px] shadow-sm">
+                   <div className="w-full h-full bg-[#050505] rounded-[7px] flex items-center justify-center">
+                      <Sparkles className="h-4 w-4 text-white" />
                    </div>
                 </div>
-                <span className="font-bold text-foreground">FlowStage</span>
+                <span className="font-bold text-foreground text-lg tracking-tight">FlowStage</span>
               </div>
               <Link
                 href="/legal/open-source"
-                className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline hover:text-primary/80 transition-colors bg-primary/5 px-3 py-1.5 rounded-lg border border-primary/10"
               >
                 <Scale className="h-3.5 w-3.5" />
                 Legal Notices
               </Link>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              FlowStage is an AI-powered omnichannel communication and customer engagement SaaS.
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
+              FlowStage is an AI-powered omnichannel communication and customer engagement platform built for modern teams.
             </p>
-            <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
-              <span>© {new Date().getFullYear()} FlowStage Inc.</span>
+            <div className="pt-4 border-t border-border/60 flex items-center justify-between text-xs font-semibold text-muted-foreground">
+              <span>© {new Date().getFullYear()} FlowStage Inc. All rights reserved.</span>
             </div>
-          </section>
+          </motion.section>
 
           {/* Save Action */}
-          <div className="flex items-center gap-3 pt-2">
-            <button
-              onClick={handleSave}
-              disabled={saving || !name.trim()}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/25 hover:opacity-95 disabled:opacity-50 transition-all"
-            >
-              {saving ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Save Changes
-                </>
+          <motion.div variants={itemVariants} className="sticky bottom-8 z-20 flex items-center justify-between p-4 rounded-2xl bg-background/80 backdrop-blur-xl border border-border shadow-2xl">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleSave}
+                disabled={saving || !name.trim()}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-8 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90 hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none transition-all"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-5 w-5" />
+                    Save Changes
+                  </>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {saved && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="flex items-center gap-2 text-sm font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-xl"
+                  >
+                    <Check className="h-4 w-4" />
+                    Settings saved
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-sm font-bold text-rose-600 bg-rose-500/10 border border-rose-500/20 px-4 py-2 rounded-xl"
+                >
+                  {error}
+                </motion.div>
               )}
-            </button>
-
-            {saved && (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 animate-in fade-in">
-                <Check className="h-4 w-4" />
-                Settings saved successfully
-              </span>
-            )}
-
-            {error && (
-              <span className="text-xs font-semibold text-destructive">
-                {error}
-              </span>
-            )}
-          </div>
-        </div>
+            </AnimatePresence>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );

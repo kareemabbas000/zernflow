@@ -22,6 +22,7 @@ import {
   Phone,
   AlertCircle,
   HelpCircle,
+  Network
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ import {
   platformLabel,
   type Platform,
 } from "@/lib/platforms";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Channel = Database["public"]["Tables"]["channels"]["Row"];
 
@@ -60,6 +62,16 @@ function getDmLink(platform: Platform, username: string | null): { url: string |
       return { url: null, label: "" };
   }
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+};
 
 export function ChannelsView({
   channels: initialChannels,
@@ -387,42 +399,48 @@ export function ChannelsView({
   }
 
   return (
-    <div className="flex h-full flex-col space-y-8 p-6 sm:p-8 max-w-7xl mx-auto overflow-y-auto">
-      {/* Top Banner & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
+    <div className="flex h-full flex-col bg-background relative overflow-hidden">
+      {/* Ambient glow */}
+      <div className="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] bg-primary/10 rounded-full blur-[150px] pointer-events-none -z-10" />
+
+      {/* Header */}
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border bg-background/50 backdrop-blur-xl px-8 py-6 shrink-0 relative z-10">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            Connect Your Channels
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+            <Network className="h-7 w-7 text-primary" />
+            Connected Channels
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Connect the communication channels where your customers message you. Automate DMs, broadcasts, and AI interactions.
+          <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
+            Manage your communication channels across various platforms. Enable AI workflows, broadcasts, and seamless interactions from a unified interface.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          {syncMessage && (
-            <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-lg border border-border">
-              {syncMessage}
-            </span>
-          )}
+          <AnimatePresence>
+            {syncMessage && (
+              <motion.span initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-xs font-bold text-primary bg-primary/10 px-4 py-2 rounded-xl border border-primary/20">
+                {syncMessage}
+              </motion.span>
+            )}
+          </AnimatePresence>
           <button
             onClick={handleSync}
             disabled={syncing}
-            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/80 disabled:opacity-50 transition-colors shadow-sm"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-bold text-foreground hover:bg-muted/80 disabled:opacity-50 transition-all shadow-sm"
           >
             <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin text-primary")} />
             {syncing ? "Syncing..." : "Sync Status"}
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* SECTION 1: Connected Channels List */}
       {channels.length > 0 && (
-        <div className="space-y-4">
+        <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-4 relative z-10">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold tracking-tight text-foreground flex items-center gap-2">
               <span>Connected Accounts</span>
-              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
+              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary border border-primary/20 shadow-sm">
                 {channels.length}
               </span>
             </h2>
@@ -431,18 +449,21 @@ export function ChannelsView({
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {channels.map((channel) => {
               const label = platformLabel(channel.platform);
               const meta = PLATFORM_DETAILS[channel.platform as Platform];
               const dm = getDmLink(channel.platform as Platform, channel.username);
 
               return (
-                <div
+                <motion.div
+                  variants={itemVariants}
                   key={channel.id}
-                  className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-5 transition-all hover:border-muted-foreground/30 hover:shadow-md"
+                  className="group relative flex flex-col justify-between rounded-3xl border border-border bg-card/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 overflow-hidden"
                 >
-                  <div>
+                  <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-primary/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  <div className="relative z-10">
                     {/* Top Row: Avatar + Names + Actions */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3.5 min-w-0">
@@ -559,15 +580,15 @@ export function ChannelsView({
                       <ChevronRight className="h-3.5 w-3.5" />
                     </Link>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* SECTION 2: Add New Channels Grid */}
-      <div className="space-y-4 pt-2">
+      <motion.div variants={itemVariants} initial="hidden" animate="visible" className="space-y-4 pt-2 relative z-10">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-foreground">
@@ -579,21 +600,24 @@ export function ChannelsView({
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {PLATFORMS.map((platformKey) => {
             const meta = PLATFORM_DETAILS[platformKey];
             const isConnecting = connecting === platformKey;
             const connectedCount = channels.filter((c) => c.platform === platformKey).length;
 
             return (
-              <div
+              <motion.div
+                variants={itemVariants}
                 key={platformKey}
-                className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/40 hover:shadow-lg"
+                className="group relative flex flex-col justify-between rounded-3xl border border-border bg-card/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 overflow-hidden"
               >
-                <div>
+                <div className="absolute -left-10 -bottom-10 w-40 h-40 rounded-full bg-primary/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                
+                <div className="relative z-10">
                   {/* Top Bar: Icon + Popular Badge */}
                   <div className="flex items-center justify-between">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted border border-border shadow-xs group-hover:scale-105 transition-transform">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted border border-border shadow-inner group-hover:scale-105 transition-transform group-hover:shadow-lg">
                       <PlatformIcon platform={platformKey} className="h-6 w-6" size={24} />
                     </div>
 
@@ -654,11 +678,11 @@ export function ChannelsView({
                     )}
                   </button>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* TELEGRAM SETUP WIZARD MODAL (100% In-App) */}
       {showTelegramModal && (

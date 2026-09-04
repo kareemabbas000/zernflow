@@ -23,6 +23,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/brand-logo";
 import type { Profile } from "@/lib/admin";
+import { motion, AnimatePresence } from "framer-motion";
 
 function subscribeToThemeClass(callback: () => void) {
   const observer = new MutationObserver(callback);
@@ -65,7 +66,7 @@ export function AdminSidebar({ profile }: { profile: Profile }) {
   }
 
   return (
-    <div className="flex h-full w-64 flex-col border-r border-border bg-card select-none">
+    <div className="flex h-full w-64 flex-col border-r border-border/40 bg-background/95 backdrop-blur-3xl select-none relative z-40 shrink-0">
       {/* Header */}
       <div className="border-b border-border p-4">
         <div className="flex items-center justify-between">
@@ -93,14 +94,22 @@ export function AdminSidebar({ profile }: { profile: Profile }) {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all",
+                "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold transition-colors mb-1",
                 isActive
-                  ? "bg-primary text-primary-foreground font-bold shadow-sm shadow-primary/25"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "text-primary font-bold"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {item.name}
+              {isActive && (
+                <motion.div
+                  layoutId="admin-sidebar-active"
+                  className="absolute inset-0 bg-primary/10 rounded-xl border border-primary/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                />
+              )}
+              <item.icon className={cn("h-4 w-4 shrink-0 relative z-10 transition-transform group-hover:scale-110", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+              <span className="relative z-10">{item.name}</span>
             </Link>
           );
         })}

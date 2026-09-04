@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { PlatformIcon } from "@/components/platform-icon";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   SegmentBuilder,
   createEmptyFilter,
@@ -98,6 +99,16 @@ function formatDate(dateStr: string | null): string {
     minute: "2-digit",
   });
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+};
 
 export function BroadcastsView({
   broadcasts,
@@ -181,31 +192,34 @@ export function BroadcastsView({
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-background relative overflow-hidden">
+      {/* Ambient glow */}
+      <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary/10 rounded-full blur-[150px] pointer-events-none -z-10" />
+
       {/* Header */}
-      <div className="border-b border-border px-8 py-6">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="border-b border-border/40 bg-background/50 backdrop-blur-xl px-8 py-6 shrink-0 relative z-10">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Radio className="h-6 w-6 text-primary" />
+            <h1 className="text-3xl font-bold flex items-center gap-3 tracking-tight text-foreground">
+              <Radio className="h-7 w-7 text-primary" />
               Broadcasts
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
               Send mass announcements and direct marketing campaigns to your audience
             </p>
           </div>
           <button
             onClick={() => setIsCreatingNew(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all shadow-md shadow-primary/20"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:opacity-90 transition-all shadow-md shadow-primary/20"
           >
             <Plus className="h-4 w-4" />
             Create Broadcast
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Broadcasts List */}
-      <div className="flex-1 overflow-auto p-8">
+      <div className="flex-1 overflow-auto p-8 relative z-10 custom-scrollbar">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-24 text-center">
             <Radio className="h-12 w-12 text-muted-foreground/30" />
@@ -222,19 +236,21 @@ export function BroadcastsView({
             </button>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((broadcast) => {
               const status = statusConfig[broadcast.status as BroadcastStatus] || statusConfig.draft;
               const StatusIcon = status.icon;
               const isDraft = broadcast.status === "draft" || broadcast.status === "scheduled";
 
               return (
-                <div
+                <motion.div
+                  variants={itemVariants}
                   key={broadcast.id}
                   onClick={() => setSelectedId(broadcast.id)}
-                  className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-5 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer"
+                  className="group relative flex flex-col justify-between rounded-3xl border border-border bg-card/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 overflow-hidden cursor-pointer"
                 >
-                  <div>
+                  <div className="absolute -right-10 -bottom-10 w-40 h-40 rounded-full bg-primary/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative z-10">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                         {broadcast.name}
@@ -260,19 +276,21 @@ export function BroadcastsView({
                     </p>
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Users className="h-3.5 w-3.5" />
+                  </div>
+
+                  <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground relative z-10">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Users className="h-4 w-4 text-primary" />
                       {broadcast.total_recipients > 0
-                        ? `${broadcast.sent}/${broadcast.total_recipients} sent`
+                        ? <><span className="text-foreground">{broadcast.sent}</span> / {broadcast.total_recipients} sent</>
                         : "Draft"}
                     </span>
                     <span>{formatDate(broadcast.created_at)}</span>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
