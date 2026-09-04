@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { GitBranch, Sparkles, Plug, ArrowRight } from "lucide-react";
+import { GitBranch, Sparkles, Plug, ArrowRight, Zap } from "lucide-react";
 import { CreateFlowButton } from "@/components/create-flow-button";
 import { ImportFlowButton, ExportFlowButton, DeleteFlowButton } from "@/components/flow-actions";
 import type { FlowStatus, Json } from "@/lib/types/database";
