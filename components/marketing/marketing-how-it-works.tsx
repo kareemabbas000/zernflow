@@ -30,36 +30,36 @@ const TelegramIcon = ({ className }: { className?: string }) => (
 )
 
 export const MockupChannels = () => (
-  <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center p-0 relative overflow-hidden">
+  <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center p-4 relative overflow-hidden">
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--brand-soft)_0%,transparent_70%)] opacity-30" />
     <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:32px_32px] opacity-20" />
     
-    <div className="relative z-10 w-full h-full flex items-center justify-center scale-[0.6] sm:scale-75 md:scale-100">
+    <div className="relative z-10 w-full max-w-[280px] aspect-square flex items-center justify-center">
       
       {/* Central Hub */}
       <motion.div 
-        animate={{ scale: [1, 1.05, 1], boxShadow: ["0 0 0px var(--brand)", "0 0 40px var(--brand)", "0 0 0px var(--brand)"] }}
+        animate={{ scale: [1, 1.05, 1], boxShadow: ["0 0 0px var(--brand)", "0 0 20px var(--brand)", "0 0 0px var(--brand)"] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="w-32 h-32 rounded-[2rem] bg-gradient-to-br from-[var(--brand)] to-[var(--brand-hover)] border-4 border-[var(--bg)] shadow-[0_0_50px_var(--brand)] flex items-center justify-center absolute z-30"
+        className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--brand)] to-[var(--brand-hover)] border-2 border-[var(--bg)] shadow-[0_0_20px_var(--brand)] flex items-center justify-center absolute z-30"
       >
-        <Workflow className="w-12 h-12 text-white" />
+        <Workflow className="w-6 h-6 text-white" />
       </motion.div>
 
       {/* Connection Lines */}
-      <svg className="absolute inset-0 w-full h-full z-10 pointer-events-none" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '600px' }}>
+      <svg className="absolute inset-0 w-full h-full z-10 pointer-events-none">
         {[
-          { x1: 150, y1: 150 }, { x1: 450, y1: 150 }, { x1: 150, y1: 450 }, { x1: 450, y1: 450 }
+          { x1: 40, y1: 40 }, { x1: 240, y1: 40 }, { x1: 40, y1: 240 }, { x1: 240, y1: 240 }
         ].map((pos, i) => (
           <g key={i}>
             <motion.line 
-              x1={pos.x1} y1={pos.y1} x2="300" y2="300" 
-              stroke="var(--border-strong)" strokeWidth="4" strokeDasharray="8 8"
+              x1={pos.x1} y1={pos.y1} x2="140" y2="140" 
+              stroke="var(--border-strong)" strokeWidth="2" strokeDasharray="4 4"
             />
             <motion.circle 
-              cx={pos.x1} cy={pos.y1} r="4" fill="var(--brand)"
+              cx={pos.x1} cy={pos.y1} r="3" fill="var(--brand)"
               animate={{ 
-                cx: [pos.x1, 300], 
-                cy: [pos.y1, 300],
+                cx: [pos.x1, 140], 
+                cy: [pos.y1, 140],
                 opacity: [0, 1, 0]
               }}
               transition={{ duration: 2, delay: i * 0.5, repeat: Infinity, ease: "easeIn" }}
@@ -70,38 +70,38 @@ export const MockupChannels = () => (
 
       {/* Orbiting Channel Nodes */}
       <motion.div 
-        animate={{ y: [-10, 10, -10] }} transition={{ duration: 4, repeat: Infinity, delay: 0 }}
-        className="absolute z-20" style={{ transform: 'translate(-150px, -150px)' }}
+        animate={{ y: [-5, 5, -5] }} transition={{ duration: 4, repeat: Infinity, delay: 0 }}
+        className="absolute z-20 left-4 top-4"
       >
-        <div className="w-24 h-24 rounded-3xl bg-[#25D366] border-4 border-[var(--bg)] shadow-2xl flex items-center justify-center">
-          <WhatsAppIcon className="w-12 h-12 text-white" />
+        <div className="w-12 h-12 rounded-xl bg-[#25D366] border-2 border-[var(--bg)] shadow-xl flex items-center justify-center">
+          <WhatsAppIcon className="w-6 h-6 text-white" />
         </div>
       </motion.div>
 
       <motion.div 
-        animate={{ y: [-10, 10, -10] }} transition={{ duration: 4, repeat: Infinity, delay: 1 }}
-        className="absolute z-20" style={{ transform: 'translate(150px, -150px)' }}
+        animate={{ y: [-5, 5, -5] }} transition={{ duration: 4, repeat: Infinity, delay: 1 }}
+        className="absolute z-20 right-4 top-4"
       >
-        <div className="w-24 h-24 rounded-3xl bg-[#E1306C] border-4 border-[var(--bg)] shadow-2xl flex items-center justify-center">
-          <InstagramIcon className="w-12 h-12 text-white" />
+        <div className="w-12 h-12 rounded-xl bg-[#E1306C] border-2 border-[var(--bg)] shadow-xl flex items-center justify-center">
+          <InstagramIcon className="w-6 h-6 text-white" />
         </div>
       </motion.div>
 
       <motion.div 
-        animate={{ y: [-10, 10, -10] }} transition={{ duration: 4, repeat: Infinity, delay: 2 }}
-        className="absolute z-20" style={{ transform: 'translate(-150px, 150px)' }}
+        animate={{ y: [-5, 5, -5] }} transition={{ duration: 4, repeat: Infinity, delay: 2 }}
+        className="absolute z-20 left-4 bottom-4"
       >
-        <div className="w-24 h-24 rounded-3xl bg-[#1877F2] border-4 border-[var(--bg)] shadow-2xl flex items-center justify-center">
-          <FacebookIcon className="w-12 h-12 text-white" />
+        <div className="w-12 h-12 rounded-xl bg-[#1877F2] border-2 border-[var(--bg)] shadow-xl flex items-center justify-center">
+          <FacebookIcon className="w-6 h-6 text-white" />
         </div>
       </motion.div>
 
       <motion.div 
-        animate={{ y: [-10, 10, -10] }} transition={{ duration: 4, repeat: Infinity, delay: 3 }}
-        className="absolute z-20" style={{ transform: 'translate(150px, 150px)' }}
+        animate={{ y: [-5, 5, -5] }} transition={{ duration: 4, repeat: Infinity, delay: 3 }}
+        className="absolute z-20 right-4 bottom-4"
       >
-        <div className="w-24 h-24 rounded-3xl bg-[#0088cc] border-4 border-[var(--bg)] shadow-2xl flex items-center justify-center">
-          <TelegramIcon className="w-12 h-12 text-white" />
+        <div className="w-12 h-12 rounded-xl bg-[#0088cc] border-2 border-[var(--bg)] shadow-xl flex items-center justify-center">
+          <TelegramIcon className="w-6 h-6 text-white" />
         </div>
       </motion.div>
     </div>
@@ -109,101 +109,84 @@ export const MockupChannels = () => (
 );
 
 export const MockupLogic = () => (
-  <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center relative overflow-hidden p-0">
-    <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:48px_48px] opacity-40" />
+  <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center relative overflow-hidden p-4">
+    <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:24px_24px] opacity-40" />
     
-    <div className="relative z-10 w-full h-full flex items-center justify-center scale-75 md:scale-100">
+    <div className="relative z-10 w-full max-w-sm flex flex-col items-center gap-4">
       
-      {/* Zoomed in Node Graph */}
-      <div className="absolute top-[20%] left-1/2 -translate-x-1/2 flex flex-col items-center">
+      {/* Router Node */}
+      <motion.div 
+        animate={{ y: [0, -2, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        className="w-full bg-[var(--bg)]/90 backdrop-blur-md rounded-2xl border-2 border-[var(--border-strong)] shadow-lg p-4"
+      >
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] flex items-center justify-center">
+            <Workflow className="w-5 h-5 text-[var(--text-primary)]" />
+          </div>
+          <div>
+            <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Condition</div>
+            <div className="text-sm font-black text-[var(--text-primary)]">User VIP Status</div>
+          </div>
+        </div>
         
-        {/* Router Node - Huge */}
+        <div className="space-y-2">
+          <div className="bg-[var(--surface-2)] border border-[var(--brand)] rounded-lg p-2 flex justify-between items-center">
+            <span className="font-bold text-[var(--text-primary)] text-xs">is_vip == true</span>
+            <div className="w-4 h-4 rounded-full bg-[var(--brand)] flex items-center justify-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-white" />
+            </div>
+          </div>
+          <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-2 flex justify-between items-center opacity-60">
+            <span className="font-bold text-[var(--text-primary)] text-xs">is_vip == false</span>
+            <div className="w-4 h-4 rounded-full bg-[var(--border)]" />
+          </div>
+        </div>
+      </motion.div>
+      
+      <div className="w-full flex justify-between px-8 relative">
+        <div className="w-px h-8 bg-[var(--border-strong)]" />
+        <div className="w-px h-8 bg-[var(--border-strong)] opacity-30" />
+        <div className="absolute top-4 left-8 right-8 h-px bg-[var(--border-strong)] opacity-30" />
+      </div>
+      
+      {/* Action Nodes */}
+      <div className="flex w-full gap-4">
         <motion.div 
-          animate={{ y: [0, -5, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="w-80 bg-[var(--bg)]/90 backdrop-blur-2xl rounded-[32px] border-4 border-[var(--border-strong)] shadow-2xl p-6 relative overflow-hidden"
+          animate={{ y: [0, -2, 0] }}
+          transition={{ duration: 4, repeat: Infinity, delay: 0.5, ease: "easeInOut" }}
+          className="flex-1 bg-[var(--bg)]/90 backdrop-blur-md rounded-xl border-2 border-[var(--brand)] shadow-[0_0_20px_var(--brand)]/10 p-3 flex flex-col items-center text-center"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-[var(--border)]/20 to-transparent pointer-events-none" />
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 rounded-2xl bg-[var(--surface-2)] flex items-center justify-center shadow-inner">
-              <Workflow className="w-7 h-7 text-[var(--text-primary)]" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Condition</div>
-              <div className="text-xl font-black text-[var(--text-primary)]">User VIP Status</div>
-            </div>
-          </div>
-          
-          <div className="space-y-3">
-            <div className="bg-[var(--surface-2)] border-2 border-[var(--brand)] rounded-xl p-3 flex justify-between items-center shadow-[0_0_15px_var(--brand)]/10">
-              <span className="font-bold text-[var(--text-primary)]">is_vip == true</span>
-              <div className="w-6 h-6 rounded-full bg-[var(--brand)] flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-white" />
-              </div>
-            </div>
-            <div className="bg-[var(--surface-2)] border-2 border-[var(--border)] rounded-xl p-3 flex justify-between items-center opacity-60">
-              <span className="font-bold text-[var(--text-primary)]">is_vip == false</span>
-              <div className="w-6 h-6 rounded-full bg-[var(--border)] flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-[var(--surface)]" />
-              </div>
-            </div>
-          </div>
+          <div className="w-8 h-8 rounded-lg bg-[var(--brand)] text-white flex items-center justify-center mb-2 shadow-sm"><Zap className="w-4 h-4"/></div>
+          <div className="text-xs font-black text-[var(--text-primary)]">Priority</div>
         </motion.div>
-        
-        {/* Massive Connection Lines */}
-        <div className="flex w-[400px] justify-between relative mt-2">
-           <svg className="absolute w-[400px] h-[100px] top-0 left-0" style={{ zIndex: -1 }}>
-             <motion.path 
-               d="M 200 0 C 200 60, 50 40, 50 100" 
-               stroke="var(--brand)" strokeWidth="6" fill="none"
-               initial={{ strokeDasharray: "10 10" }}
-               animate={{ strokeDashoffset: [0, -100] }}
-               transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-             />
-             <path d="M 200 0 C 200 60, 350 40, 350 100" stroke="var(--border-strong)" strokeWidth="6" fill="none" />
-           </svg>
-        </div>
-        
-        {/* Action Nodes */}
-        <div className="flex gap-20 mt-[100px] relative w-[480px] justify-between">
-          <motion.div 
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 5, repeat: Infinity, delay: 0.5, ease: "easeInOut" }}
-            className="w-56 bg-[var(--bg)]/90 backdrop-blur-2xl rounded-[32px] border-4 border-[var(--brand)] shadow-[0_0_40px_var(--brand)]/20 p-6 flex flex-col items-center text-center"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-[var(--brand)] text-white flex items-center justify-center mb-4 shadow-lg"><Zap className="w-8 h-8"/></div>
-            <div className="text-lg font-black text-[var(--text-primary)] mb-1">Priority Queue</div>
-            <div className="text-xs font-bold text-[var(--text-secondary)]">Route to top agent</div>
-          </motion.div>
 
-          <motion.div 
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 5, repeat: Infinity, delay: 0.8, ease: "easeInOut" }}
-            className="w-56 bg-[var(--bg)]/90 backdrop-blur-2xl rounded-[32px] border-4 border-[var(--border)] shadow-xl p-6 flex flex-col items-center text-center opacity-75"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-[var(--surface-2)] text-[var(--text-muted)] flex items-center justify-center mb-4"><Cpu className="w-8 h-8"/></div>
-            <div className="text-lg font-black text-[var(--text-primary)] mb-1">AI Gen-Reply</div>
-            <div className="text-xs font-bold text-[var(--text-secondary)]">Standard support</div>
-          </motion.div>
-        </div>
+        <motion.div 
+          animate={{ y: [0, -2, 0] }}
+          transition={{ duration: 4, repeat: Infinity, delay: 0.8, ease: "easeInOut" }}
+          className="flex-1 bg-[var(--bg)]/90 backdrop-blur-md rounded-xl border-2 border-[var(--border)] shadow-sm p-3 flex flex-col items-center text-center opacity-75"
+        >
+          <div className="w-8 h-8 rounded-lg bg-[var(--surface-2)] text-[var(--text-muted)] flex items-center justify-center mb-2"><Cpu className="w-4 h-4"/></div>
+          <div className="text-xs font-black text-[var(--text-primary)]">AI Reply</div>
+        </motion.div>
       </div>
     </div>
   </div>
 );
 
 export const MockupDeploy = () => (
-  <div className="w-full h-full bg-[var(--surface-inset)] flex flex-col items-center justify-center p-0 relative overflow-hidden">
+  <div className="w-full h-full bg-[var(--surface-inset)] flex flex-col items-center justify-center p-4 relative overflow-hidden">
     
     {/* Pulsating Radar Background */}
     <motion.div 
-       animate={{ scale: [1, 2, 3], opacity: [0.8, 0.2, 0] }}
+       animate={{ scale: [1, 1.5, 2], opacity: [0.5, 0.2, 0] }}
        transition={{ duration: 3, repeat: Infinity, ease: "easeOut" }}
-       className="absolute w-[300px] h-[300px] border-[10px] border-[var(--success)] rounded-full z-0"
+       className="absolute w-40 h-40 border-4 border-[var(--success)] rounded-full z-0"
     />
     <motion.div 
-       animate={{ scale: [1, 2, 3], opacity: [0.8, 0.2, 0] }}
-       transition={{ duration: 3, repeat: Infinity, delay: 1, ease: "easeOut" }}
-       className="absolute w-[300px] h-[300px] border-[10px] border-[var(--success)] rounded-full z-0"
+       animate={{ scale: [1, 1.5, 2], opacity: [0.5, 0.2, 0] }}
+       transition={{ duration: 3, repeat: Infinity, delay: 1.5, ease: "easeOut" }}
+       className="absolute w-40 h-40 border-4 border-[var(--success)] rounded-full z-0"
     />
     
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--success-soft)_0%,transparent_80%)] opacity-30 z-0" />
@@ -212,42 +195,42 @@ export const MockupDeploy = () => (
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", duration: 0.8 }}
-      className="bg-[var(--bg)]/80 backdrop-blur-3xl rounded-[40px] border-2 border-[var(--border)] p-10 shadow-2xl w-full max-w-[420px] relative z-10 flex flex-col items-center text-center"
+      className="bg-[var(--bg)]/90 backdrop-blur-md rounded-2xl border border-[var(--border)] p-6 shadow-xl w-full max-w-[280px] relative z-10 flex flex-col items-center text-center"
     >
-      <div className="w-full flex justify-between items-center mb-8">
-         <div className="text-sm font-black uppercase tracking-widest text-[var(--text-primary)]">Production</div>
-         <div className="px-3 py-1 rounded-full bg-[var(--success-soft)] text-[var(--success)] text-xs font-bold flex items-center gap-2">
-           <div className="w-2 h-2 rounded-full bg-[var(--success)] animate-pulse" /> LIVE
+      <div className="w-full flex justify-between items-center mb-6">
+         <div className="text-xs font-black uppercase tracking-widest text-[var(--text-primary)]">Production</div>
+         <div className="px-2 py-0.5 rounded-full bg-[var(--success-soft)] text-[var(--success)] text-[10px] font-bold flex items-center gap-1.5">
+           <div className="w-1.5 h-1.5 rounded-full bg-[var(--success)] animate-pulse" /> LIVE
          </div>
       </div>
       
       {/* Massive Toggle */}
-      <div className="w-48 h-24 bg-[var(--success)] rounded-full p-2 mb-8 shadow-inner relative cursor-pointer group">
-         <div className="absolute inset-0 rounded-full shadow-[0_0_50px_var(--success)] opacity-50 group-hover:opacity-100 transition-opacity" />
+      <div className="w-24 h-12 bg-[var(--success)] rounded-full p-1 mb-6 shadow-inner relative cursor-pointer group">
+         <div className="absolute inset-0 rounded-full shadow-[0_0_20px_var(--success)] opacity-50 group-hover:opacity-100 transition-opacity" />
          <motion.div 
            layout
-           className="w-20 h-20 bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.3)] flex items-center justify-center ml-auto relative z-10"
+           className="w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center ml-auto relative z-10"
          >
-           <Check className="w-10 h-10 text-[var(--success)]" />
+           <Check className="w-5 h-5 text-[var(--success)]" />
          </motion.div>
       </div>
 
-      <div className="space-y-2 mb-8 w-full">
-         <div className="text-5xl font-display font-black text-[var(--text-primary)]">14,293</div>
-         <div className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Conversations Auto-Handled</div>
+      <div className="space-y-1 mb-6 w-full">
+         <div className="text-3xl font-display font-black text-[var(--text-primary)]">14,293</div>
+         <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Auto-Handled</div>
       </div>
       
-      <div className="w-full bg-[var(--surface-2)] rounded-2xl h-3 overflow-hidden shadow-inner">
+      <div className="w-full bg-[var(--surface-2)] rounded-full h-2 overflow-hidden shadow-inner">
          <motion.div 
            initial={{ width: "0%" }}
            animate={{ width: "85%" }}
            transition={{ duration: 2, ease: "easeOut" }}
-           className="h-full bg-gradient-to-r from-[var(--success)] to-[#25D366]"
+           className="h-full bg-[var(--success)]"
          />
       </div>
-      <div className="w-full flex justify-between text-[10px] font-bold text-[var(--text-muted)] mt-2 uppercase tracking-widest">
+      <div className="w-full flex justify-between text-[8px] font-bold text-[var(--text-muted)] mt-2 uppercase tracking-widest">
         <span>0%</span>
-        <span className="text-[var(--success)]">Server Load: 85%</span>
+        <span className="text-[var(--success)]">Load: 85%</span>
       </div>
     </motion.div>
   </div>

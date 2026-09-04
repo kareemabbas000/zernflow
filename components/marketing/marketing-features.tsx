@@ -30,217 +30,95 @@ const TelegramIcon = ({ className }: { className?: string }) => (
 )
 
 const AbstractFlow = () => (
-  <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center p-0 relative overflow-hidden">
+  <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center p-4 relative overflow-hidden">
     <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:32px_32px] opacity-40" />
     
-    <div className="relative z-10 w-full h-full flex items-center justify-center scale-90 sm:scale-100">
+    <div className="relative z-10 w-full flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4">
+      {/* Node 1 */}
+      <motion.div animate={{ y: [-2, 2, -2] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} className="w-32 bg-[var(--bg)]/90 backdrop-blur-md border border-[var(--border)] rounded-2xl p-4 shadow-sm flex flex-col items-center gap-2 relative">
+        <div className="w-10 h-10 rounded-full bg-[#25D366]/10 text-[#25D366] flex items-center justify-center"><WhatsAppIcon className="w-5 h-5"/></div>
+        <div className="text-[10px] font-bold text-[var(--text-primary)]">Incoming</div>
+      </motion.div>
       
-      {/* Animated SVG Path Connection */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: -1 }}>
-        <motion.path 
-          d="M 280 140 C 280 180, 280 180, 280 220" 
-          stroke="url(#gradient1)" strokeWidth="3" fill="none"
-          initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.5, repeat: Infinity, repeatType: "loop", ease: "linear" }}
-        />
-        <motion.path 
-          d="M 280 280 C 280 320, 160 320, 160 360" 
-          stroke="url(#gradient2)" strokeWidth="3" fill="none"
-          initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.5, delay: 0.2, repeat: Infinity, repeatType: "loop", ease: "linear" }}
-        />
-        <motion.path 
-          d="M 280 280 C 280 320, 400 320, 400 360" 
-          stroke="url(#gradient2)" strokeWidth="3" fill="none"
-          initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.5, delay: 0.4, repeat: Infinity, repeatType: "loop", ease: "linear" }}
-        />
-        <defs>
-          <linearGradient id="gradient1" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--success)" stopOpacity="0" />
-            <stop offset="50%" stopColor="var(--success)" />
-            <stop offset="100%" stopColor="var(--success)" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="gradient2" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="var(--lilac)" stopOpacity="0" />
-            <stop offset="50%" stopColor="var(--lilac)" />
-            <stop offset="100%" stopColor="var(--lilac)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-      </svg>
+      {/* Line connecting 1 -> 2 */}
+      <div className="w-0.5 h-6 md:w-8 md:h-0.5 bg-[var(--border)] relative overflow-hidden rounded-full">
+        <motion.div className="absolute inset-0 bg-[var(--brand)]" initial={{ scaleX: 0, originX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 1.5, repeat: Infinity }} />
+      </div>
 
-      <div className="absolute top-[80px] left-1/2 -translate-x-1/2 flex flex-col items-center">
-        {/* Trigger Node */}
-        <motion.div 
-          animate={{ y: [0, -4, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          className="w-64 bg-[var(--bg)]/90 backdrop-blur-xl rounded-2xl border-2 border-[var(--success)] shadow-[0_8px_30px_rgb(0,0,0,0.12)] shadow-[var(--success)]/10 p-4 flex items-center gap-4 relative"
-        >
-          <div className="absolute -inset-1 bg-[var(--success)] opacity-20 blur-lg rounded-2xl" />
-          <div className="w-10 h-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center shadow-lg relative z-10">
-            <WhatsAppIcon className="w-6 h-6" />
-          </div>
-          <div className="relative z-10">
-            <div className="text-[10px] font-bold text-[var(--success)] uppercase tracking-wider mb-0.5">Trigger</div>
-            <div className="text-sm font-black text-[var(--text-primary)] leading-tight">Incoming WhatsApp</div>
-          </div>
-        </motion.div>
+      {/* Node 2 */}
+      <motion.div animate={{ y: [-2, 2, -2] }} transition={{ duration: 3, repeat: Infinity, delay: 0.2, ease: "easeInOut" }} className="w-36 bg-[var(--bg)]/90 backdrop-blur-md border-2 border-[var(--brand)] rounded-2xl p-4 shadow-lg shadow-[var(--brand)]/10 flex flex-col items-center gap-2 relative z-10">
+         <div className="absolute -top-2 -right-2 w-6 h-6 bg-[var(--brand)] rounded-full text-white flex items-center justify-center shadow-md"><Sparkles className="w-3 h-3"/></div>
+         <div className="w-10 h-10 rounded-full bg-[var(--surface-2)] flex items-center justify-center"><Workflow className="w-5 h-5 text-[var(--text-primary)]"/></div>
+         <div className="text-xs font-black text-[var(--text-primary)]">AI Router</div>
+      </motion.div>
 
-        {/* Space for line */}
-        <div className="h-[76px]" />
-
-        {/* Router Node */}
-        <motion.div 
-          animate={{ y: [0, -4, 0] }}
-          transition={{ duration: 4, repeat: Infinity, delay: 0.2, ease: "easeInOut" }}
-          className="w-56 bg-[var(--bg)]/90 backdrop-blur-xl rounded-2xl border-2 border-[var(--border-strong)] shadow-xl p-4 flex flex-col gap-3 relative"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[var(--surface-2)] flex items-center justify-center text-[var(--text-primary)]">
-              <Workflow className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-0.5">Router</div>
-              <div className="text-sm font-black text-[var(--text-primary)]">AI Intent Split</div>
-            </div>
-          </div>
-          <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-2 text-xs font-medium text-[var(--text-secondary)] flex justify-between items-center">
-            <span>If Intent == "Support"</span>
-            <CheckCircle2 className="w-4 h-4 text-[var(--brand)]" />
-          </div>
-        </motion.div>
-
-        {/* Space for lines */}
-        <div className="h-[60px]" />
-
-        <div className="flex gap-12 w-full justify-center">
-          <motion.div 
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 4, repeat: Infinity, delay: 0.4, ease: "easeInOut" }}
-            className="w-48 bg-[var(--bg)]/90 backdrop-blur-xl rounded-2xl border-2 border-[var(--border)] p-4 shadow-xl flex items-center gap-3"
-          >
-            <div className="w-8 h-8 rounded-lg bg-[var(--surface-2)] flex items-center justify-center"><Users className="w-4 h-4 text-[var(--text-muted)]"/></div>
-            <div>
-              <div className="text-sm font-black text-[var(--text-primary)]">Human Handoff</div>
-            </div>
-          </motion.div>
-          <motion.div 
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 4, repeat: Infinity, delay: 0.6, ease: "easeInOut" }}
-            className="w-56 bg-[var(--bg)]/90 backdrop-blur-xl rounded-2xl border-2 border-[var(--lilac)] p-4 shadow-xl shadow-[var(--lilac)]/10 flex items-center gap-3 relative overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--lilac)]/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-            <div className="w-10 h-10 rounded-xl bg-[var(--lilac-soft)] text-[var(--lilac)] flex items-center justify-center shadow-inner"><Cpu className="w-5 h-5"/></div>
-            <div>
-              <div className="text-[10px] font-bold text-[var(--lilac)] uppercase tracking-wider mb-0.5">Generate</div>
-              <div className="text-sm font-black text-[var(--text-primary)]">AI Auto-Reply</div>
-            </div>
-          </motion.div>
-        </div>
+      {/* Line connecting 2 -> 3 */}
+      <div className="w-0.5 h-6 md:w-8 md:h-0.5 bg-[var(--border)] relative overflow-hidden rounded-full">
+        <motion.div className="absolute inset-0 bg-[var(--lilac)]" initial={{ scaleX: 0, originX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 1.5, delay: 0.5, repeat: Infinity }} />
       </div>
       
-      {/* Sidebar Tool panel */}
-      <div className="absolute right-6 top-6 bottom-6 w-16 bg-[var(--bg)]/80 backdrop-blur-md border border-[var(--border)] rounded-2xl shadow-2xl flex flex-col items-center py-4 gap-4 hidden sm:flex">
-        <div className="w-10 h-10 rounded-xl bg-[var(--brand)] text-white shadow-lg flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"><Plus className="w-5 h-5" /></div>
-        <div className="w-8 h-px bg-[var(--border)] my-2" />
-        {['bg-[#25D366] text-white', 'bg-[#E1306C] text-white', 'bg-[var(--lilac)] text-white', 'bg-[var(--surface-2)] text-[var(--text-primary)]'].map((bg, i) => (
-          <div key={i} className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center shadow-md cursor-pointer hover:scale-110 transition-transform`}>
-            {i === 0 ? <WhatsAppIcon className="w-5 h-5"/> : i === 1 ? <InstagramIcon className="w-5 h-5"/> : i === 2 ? <Sparkles className="w-5 h-5"/> : <Workflow className="w-5 h-5"/>}
-          </div>
-        ))}
-      </div>
+      {/* Node 3 */}
+      <motion.div animate={{ y: [-2, 2, -2] }} transition={{ duration: 3, repeat: Infinity, delay: 0.4, ease: "easeInOut" }} className="w-32 bg-[var(--bg)]/90 backdrop-blur-md border border-[var(--border)] rounded-2xl p-4 shadow-sm flex flex-col items-center gap-2">
+        <div className="w-10 h-10 rounded-full bg-[var(--lilac-soft)] text-[var(--lilac)] flex items-center justify-center"><Cpu className="w-5 h-5"/></div>
+        <div className="text-[10px] font-bold text-[var(--text-primary)]">Auto-Reply</div>
+      </motion.div>
     </div>
   </div>
 );
 
 const AbstractCopilot = () => (
-  <div className="w-full h-full bg-[var(--bg)] flex overflow-hidden">
-    {/* Left Sidebar (Tickets) */}
-    <div className="w-[35%] h-full border-r border-[var(--border)] bg-[var(--surface)] hidden md:flex flex-col">
-      <div className="p-4 border-b border-[var(--border)]">
-        <div className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)] mb-4">Active Queue</div>
-        <div className="bg-[var(--surface-2)] border border-[var(--brand)] shadow-sm rounded-xl p-3 cursor-pointer relative overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--brand)]" />
-          <div className="flex justify-between items-start mb-1">
-            <span className="font-bold text-sm text-[var(--text-primary)]">#4092 - Login Issue</span>
-            <span className="text-[10px] font-bold text-[var(--text-muted)]">2m</span>
-          </div>
-          <div className="text-xs text-[var(--text-secondary)] truncate">I can't log into my account...</div>
-        </div>
-      </div>
-      <div className="p-4 space-y-3 opacity-60">
-        {[1, 2].map(i => (
-           <div key={i} className="bg-[var(--bg)] border border-[var(--border)] rounded-xl p-3 pointer-events-none">
-             <div className="flex justify-between items-start mb-1">
-               <span className="font-bold text-sm text-[var(--text-primary)]">#409{i} - Billing</span>
-               <span className="text-[10px] font-bold text-[var(--text-muted)]">1h</span>
-             </div>
-             <div className="text-xs text-[var(--text-secondary)] truncate">Can I get an invoice for...</div>
-           </div>
-        ))}
-      </div>
-    </div>
-
-    {/* Right Main Chat */}
-    <div className="flex-1 h-full flex flex-col relative bg-[var(--surface-inset)]">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[var(--lilac)] opacity-5 blur-[100px] rounded-full pointer-events-none" />
+  <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center p-4">
+    <div className="w-full max-w-sm bg-[var(--bg)] border border-[var(--border)] rounded-3xl shadow-xl flex flex-col overflow-hidden h-[400px]">
       
-      <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--bg)]/80 backdrop-blur-md flex justify-between items-center z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center font-bold text-[var(--text-primary)] shadow-inner">JD</div>
-          <div>
-            <div className="text-sm font-black text-[var(--text-primary)]">John Doe</div>
-            <div className="text-xs text-[var(--text-secondary)] flex items-center gap-1"><WhatsAppIcon className="w-3 h-3 text-[#25D366]"/> WhatsApp User</div>
+      {/* Chat Header */}
+      <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface)] flex justify-between items-center z-10">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center font-bold text-[var(--text-primary)] shrink-0">JD</div>
+          <div className="min-w-0">
+            <div className="text-sm font-black text-[var(--text-primary)] truncate">John Doe</div>
+            <div className="text-xs text-[var(--text-secondary)] flex items-center gap-1 truncate"><WhatsAppIcon className="w-3 h-3 text-[#25D366] shrink-0"/> WhatsApp User</div>
           </div>
         </div>
+      </div>
+      
+      {/* Chat Messages */}
+      <div className="flex-1 p-4 flex flex-col justify-end gap-4 overflow-hidden relative">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--lilac-soft)_0%,transparent_70%)] opacity-30" />
         
-        {/* Dynamic AI Intent Tag */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.8, y: -10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ delay: 1, type: "spring" }}
-          className="hidden sm:flex items-center gap-1.5 bg-[var(--lilac-soft)] border border-[var(--lilac)]/30 text-[var(--lilac)] px-3 py-1.5 rounded-full shadow-sm"
-        >
-          <Sparkles className="w-3 h-3" />
-          <span className="text-[10px] font-black uppercase tracking-wider">Intent: Tech Support</span>
-        </motion.div>
-      </div>
-      
-      <div className="flex-1 p-6 flex flex-col justify-end gap-6 z-10">
-        {/* User Message */}
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex gap-3 max-w-[85%]">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 shrink-0 shadow-sm" />
-          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-2xl rounded-tl-sm p-4 text-sm text-[var(--text-primary)] shadow-sm">
-            I can't log into my account, it keeps saying password incorrect even after I reset it. Can someone help?
+        <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex gap-2 max-w-[85%] z-10">
+          <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 shrink-0" />
+          <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-2xl rounded-tl-sm p-3 text-xs text-[var(--text-primary)] shadow-sm">
+            I can't log into my account.
           </div>
         </motion.div>
         
-        {/* AI Typing / Response */}
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="flex gap-3 max-w-[90%] self-end flex-row-reverse">
-          <div className="w-8 h-8 rounded-full bg-[var(--lilac)] text-white flex items-center justify-center shrink-0 shadow-lg shadow-[var(--lilac)]/30">
-            <Sparkles className="w-4 h-4" />
+        <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="flex gap-2 max-w-[85%] self-end flex-row-reverse z-10">
+          <div className="w-6 h-6 rounded-full bg-[var(--lilac)] text-white flex items-center justify-center shrink-0">
+            <Sparkles className="w-3 h-3" />
           </div>
-          <div className="bg-gradient-to-br from-[var(--lilac)]/10 to-[var(--surface)] border border-[var(--lilac)]/20 rounded-2xl rounded-tr-sm p-4 text-sm text-[var(--text-primary)] shadow-md relative overflow-hidden">
-             {/* Typewriter effect simulation */}
+          <div className="bg-[var(--lilac-soft)] border border-[var(--lilac)]/20 rounded-2xl rounded-tr-sm p-3 text-xs text-[var(--text-primary)] relative">
             <motion.div 
                initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ delay: 1.5, duration: 0.2 }}
-               className="absolute inset-0 bg-[var(--surface)] flex items-center px-4"
+               className="absolute inset-0 bg-[var(--surface)] flex items-center px-3 rounded-2xl rounded-tr-sm"
             >
               <div className="flex gap-1">
-                <motion.div animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.6 }} className="w-1.5 h-1.5 rounded-full bg-[var(--lilac)]" />
-                <motion.div animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }} className="w-1.5 h-1.5 rounded-full bg-[var(--lilac)]" />
-                <motion.div animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }} className="w-1.5 h-1.5 rounded-full bg-[var(--lilac)]" />
+                <motion.div animate={{ y: [0, -2, 0] }} transition={{ repeat: Infinity, duration: 0.6 }} className="w-1 h-1 rounded-full bg-[var(--lilac)]" />
+                <motion.div animate={{ y: [0, -2, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }} className="w-1 h-1 rounded-full bg-[var(--lilac)]" />
+                <motion.div animate={{ y: [0, -2, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }} className="w-1 h-1 rounded-full bg-[var(--lilac)]" />
               </div>
             </motion.div>
             <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.6 }}>
-              Hi John! I see the issue. There is a cached session preventing your new password from taking effect. I've cleared the cache on our end. Please try logging in again!
+              I've cleared your cache. Please try logging in again!
             </motion.span>
           </div>
         </motion.div>
       </div>
       
-      {/* Reply Input */}
-      <div className="p-4 bg-[var(--bg)] border-t border-[var(--border)] z-10">
-        <div className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-3 flex items-center justify-between opacity-50 pointer-events-none">
-          <span className="text-sm text-[var(--text-muted)]">AI is handling this conversation...</span>
-          <button className="h-7 px-3 text-xs font-bold rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)]">Takeover</button>
+      {/* Input Area */}
+      <div className="p-3 bg-[var(--bg)] border-t border-[var(--border)] z-10">
+        <div className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl p-2 flex items-center justify-between">
+          <span className="text-xs text-[var(--text-muted)] ml-2">AI replying...</span>
+          <button className="px-3 py-1 text-[10px] font-bold rounded-lg bg-[var(--brand)] text-white">Takeover</button>
         </div>
       </div>
     </div>
@@ -248,78 +126,39 @@ const AbstractCopilot = () => (
 );
 
 const AbstractOmnichannel = () => (
-  <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center p-0 md:p-6 relative overflow-hidden">
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--bg)_0%,transparent_100%)] opacity-80" />
-    
-    <motion.div 
-      initial={{ y: 30, opacity: 0, rotateX: 5 }}
-      whileInView={{ y: 0, opacity: 1, rotateX: 0 }}
-      transition={{ type: "spring", bounce: 0.3, duration: 1 }}
-      className="w-full h-full md:w-[95%] md:h-[90%] bg-[var(--bg)] md:rounded-[32px] border-y md:border border-[var(--border)] shadow-2xl flex overflow-hidden perspective-[1000px] z-10"
-    >
-      {/* Sidebar Channels */}
-      <div className="w-16 border-r border-[var(--border)] bg-[var(--surface)] flex flex-col items-center py-6 gap-6 relative z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-        <div className="w-12 h-12 rounded-xl bg-[var(--brand)] text-white flex items-center justify-center shadow-lg"><Workflow className="w-6 h-6"/></div>
-        <div className="w-8 h-px bg-[var(--border)] my-2" />
-        
-        {/* Channel Icons with Badges */}
-        <div className="relative group cursor-pointer">
-          <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--brand)] text-[var(--bg)] text-[9px] font-bold flex items-center justify-center shadow-sm z-10">3</div>
-          <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] group-hover:bg-[#25D366]/10 text-[#25D366] flex items-center justify-center transition-colors"><WhatsAppIcon className="w-6 h-6"/></div>
-        </div>
-        
-        <div className="relative group cursor-pointer">
-           <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] group-hover:bg-[#E1306C]/10 text-[#E1306C] flex items-center justify-center transition-colors"><InstagramIcon className="w-6 h-6"/></div>
-        </div>
-
-        <div className="relative group cursor-pointer">
-           <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] group-hover:bg-[#1877F2]/10 text-[#1877F2] flex items-center justify-center transition-colors"><FacebookIcon className="w-6 h-6"/></div>
-        </div>
-        
-        <div className="relative group cursor-pointer">
-           <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] group-hover:bg-[#0088cc]/10 text-[#0088cc] flex items-center justify-center transition-colors"><TelegramIcon className="w-6 h-6"/></div>
-        </div>
-      </div>
+  <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="w-full max-w-2xl bg-[var(--bg)] rounded-3xl border border-[var(--border)] shadow-xl flex overflow-hidden h-[400px]">
       
-      {/* Inbox List */}
-      <div className="w-64 border-r border-[var(--border)] bg-[var(--surface)] flex flex-col z-10 hidden lg:flex">
-        <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg)]/50 backdrop-blur-md">
-          <div className="font-black text-lg text-[var(--text-primary)]">Unified Inbox</div>
-          <div className="w-6 h-6 rounded-md bg-[var(--surface-2)] flex items-center justify-center"><Globe className="w-3 h-3 text-[var(--text-muted)]"/></div>
+      {/* Inbox List (Hidden on Mobile) */}
+      <div className="w-56 border-r border-[var(--border)] bg-[var(--surface)] hidden sm:flex flex-col z-10">
+        <div className="p-4 border-b border-[var(--border)]">
+          <div className="font-black text-base text-[var(--text-primary)]">Inbox</div>
         </div>
         <div className="flex-1 overflow-hidden p-2 space-y-1">
-          {/* Active Chat Item */}
-          <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] flex gap-3 items-center cursor-pointer relative overflow-hidden">
+          <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] flex gap-3 items-center relative overflow-hidden">
             <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--brand)]" />
-            <div className="relative">
-              <img src="https://i.pravatar.cc/150?u=a" alt="User" className="w-10 h-10 rounded-full object-cover shadow-sm" />
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#25D366] border-2 border-[var(--surface-2)] flex items-center justify-center"><WhatsAppIcon className="w-2 h-2 text-white"/></div>
+            <div className="relative shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[var(--border)]" />
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#25D366] border border-[var(--surface-2)] flex items-center justify-center"><WhatsAppIcon className="w-2 h-2 text-white"/></div>
             </div>
-            <div className="flex-1 overflow-hidden">
-              <div className="flex justify-between items-center mb-1">
-                <span className="font-bold text-sm text-[var(--text-primary)] truncate">Elena R.</span>
-                <span className="text-[10px] font-bold text-[var(--brand)]">Just now</span>
-              </div>
-              <div className="text-xs text-[var(--text-secondary)] truncate">Is this in stock?</div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-xs text-[var(--text-primary)] truncate">Elena R.</div>
+              <div className="text-[10px] text-[var(--text-secondary)] truncate">Is this in stock?</div>
             </div>
           </div>
           
-          {/* Inactive Items */}
           {[
-            { n: "Marcus T.", t: "5m", icon: <InstagramIcon className="w-2 h-2 text-white"/>, bg: "bg-[#E1306C]" },
-            { n: "David C.", t: "1h", icon: <FacebookIcon className="w-2 h-2 text-white"/>, bg: "bg-[#1877F2]" }
+            { n: "Marcus T.", icon: <InstagramIcon className="w-2 h-2 text-white"/>, bg: "bg-[#E1306C]" },
+            { n: "David C.", icon: <FacebookIcon className="w-2 h-2 text-white"/>, bg: "bg-[#1877F2]" }
           ].map((item, i) => (
-             <div key={i} className="p-3 rounded-xl hover:bg-[var(--surface-2)] border border-transparent transition-colors flex gap-3 items-center cursor-pointer">
-              <div className="relative">
-                <div className="w-10 h-10 rounded-full bg-[var(--border)] flex items-center justify-center text-[var(--text-muted)] font-bold text-xs">{item.n.charAt(0)}</div>
-                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${item.bg} border-2 border-[var(--surface)] flex items-center justify-center`}>{item.icon}</div>
+             <div key={i} className="p-3 rounded-xl hover:bg-[var(--surface-2)] border border-transparent transition-colors flex gap-3 items-center">
+              <div className="relative shrink-0">
+                <div className="w-8 h-8 rounded-full bg-[var(--border)]" />
+                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${item.bg} border border-[var(--surface)] flex items-center justify-center`}>{item.icon}</div>
               </div>
-              <div className="flex-1 overflow-hidden">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="font-bold text-sm text-[var(--text-primary)] truncate">{item.n}</span>
-                  <span className="text-[10px] font-medium text-[var(--text-muted)]">{item.t}</span>
-                </div>
-                <div className="h-1.5 w-3/4 bg-[var(--border-strong)] rounded-full mt-2" />
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-xs text-[var(--text-primary)] truncate">{item.n}</div>
+                <div className="h-1.5 w-3/4 bg-[var(--border-strong)] rounded-full mt-1" />
               </div>
             </div>
           ))}
@@ -327,87 +166,87 @@ const AbstractOmnichannel = () => (
       </div>
       
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-[var(--surface-inset)] relative">
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
-        
-        <div className="h-16 border-b border-[var(--border)] bg-[var(--bg)]/80 backdrop-blur-md flex items-center px-6 z-10 shadow-sm">
-          <div className="font-black text-lg text-[var(--text-primary)]">Elena R.</div>
-          <div className="ml-4 flex items-center gap-2 text-xs font-bold text-[#25D366] bg-[#25D366]/10 px-3 py-1 rounded-full">
-            <WhatsAppIcon className="w-4 h-4" /> WhatsApp
+      <div className="flex-1 flex flex-col bg-[var(--bg)] relative min-w-0">
+        {/* Header */}
+        <div className="h-16 border-b border-[var(--border)] bg-[var(--bg)] flex justify-between items-center px-4 z-10 shrink-0 gap-2">
+          <div className="flex flex-col min-w-0">
+            <div className="font-black text-sm text-[var(--text-primary)] truncate">Elena R.</div>
+            <div className="flex items-center gap-1 text-[10px] font-bold text-[#25D366]">
+              <WhatsAppIcon className="w-3 h-3 shrink-0" /> <span className="truncate">WhatsApp</span>
+            </div>
           </div>
-          <div className="ml-auto flex gap-2">
-            <button className="h-8 px-4 text-xs font-bold rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)]">Mark Resolved</button>
-          </div>
+          <button className="h-7 px-3 text-[10px] font-bold rounded-lg border border-[var(--border)] bg-[var(--surface)] shrink-0">Mark Done</button>
         </div>
         
-        <div className="flex-1 p-6 flex flex-col gap-4 z-10 overflow-hidden">
-           <div className="self-end bg-[var(--brand)] text-[var(--text-on-brand)] rounded-2xl rounded-tr-sm p-3 max-w-[80%] shadow-md">
+        {/* Chat Body */}
+        <div className="flex-1 p-4 flex flex-col justify-end gap-4 overflow-hidden relative">
+           <div className="self-end bg-[var(--brand)] text-white rounded-2xl rounded-tr-sm p-3 max-w-[85%] text-xs shadow-sm">
              Hi Elena, how can we help you today?
            </div>
-           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }} className="bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] rounded-2xl rounded-tl-sm p-4 max-w-[80%] shadow-sm">
+           <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }} className="bg-[var(--surface-2)] text-[var(--text-primary)] rounded-2xl rounded-tl-sm p-3 max-w-[85%] text-xs shadow-sm">
              I saw your new summer collection on Instagram! Is the blue floral dress available in size M?
            </motion.div>
         </div>
         
-        <div className="p-4 bg-[var(--bg)] border-t border-[var(--border)] z-10">
-          <div className="bg-[var(--surface-2)] rounded-xl border border-[var(--border)] p-2 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[var(--brand)] text-white flex items-center justify-center shrink-0 cursor-pointer"><Sparkles className="w-4 h-4" /></div>
-            <div className="text-sm font-medium text-[var(--text-muted)] flex-1 px-2">Type a message or use AI...</div>
-            <button className="h-8 px-4 text-xs rounded-lg font-bold bg-[var(--brand)] hover:bg-[var(--brand-hover)] text-white">Send</button>
+        {/* Input */}
+        <div className="p-3 border-t border-[var(--border)] bg-[var(--surface)]">
+          <div className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 flex justify-between items-center text-xs text-[var(--text-muted)]">
+            <span>Type a reply...</span>
+            <button className="text-white bg-[var(--brand)] px-3 py-1 rounded-md font-bold text-[10px]">Send</button>
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   </div>
 );
 
 const AbstractAnalytics = () => {
   return (
-    <div className="w-full h-full bg-[var(--bg)] flex flex-col relative overflow-hidden">
-      <div className="absolute -top-40 -right-40 w-96 h-96 bg-[var(--butter)] opacity-10 blur-[100px] rounded-full" />
+    <div className="w-full h-full bg-[var(--bg)] flex flex-col relative overflow-hidden p-4 md:p-6">
+      <div className="absolute -top-20 -right-20 w-64 h-64 bg-[var(--butter)] opacity-10 blur-[60px] rounded-full" />
       
       {/* Header */}
-      <div className="px-8 py-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--surface)]/50 backdrop-blur-md z-10">
-        <h3 className="font-display font-black text-2xl text-[var(--text-primary)]">Performance</h3>
-        <div className="bg-[var(--surface-2)] rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-bold text-[var(--text-primary)]">Last 7 Days</div>
+      <div className="flex justify-between items-center mb-6 z-10">
+        <h3 className="font-display font-black text-xl text-[var(--text-primary)]">Performance</h3>
+        <div className="bg-[var(--surface-2)] rounded-lg border border-[var(--border)] px-3 py-1.5 text-[10px] font-bold text-[var(--text-primary)]">7 Days</div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-3 gap-6 p-8 z-10">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-6 z-10">
         {[
-          { label: "Resolution Rate", value: "84.2%", trend: "+12%", color: "text-[var(--success)]", bg: "bg-[var(--success-soft)]", icon: <TrendingUp className="w-5 h-5"/> },
-          { label: "AI Deflection", value: "68%", trend: "+5%", color: "text-[var(--brand)]", bg: "bg-[var(--brand-soft)]", icon: <Cpu className="w-5 h-5"/> },
-          { label: "Hours Saved", value: "142h", trend: "+24h", color: "text-[var(--butter)]", bg: "bg-[var(--butter-soft)]", icon: <Zap className="w-5 h-5"/> },
+          { label: "Resolved", value: "84%", trend: "+12%", color: "text-[var(--success)]", bg: "bg-[var(--success-soft)]", icon: <TrendingUp className="w-4 h-4"/> },
+          { label: "AI Handled", value: "68%", trend: "+5%", color: "text-[var(--brand)]", bg: "bg-[var(--brand-soft)]", icon: <Cpu className="w-4 h-4"/> },
+          { label: "Hours", value: "142", trend: "+24h", color: "text-[var(--butter)]", bg: "bg-[var(--butter-soft)]", icon: <Zap className="w-4 h-4"/> },
         ].map((kpi, i) => (
           <motion.div 
             key={i}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6 shadow-sm flex flex-col justify-between group hover:border-[var(--brand)] transition-colors"
+            className={`bg-[var(--surface)] rounded-xl border border-[var(--border)] p-3 md:p-4 shadow-sm flex flex-col ${i === 2 ? 'hidden md:flex' : 'flex'}`}
           >
-            <div className="flex justify-between items-start mb-4">
-              <div className={`w-12 h-12 rounded-xl ${kpi.bg} ${kpi.color} flex items-center justify-center shadow-sm`}>
+            <div className="flex justify-between items-start mb-2 md:mb-4">
+              <div className={`w-8 h-8 rounded-lg ${kpi.bg} ${kpi.color} flex items-center justify-center shadow-sm`}>
                 {kpi.icon}
               </div>
-              <div className={`px-2 py-1 rounded-full text-xs font-bold ${kpi.bg} ${kpi.color}`}>
+              <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${kpi.bg} ${kpi.color}`}>
                 {kpi.trend}
               </div>
             </div>
             <div>
-              <div className="text-4xl font-display font-black text-[var(--text-primary)] mb-1">{kpi.value}</div>
-              <div className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">{kpi.label}</div>
+              <div className="text-2xl md:text-3xl font-display font-black text-[var(--text-primary)] mb-0.5">{kpi.value}</div>
+              <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{kpi.label}</div>
             </div>
           </motion.div>
         ))}
       </div>
 
       {/* Sweeping Area Chart */}
-      <div className="flex-1 relative mt-auto z-0 flex items-end">
+      <div className="flex-1 relative bg-[var(--surface-2)] rounded-xl border border-[var(--border)] overflow-hidden flex items-end">
         <svg className="w-full h-full absolute inset-0" preserveAspectRatio="none" viewBox="0 0 1000 300">
           <defs>
             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--butter)" stopOpacity="0.4" />
+              <stop offset="0%" stopColor="var(--butter)" stopOpacity="0.3" />
               <stop offset="100%" stopColor="var(--bg)" stopOpacity="0" />
             </linearGradient>
           </defs>
@@ -416,7 +255,7 @@ const AbstractAnalytics = () => {
             fill="url(#areaGradient)"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.5 }}
+            transition={{ duration: 1, delay: 0.2 }}
           />
           <motion.path
             d="M 0 250 C 100 250, 200 150, 300 180 C 400 210, 500 50, 600 100 C 700 150, 800 80, 900 120 L 1000 40"
@@ -428,10 +267,6 @@ const AbstractAnalytics = () => {
             transition={{ duration: 1.5, ease: "easeOut" }}
           />
         </svg>
-        
-        <div className="w-full border-t border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-md px-8 py-3 flex justify-between text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest z-10 relative">
-          <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span className="text-[var(--text-primary)]">Sat</span><span>Sun</span>
-        </div>
       </div>
     </div>
   );
