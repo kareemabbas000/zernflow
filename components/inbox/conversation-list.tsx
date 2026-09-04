@@ -518,14 +518,14 @@ export function ConversationList({
       {/* Conversation list */}
       <div className="flex-1 overflow-y-auto divide-y divide-border/60 flex flex-col">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/60 text-muted-foreground/60 mb-3">
-              <MessageSquare className="h-6 w-6" />
+          <div className="flex flex-col items-center justify-center py-20 text-center px-6 h-full flex-1 bg-background/50">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground mb-4 shadow-sm border border-border">
+              <MessageSquare className="h-8 w-8 opacity-50" />
             </div>
-            <p className="text-sm font-semibold text-foreground">
+            <p className="text-base font-bold text-foreground">
               No conversations found
             </p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+            <p className="text-sm text-muted-foreground mt-2 max-w-[220px] leading-relaxed">
               {filters.search
                 ? "Try a different search term"
                 : filters.status !== "all"
