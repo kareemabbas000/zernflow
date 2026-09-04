@@ -307,8 +307,8 @@ export function MarketingHowItWorks() {
                   className="absolute inset-0"
                 >
                   {activeContent?.mockup}
-                  <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 bg-[var(--overlay-scrim)] backdrop-blur-overlay rounded-2xl p-4 md:p-5 text-[var(--text-on-brand)] z-50 border border-[var(--border-subtle)] shadow-2xl shadow-[var(--marketing-deep)]/20">
-                    <p className="font-bold text-sm md:text-base text-center md:text-left">{activeContent?.description}</p>
+                  <div className="absolute bottom-2 left-2 right-2 md:bottom-3 md:left-3 md:right-3 bg-[var(--overlay-scrim)] backdrop-blur-overlay rounded-[14px] py-2.5 px-4 md:py-3 md:px-5 text-[var(--text-on-brand)] z-50 border border-[var(--border-subtle)] shadow-xl shadow-black/20">
+                    <p className="font-bold text-xs md:text-sm text-center md:text-left">{activeContent?.description}</p>
                   </div>
                 </motion.div>
               </AnimatePresence>

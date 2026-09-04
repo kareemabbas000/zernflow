@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { motion } from "framer-motion"
-import { Link2, Sparkles, Rocket } from "lucide-react"
+import { Link2, Sparkles, Rocket, Workflow, Check } from "lucide-react"
 
 const MiniStep1 = () => (
   <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center relative overflow-hidden">
@@ -37,22 +37,50 @@ const MiniStep1 = () => (
 
 const MiniStep2 = () => (
   <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center relative overflow-hidden">
-     <div className="absolute inset-0 bg-[linear-gradient(45deg,var(--border)_1px,transparent_1px)] bg-[size:16px_16px] opacity-20" />
-     <div className="relative w-full flex flex-col items-center gap-4">
-        <motion.div animate={{ y: [-4, 4, -4] }} transition={{ duration: 4, repeat: Infinity }} className="w-16 h-8 bg-[var(--bg)] border border-[var(--border-strong)] rounded-lg shadow-md flex items-center justify-center">
-          <div className="w-3 h-1 rounded-full bg-[var(--text-muted)]" />
+     <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:16px_16px] opacity-30" />
+     
+     <div className="relative w-full h-full flex items-center justify-center">
+        {/* Animated Paths */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+           <path d="M50 35 L30 65" stroke="var(--border-strong)" strokeWidth="1" fill="none" strokeDasharray="2 2" />
+           <path d="M50 35 L70 65" stroke="var(--border-strong)" strokeWidth="1" fill="none" strokeDasharray="2 2" />
+           
+           {/* Travelling Dots */}
+           <motion.circle r="2" fill="var(--brand)"
+             initial={{ cx: 50, cy: 35, opacity: 0 }}
+             animate={{ cx: 30, cy: 65, opacity: [0, 1, 1, 0] }}
+             transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+           />
+           <motion.circle r="2" fill="var(--success)"
+             initial={{ cx: 50, cy: 35, opacity: 0 }}
+             animate={{ cx: 70, cy: 65, opacity: [0, 1, 1, 0] }}
+             transition={{ duration: 1.5, repeat: Infinity, delay: 0.75, ease: "linear" }}
+           />
+        </svg>
+
+        {/* Top Node */}
+        <motion.div 
+           animate={{ scale: [1, 1.05, 1], y: [0, -2, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+           className="absolute top-[22%] w-10 h-10 bg-[var(--bg)] border-2 border-[var(--brand)] rounded-xl flex items-center justify-center shadow-[0_0_20px_var(--brand)]/20"
+        >
+           <Workflow className="w-4 h-4 text-[var(--brand)]" />
         </motion.div>
         
-        <div className="w-px h-8 bg-[var(--border)] relative overflow-hidden">
-           <motion.div initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 1.5, repeat: Infinity }} className="absolute inset-0 bg-[var(--brand)] origin-top" />
-        </div>
-        
-        <div className="flex gap-6">
-           <motion.div animate={{ y: [-4, 4, -4] }} transition={{ duration: 4, repeat: Infinity, delay: 0.5 }} className="w-12 h-8 bg-[var(--brand-soft)] border border-[var(--brand)] rounded-lg shadow-sm flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-[var(--brand)]" />
-           </motion.div>
-           <motion.div animate={{ y: [-4, 4, -4] }} transition={{ duration: 4, repeat: Infinity, delay: 1 }} className="w-12 h-8 bg-[var(--bg)] border border-[var(--border)] rounded-lg shadow-sm" />
-        </div>
+        {/* Bottom Left Node */}
+        <motion.div 
+           animate={{ scale: [1, 1.05, 1], y: [0, -2, 0] }} transition={{ duration: 3, delay: 1, repeat: Infinity, ease: "easeInOut" }}
+           className="absolute bottom-[22%] left-[18%] w-10 h-10 bg-[var(--bg)] border-2 border-[var(--border-strong)] rounded-xl flex items-center justify-center shadow-lg"
+        >
+           <Sparkles className="w-4 h-4 text-[var(--text-muted)]" />
+        </motion.div>
+
+        {/* Bottom Right Node */}
+        <motion.div 
+           animate={{ scale: [1, 1.05, 1], y: [0, -2, 0] }} transition={{ duration: 3, delay: 2, repeat: Infinity, ease: "easeInOut" }}
+           className="absolute bottom-[22%] right-[18%] w-10 h-10 bg-[var(--success-soft)] border-2 border-[var(--success)] rounded-xl flex items-center justify-center shadow-lg shadow-[var(--success)]/10"
+        >
+           <Check className="w-4 h-4 text-[var(--success)]" />
+        </motion.div>
      </div>
   </div>
 );
