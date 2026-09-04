@@ -1,4 +1,4 @@
-"use client";
+1: "use client";
 
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
@@ -580,7 +580,7 @@ export default function LandingPage() {
         </div>
       </footer>
       
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{__html: \`
         @keyframes marquee {
           0% { transform: translateX(0%); }
           100% { transform: translateX(-50%); }
@@ -588,7 +588,8 @@ export default function LandingPage() {
         .animate-marquee {
           animation: marquee 20s linear infinite;
         }
-      `}} />
+      \`}} />
     </div>
   );
 }
+
