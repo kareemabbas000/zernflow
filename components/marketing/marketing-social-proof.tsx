@@ -58,7 +58,7 @@ export function MarketingSocialProof({ customContent }: { customContent?: any[] 
   const duplicatedTestimonials = [...activeTestimonials, ...activeTestimonials]
   
   return (
-    <section className="bg-[var(--paper)] overflow-hidden py-12 border-b border-[var(--border)]">
+    <section className="bg-[var(--bg)] overflow-hidden py-12 border-b border-[var(--border)]">
       <div 
         className="flex gap-6 w-max"
         onMouseEnter={() => setIsHovered(true)}
@@ -78,7 +78,7 @@ export function MarketingSocialProof({ customContent }: { customContent?: any[] 
           {duplicatedTestimonials.map((testimonial, idx) => (
             <div 
               key={`${testimonial.id}-${idx}`} 
-              className="w-[380px] shrink-0 rounded-2xl border border-[var(--border)] bg-white p-6 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing flex flex-col justify-between h-[200px]"
+              className="w-[380px] shrink-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing flex flex-col justify-between h-[200px]"
             >
               <div className="flex items-start gap-4">
                 <div className="relative">
@@ -87,19 +87,19 @@ export function MarketingSocialProof({ customContent }: { customContent?: any[] 
                     transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
                     className={`absolute -inset-1 rounded-full opacity-30 ${testimonial.accent}`} 
                   />
-                  <img src={testimonial.image} alt={testimonial.name} className="relative w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" />
+                  <img src={testimonial.image} alt={testimonial.name} className="relative w-12 h-12 rounded-full object-cover border-2 border-[var(--surface)] shadow-sm" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[var(--ink)] text-sm">{testimonial.name}</h4>
-                  <p className="text-xs font-medium text-[var(--ink-3)]">{testimonial.role}</p>
+                  <h4 className="font-bold text-[var(--text-primary)] text-sm">{testimonial.name}</h4>
+                  <p className="text-xs font-medium text-[var(--text-muted)]">{testimonial.role}</p>
                 </div>
                 <div className="ml-auto">
-                  <span className="inline-block bg-[var(--surface-2)] text-[var(--ink-2)] font-mono text-[11px] px-2 py-1 rounded-md font-bold">
+                  <span className="inline-block bg-[var(--surface-2)] text-[var(--text-secondary)] font-mono text-[11px] px-2 py-1 rounded-md font-bold">
                     {testimonial.metric}
                   </span>
                 </div>
               </div>
-              <p className="text-[var(--ink-2)] font-medium text-sm leading-relaxed mt-4">
+              <p className="text-[var(--text-secondary)] font-medium text-sm leading-relaxed mt-4">
                 &quot;{testimonial.quote}&quot;
               </p>
             </div>

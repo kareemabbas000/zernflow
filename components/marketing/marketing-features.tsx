@@ -2,213 +2,210 @@
 
 import * as React from "react"
 import { motion } from "framer-motion"
-import { Workflow, Cpu, Globe, BarChart3, MessageSquare, Zap, ArrowRight, Settings, Users, Sparkles, CheckCircle2, TrendingUp, Filter } from "lucide-react"
+import { Workflow, Cpu, Globe, BarChart3, MessageSquare, Zap, Sparkles, TrendingUp, Users, CheckCircle2 } from "lucide-react"
 
-const MockupStudio = () => (
-  <div className="w-full h-full bg-[var(--surface-2)] flex items-center justify-center p-6 relative overflow-hidden pt-12">
-    {/* Grid Background */}
-    <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
+const AbstractFlow = () => (
+  <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:24px_24px] opacity-30" />
     
     <div className="relative z-10 flex flex-col items-center gap-6 w-full max-w-sm">
-      {/* Node 1: Trigger */}
+      {/* Trigger Node */}
       <motion.div 
-        initial={{ y: 20, opacity: 0 }}
+        initial={{ y: 10, opacity: 0 }}
         whileInView={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="w-full bg-[var(--paper)] rounded-xl border border-[var(--border)] p-4 shadow-sm relative"
+        className="w-full max-w-[220px] bg-[var(--surface)] rounded-xl border border-[var(--brand)] p-3 shadow-lg flex items-center gap-3 relative z-10"
       >
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center">
-            <Zap className="w-4 h-4" />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-[var(--ink)]">Trigger: New Message</h4>
-            <p className="text-xs text-[var(--ink-3)]">When customer sends a DM</p>
-          </div>
+        <div className="w-8 h-8 rounded-lg bg-[var(--brand)] text-white flex items-center justify-center shadow-md shadow-[var(--brand)]/30">
+          <Globe className="w-4 h-4" />
+        </div>
+        <div className="flex-1">
+          <div className="text-xs font-bold text-[var(--text-primary)]">Incoming Message</div>
+          <div className="text-[10px] text-[var(--text-secondary)]">WhatsApp</div>
         </div>
       </motion.div>
 
-      {/* Arrow Down */}
-      <div className="w-0.5 h-6 bg-[var(--border-strong)] -my-2 relative z-0" />
+      {/* Connection Line */}
+      <div className="w-0.5 h-8 bg-gradient-to-b from-[var(--brand)] to-[var(--border-strong)] -my-3 relative z-0" />
 
-      {/* Node 2: AI Action */}
+      {/* Condition Node */}
       <motion.div 
-        initial={{ y: 20, opacity: 0 }}
+        initial={{ y: 10, opacity: 0 }}
         whileInView={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="w-full bg-[var(--paper)] rounded-xl border border-[var(--brand)] p-4 shadow-md relative"
+        transition={{ delay: 0.15 }}
+        className="w-full max-w-[200px] bg-[var(--surface)] rounded-xl border border-[var(--border)] p-3 shadow-md flex flex-col gap-2 relative z-10"
       >
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-lg bg-[var(--lilac-soft)] text-[var(--lilac)] flex items-center justify-center">
-            <Cpu className="w-4 h-4" />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-[var(--ink)]">AI Copilot</h4>
-            <p className="text-xs text-[var(--ink-3)]">Analyze intent & generate reply</p>
-          </div>
-        </div>
-        <div className="bg-[var(--surface-2)] rounded-md p-2 text-[10px] font-mono text-[var(--ink-2)]">
-          &gt; prompt: &quot;Be helpful, concise...&quot;
-        </div>
+        <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">Intent = Support?</div>
       </motion.div>
 
-      {/* Arrow Down */}
-      <div className="w-0.5 h-6 bg-[var(--border-strong)] -my-2 relative z-0" />
+      <div className="flex gap-16 -my-3 relative z-0">
+        <div className="w-0.5 h-10 bg-[var(--border-strong)] rotate-[-30deg] origin-top" />
+        <div className="w-0.5 h-10 bg-[var(--lilac)] rotate-[30deg] origin-top" />
+      </div>
 
-      {/* Node 3: Send */}
-      <motion.div 
-        initial={{ y: 20, opacity: 0 }}
-        whileInView={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="w-full bg-[var(--paper)] rounded-xl border border-[var(--border)] p-4 shadow-sm"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[var(--success-soft)] text-[var(--success)] flex items-center justify-center">
-            <MessageSquare className="w-4 h-4" />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-[var(--ink)]">Send Reply</h4>
-            <p className="text-xs text-[var(--ink-3)]">Via original channel</p>
-          </div>
-        </div>
-      </motion.div>
+      {/* Action Nodes */}
+      <div className="flex gap-4 relative z-10">
+        <motion.div 
+          initial={{ y: 10, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="w-[120px] bg-[var(--surface)] rounded-xl border border-[var(--border)] p-3 shadow-md flex items-center gap-2 opacity-60"
+        >
+          <div className="w-6 h-6 rounded-md bg-[var(--surface-2)] flex items-center justify-center"><Users className="w-3 h-3 text-[var(--text-muted)]"/></div>
+          <div className="text-[9px] font-bold text-[var(--text-secondary)]">Agent</div>
+        </motion.div>
+        
+        <motion.div 
+          initial={{ y: 10, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="w-[140px] bg-[var(--surface)] rounded-xl border-2 border-[var(--lilac)] p-3 shadow-xl flex items-center gap-2 relative"
+        >
+          <motion.div 
+            animate={{ scale: [1, 1.2, 1] }} 
+            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute -top-1 -right-1 w-3 h-3 bg-[var(--lilac)] rounded-full shadow-[0_0_8px_var(--lilac)]" 
+          />
+          <div className="w-6 h-6 rounded-md bg-[var(--lilac-soft)] text-[var(--lilac)] flex items-center justify-center"><Cpu className="w-3 h-3"/></div>
+          <div className="text-[9px] font-bold text-[var(--text-primary)]">AI Auto-Reply</div>
+        </motion.div>
+      </div>
     </div>
   </div>
 );
 
-const MockupCopilot = () => (
-  <div className="w-full h-full bg-[var(--paper)] flex flex-col p-6 pt-12 relative">
-    <div className="flex items-center justify-between mb-6 border-b border-[var(--border)] pb-4">
-      <div className="flex items-center gap-2">
-        <Cpu className="w-5 h-5 text-[var(--lilac)]" />
-        <h3 className="font-bold text-[var(--ink)]">AI Node Settings</h3>
-      </div>
-      <div className="text-xs font-medium bg-[var(--lilac-soft)] text-[var(--lilac)] px-2 py-1 rounded">GPT-4 Turbo</div>
-    </div>
-
-    <div className="space-y-5">
-      <div className="space-y-2">
-        <label className="text-xs font-bold text-[var(--ink-2)] uppercase tracking-wider">System Prompt</label>
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 text-sm text-[var(--ink)] font-medium leading-relaxed">
-          You are a helpful customer support agent for Zenith.
-          <span className="text-[var(--lilac)]"> @knowledge_base</span> is attached. If you don&apos;t know the answer, output &quot;ESCALATE&quot;.
+const AbstractCopilot = () => (
+  <div className="w-full h-full bg-[var(--surface-inset)] flex items-end justify-center p-6 relative overflow-hidden">
+    <div className="absolute top-10 left-10 w-32 h-32 bg-[var(--lilac)] opacity-10 blur-[50px] rounded-full" />
+    
+    <div className="w-full max-w-[320px] bg-[var(--bg)] rounded-t-2xl border-x-2 border-t-2 border-[var(--border)] shadow-2xl flex flex-col h-[280px] overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-[var(--border)] flex items-center gap-3 bg-[var(--surface)]">
+        <div className="w-8 h-8 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-xs font-bold">U</div>
+        <div>
+          <div className="text-xs font-bold text-[var(--text-primary)]">Customer Issue</div>
+          <div className="text-[9px] text-[var(--text-muted)]">Ticket #4092</div>
         </div>
       </div>
       
-      <div className="space-y-2">
-        <label className="text-xs font-bold text-[var(--ink-2)] uppercase tracking-wider">Test Output</label>
-        <div className="bg-[var(--surface-2)] rounded-xl p-3 flex gap-3">
-          <div className="w-6 h-6 rounded-full bg-[var(--lilac)] flex items-center justify-center shrink-0">
-            <Sparkles className="w-3 h-3 text-white" />
+      {/* Messages */}
+      <div className="flex-1 p-4 flex flex-col gap-4">
+        <motion.div initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} className="flex gap-2 max-w-[85%]">
+          <div className="w-6 h-6 rounded-full bg-[var(--surface-2)] shrink-0" />
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl rounded-tl-sm p-3 text-[10px] text-[var(--text-secondary)] shadow-sm">
+            I can't log into my account, it keeps saying password incorrect even after I reset it.
           </div>
-          <p className="text-sm text-[var(--ink-2)]">
-            &quot;Hi Alex! Your order #4492 is currently out for delivery and should arrive by 8 PM today.&quot;
-          </p>
+        </motion.div>
+        
+        <motion.div initial={{ opacity: 0, x: 10 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} className="flex gap-2 max-w-[90%] self-end flex-row-reverse">
+          <div className="w-6 h-6 rounded-full bg-[var(--lilac)] text-white flex items-center justify-center shrink-0 shadow-lg shadow-[var(--lilac)]/20">
+            <Sparkles className="w-3 h-3" />
+          </div>
+          <div className="bg-gradient-to-br from-[var(--lilac-soft)] to-[var(--surface)] border border-[var(--lilac)]/30 rounded-2xl rounded-tr-sm p-3 text-[10px] text-[var(--text-primary)] shadow-sm">
+            <motion.span 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              transition={{ delay: 0.8 }}
+            >
+              I see the issue. There is a cached session preventing the login. I have cleared it on our end. Please try logging in again now!
+            </motion.span>
+          </div>
+        </motion.div>
+      </div>
+      
+      {/* Input */}
+      <div className="p-3 border-t border-[var(--border)] bg-[var(--surface)]">
+        <div className="h-8 w-full rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center px-3 gap-2">
+          <div className="w-3 h-3 rounded-full bg-[var(--lilac)] animate-pulse" />
+          <div className="text-[10px] text-[var(--text-muted)]">AI is typing...</div>
         </div>
       </div>
     </div>
   </div>
 );
 
-const MockupInbox = () => (
-  <div className="w-full h-full bg-[var(--surface)] flex pt-6 relative">
-    {/* Left Sidebar (Contacts) */}
-    <div className="w-24 md:w-1/3 border-r border-[var(--border)] h-full bg-[var(--paper)] pt-6 flex flex-col">
-      <div className="px-4 pb-4 border-b border-[var(--border)] hidden md:block">
-        <h3 className="font-bold text-[var(--ink)] text-sm">Inbox</h3>
+const AbstractOmnichannel = () => (
+  <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center relative overflow-hidden">
+    <motion.div 
+      initial={{ y: 20, opacity: 0, rotateX: 10 }}
+      whileInView={{ y: 0, opacity: 1, rotateX: 0 }}
+      transition={{ type: "spring", bounce: 0.4 }}
+      className="w-[90%] h-[80%] bg-[var(--bg)] rounded-xl border border-[var(--border)] shadow-2xl flex overflow-hidden perspective-[1000px]"
+    >
+      {/* Sidebar Channels */}
+      <div className="w-12 border-r border-[var(--border)] bg-[var(--surface)] flex flex-col items-center py-4 gap-4">
+        <div className="w-8 h-8 rounded-lg bg-[var(--surface-2)] flex items-center justify-center border border-[var(--border)]"><Globe className="w-4 h-4 text-[var(--text-muted)]"/></div>
+        <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center border border-green-500/20 text-green-500"><MessageSquare className="w-4 h-4"/></div>
+        <div className="w-8 h-8 rounded-lg bg-[var(--surface-2)] flex items-center justify-center border border-[var(--border)]"><MessageSquare className="w-4 h-4 text-[var(--text-muted)]"/></div>
       </div>
-      <div className="flex-1 overflow-hidden p-2 space-y-1">
-        {[
-          { name: "Sarah Jenkins", msg: "Can I upgrade?", channel: "whatsapp", active: true },
-          { name: "David R.", msg: "Thanks for the help", channel: "instagram", active: false },
-          { name: "Alex M.", msg: "Where is my order?", channel: "email", active: false },
-        ].map((c, i) => (
-          <div key={i} className={`p-2 md:p-3 rounded-lg flex items-center gap-3 ${c.active ? 'bg-[var(--surface-2)] border border-[var(--border)]' : 'hover:bg-[var(--surface)] border border-transparent'}`}>
-            <div className="w-8 h-8 rounded-full bg-[var(--brand)] text-white flex items-center justify-center font-bold text-xs shrink-0 relative">
-              {c.name.charAt(0)}
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[var(--surface)] flex items-center justify-center">
-                <Globe className={`w-2.5 h-2.5 ${c.channel === 'whatsapp' ? 'text-[var(--success)]' : c.channel === 'instagram' ? 'text-[var(--coral)]' : 'text-[var(--brand)]'}`} />
-              </div>
-            </div>
-            <div className="hidden md:block overflow-hidden">
-              <h4 className="text-sm font-bold text-[var(--ink)] truncate">{c.name}</h4>
-              <p className="text-xs text-[var(--ink-3)] truncate">{c.msg}</p>
+      
+      {/* Inbox List */}
+      <div className="w-32 border-r border-[var(--border)] bg-[var(--surface)] py-3 hidden sm:flex flex-col gap-1">
+        <div className="px-3 text-[9px] font-bold text-[var(--text-muted)] mb-2 uppercase tracking-widest">Inbox</div>
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className={`mx-2 p-2 rounded-lg ${i === 1 ? 'bg-[var(--surface-2)] border border-[var(--border)]' : ''} flex gap-2 items-center`}>
+            <div className="w-5 h-5 rounded-full bg-[var(--border)] shrink-0" />
+            <div className="flex-1">
+              <div className="h-1.5 w-12 bg-[var(--border-strong)] rounded-full mb-1" />
+              <div className="h-1 w-16 bg-[var(--border)] rounded-full" />
             </div>
           </div>
         ))}
       </div>
-    </div>
-    
-    {/* Right Area (Chat) */}
-    <div className="flex-1 h-full bg-[var(--paper)] pt-6 flex flex-col">
-      <div className="px-6 pb-4 border-b border-[var(--border)] flex items-center gap-3">
-        <h3 className="font-bold text-[var(--ink)] text-sm">Sarah Jenkins</h3>
-        <span className="text-[10px] bg-[var(--success-soft)] text-[var(--success)] px-2 py-0.5 rounded font-bold">Online</span>
-      </div>
-      <div className="flex-1 p-6 flex flex-col justify-end gap-4">
-        <div className="flex items-end gap-2 max-w-[80%]">
-          <div className="w-6 h-6 rounded-full bg-[var(--brand)] shrink-0" />
-          <div className="bg-[var(--surface)] p-3 rounded-2xl rounded-bl-sm text-sm text-[var(--ink)] border border-[var(--border)]">
-            Hi! How can I help you today?
+      
+      {/* Chat Area */}
+      <div className="flex-1 flex flex-col bg-[var(--bg)]">
+        <div className="h-10 border-b border-[var(--border)] flex items-center px-4">
+          <div className="text-xs font-bold text-[var(--text-primary)]">Sarah Jenkins</div>
+          <div className="ml-auto flex gap-2">
+            <div className="w-4 h-4 rounded-md bg-[var(--brand-soft)] text-[var(--brand)] flex items-center justify-center"><CheckCircle2 className="w-3 h-3"/></div>
           </div>
         </div>
-        <div className="flex items-end gap-2 max-w-[80%] self-end flex-row-reverse">
-          <div className="w-6 h-6 rounded-full bg-[var(--surface-2)] shrink-0" />
-          <div className="bg-[var(--brand)] p-3 rounded-2xl rounded-br-sm text-sm text-white">
-            Can I upgrade to the pro plan?
-          </div>
+        <div className="flex-1 p-4 flex flex-col gap-3">
+           <div className="h-8 w-3/4 bg-[var(--surface-2)] rounded-r-xl rounded-bl-xl border border-[var(--border)]" />
+           <div className="h-12 w-2/3 self-end bg-[var(--brand)] text-[var(--bg)] rounded-l-xl rounded-br-xl opacity-90" />
+           <div className="h-6 w-1/2 bg-[var(--surface-2)] rounded-r-xl rounded-bl-xl border border-[var(--border)]" />
         </div>
       </div>
-    </div>
+    </motion.div>
   </div>
 );
 
-const MockupAnalytics = () => (
-  <div className="w-full h-full bg-[var(--paper)] p-6 pt-12 flex flex-col gap-6 relative">
-    <div className="grid grid-cols-2 gap-4">
-      <div className="bg-[var(--surface)] border border-[var(--border)] p-4 rounded-xl">
-        <p className="text-xs text-[var(--ink-3)] font-bold uppercase mb-1">Messages Sent</p>
-        <h3 className="text-2xl font-black text-[var(--ink)]">14,203</h3>
-        <span className="text-xs font-bold text-[var(--success)] flex items-center gap-1 mt-1">
-          <TrendingUp className="w-3 h-3" /> +12%
-        </span>
-      </div>
-      <div className="bg-[var(--surface)] border border-[var(--border)] p-4 rounded-xl">
-        <p className="text-xs text-[var(--ink-3)] font-bold uppercase mb-1">AI Deflection</p>
-        <h3 className="text-2xl font-black text-[var(--ink)]">68%</h3>
-        <span className="text-xs font-bold text-[var(--success)] flex items-center gap-1 mt-1">
-          <TrendingUp className="w-3 h-3" /> +5%
-        </span>
-      </div>
-    </div>
-
-    <div className="flex-1 bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex flex-col">
-      <h4 className="text-sm font-bold text-[var(--ink)] mb-4">Volume by Channel</h4>
-      <div className="flex-1 flex flex-col justify-center gap-4">
-        {[
-          { label: "WhatsApp", val: 80, color: "bg-[var(--success)]" },
-          { label: "Instagram", val: 45, color: "bg-[var(--coral)]" },
-          { label: "Email", val: 20, color: "bg-[var(--brand)]" },
-        ].map((item, i) => (
-          <div key={i}>
-            <div className="flex justify-between text-xs mb-1 font-medium">
-              <span className="text-[var(--ink-2)]">{item.label}</span>
-              <span className="text-[var(--ink)]">{item.val}%</span>
+const AbstractAnalytics = () => {
+  const bars = [40, 65, 45, 80, 55, 95, 75];
+  return (
+    <div className="w-full h-full bg-[var(--surface-inset)] flex flex-col justify-center p-6 md:p-8 relative overflow-hidden">
+      <div className="w-full max-w-[340px] mx-auto bg-[var(--bg)] rounded-2xl border border-[var(--border)] shadow-xl p-5">
+        <div className="flex justify-between items-end mb-6">
+          <div>
+            <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Resolution Rate</div>
+            <div className="text-3xl font-display font-black text-[var(--text-primary)] flex items-center gap-2">
+              84.2% <span className="text-xs font-bold text-[var(--success)] bg-[var(--success-soft)] px-2 py-0.5 rounded-full">+12%</span>
             </div>
-            <div className="h-2 w-full bg-[var(--surface-2)] rounded-full overflow-hidden">
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-[var(--butter-soft)] text-[var(--butter)] flex items-center justify-center">
+            <TrendingUp className="w-4 h-4" />
+          </div>
+        </div>
+
+        <div className="h-32 flex items-end justify-between gap-2 border-b border-[var(--border)] pb-2">
+          {bars.map((h, i) => (
+            <div key={i} className="w-full flex justify-center group relative">
               <motion.div 
-                initial={{ width: 0 }}
-                whileInView={{ width: `${item.val}%` }}
-                transition={{ duration: 1, delay: i * 0.2 }}
-                className={`h-full ${item.color} rounded-full`} 
+                initial={{ height: 0 }}
+                whileInView={{ height: `${h}%` }}
+                transition={{ duration: 0.8, delay: i * 0.1, type: "spring" }}
+                className={`w-6 rounded-t-md ${i === 5 ? 'bg-[var(--butter)] shadow-[0_0_15px_var(--butter)] z-10' : 'bg-[var(--surface-2)] group-hover:bg-[var(--border-strong)] transition-colors'}`}
               />
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        <div className="flex justify-between mt-2 px-1 text-[9px] font-bold text-[var(--text-muted)]">
+          <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span className="text-[var(--text-primary)]">Sat</span><span>Sun</span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+}
 
 const features = [
   {
@@ -216,8 +213,9 @@ const features = [
     eyebrow: "01. VISUAL STUDIO",
     heading: "Build flows without breaking a sweat",
     copy: "Drag and drop triggers, conditions, and actions onto an infinite canvas. Complex logic feels like playing with blocks.",
-    mockup: <MockupStudio />,
+    mockup: <AbstractFlow />,
     accent: "bg-[var(--brand)]",
+    accentColor: "var(--brand)",
     reversed: false,
     icon: <Workflow className="w-5 h-5" />
   },
@@ -226,8 +224,9 @@ const features = [
     eyebrow: "02. NATIVE AI COPILOT",
     heading: "Let AI handle the busywork",
     copy: "Embed LLM nodes directly in your flows. Categorize intents, summarize long threads, or generate draft replies on autopilot.",
-    mockup: <MockupCopilot />,
+    mockup: <AbstractCopilot />,
     accent: "bg-[var(--lilac)]",
+    accentColor: "var(--lilac)",
     reversed: true,
     icon: <Cpu className="w-5 h-5" />
   },
@@ -236,8 +235,9 @@ const features = [
     eyebrow: "03. OMNICHANNEL",
     heading: "One inbox for every channel",
     copy: "WhatsApp, Instagram, SMS, and Email flowing into a single unified view. Respond faster without switching tabs.",
-    mockup: <MockupInbox />,
-    accent: "bg-[var(--lime)]",
+    mockup: <AbstractOmnichannel />,
+    accent: "bg-[var(--success)]",
+    accentColor: "var(--success)",
     reversed: false,
     icon: <Globe className="w-5 h-5" />
   },
@@ -246,8 +246,9 @@ const features = [
     eyebrow: "04. DEEP ANALYTICS",
     heading: "Insight over noise",
     copy: "Stop drowning in spreadsheets. See clear trends, conversion metrics, and AI-generated plain text explanations of what changed.",
-    mockup: <MockupAnalytics />,
+    mockup: <AbstractAnalytics />,
     accent: "bg-[var(--butter)]",
+    accentColor: "var(--butter)",
     reversed: true,
     icon: <BarChart3 className="w-5 h-5" />
   }
@@ -255,7 +256,7 @@ const features = [
 
 export function MarketingFeatures() {
   return (
-    <section className="py-24 lg:py-32 bg-[var(--paper)] overflow-hidden" id="features">
+    <section className="py-24 lg:py-32 bg-[var(--bg)] overflow-hidden" id="features">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 space-y-32">
         {features.map((feature, idx) => (
           <div 
@@ -264,39 +265,32 @@ export function MarketingFeatures() {
           >
             {/* Text Content */}
             <div className="flex-1 space-y-6">
-              <div className="inline-flex items-center gap-2 font-mono text-sm font-bold tracking-widest text-[var(--ink-3)]">
-                <span className={`p-1.5 rounded-md text-white ${feature.accent}`}>
+              <div className="inline-flex items-center gap-2 font-mono text-sm font-bold tracking-widest text-[var(--text-muted)]">
+                <span className={`p-2 rounded-lg text-[var(--text-on-brand)] ${feature.accent}`}>
                   {feature.icon}
                 </span>
                 {feature.eyebrow}
               </div>
-              <h2 className="font-display text-3xl md:text-5xl font-black tracking-tight text-[var(--ink)]">
+              <h2 className="font-display text-4xl md:text-5xl font-black tracking-tight text-[var(--text-primary)]">
                 {feature.heading}
               </h2>
-              <p className="text-lg md:text-xl text-[var(--ink-2)] font-medium leading-relaxed max-w-lg">
+              <p className="text-lg md:text-xl text-[var(--text-secondary)] font-medium leading-relaxed max-w-lg">
                 {feature.copy}
               </p>
             </div>
 
-            {/* Video Panel */}
-            <div className="flex-1 relative w-full aspect-square md:aspect-video lg:aspect-square max-w-2xl">
-              {/* Bleeding Accent Block */}
-              <div className={`absolute top-[10%] bottom-[-10%] ${feature.reversed ? 'right-[-50vw] left-[10%]' : 'left-[-50vw] right-[10%]'} ${feature.accent} opacity-20 rounded-3xl -z-10`} />
+            {/* Abstract Graphic Panel */}
+            <div className="flex-1 relative w-full aspect-square max-w-xl">
+              <div className={`absolute inset-0 ${feature.accent} opacity-10 rounded-[40px] rotate-3 scale-105 blur-lg -z-10`} />
               
               <motion.div 
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="w-full h-full relative rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-2 shadow-xl"
+                className="w-full h-full relative rounded-[40px] border border-[var(--border)] bg-[var(--surface)] p-2 shadow-xl overflow-hidden"
               >
-                {/* Device Frame */}
-                <div className="w-full h-full rounded-[20px] overflow-hidden bg-[var(--ink)] relative border border-[var(--border-strong)]">
-                  <div className="absolute top-0 inset-x-0 h-6 bg-[var(--surface-2)] border-b border-[var(--border-strong)] flex items-center px-4 gap-1.5 z-20">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[var(--danger)]/80" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-[var(--warning)]/80" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-[var(--success)]/80" />
-                  </div>
+                <div className="w-full h-full rounded-[32px] overflow-hidden bg-[var(--surface-inset)] relative">
                   {feature.mockup}
                 </div>
               </motion.div>

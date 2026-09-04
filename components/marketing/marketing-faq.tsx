@@ -34,7 +34,7 @@ export function MarketingFAQ() {
     <section className="py-24 bg-[var(--surface-2)]">
       <div className="max-w-3xl mx-auto px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="font-display text-3xl md:text-5xl font-black tracking-tight text-[var(--ink)]">
+          <h2 className="font-display text-3xl md:text-5xl font-black tracking-tight text-[var(--text-primary)]">
             Frequently asked questions.
           </h2>
         </div>
@@ -45,15 +45,15 @@ export function MarketingFAQ() {
             return (
               <div 
                 key={idx} 
-                className="bg-white rounded-2xl border border-[var(--border)] overflow-hidden transition-colors"
+                className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] overflow-hidden transition-colors"
               >
                 <button
                   className="w-full px-6 py-6 text-left flex justify-between items-center focus:outline-none"
                   onClick={() => setOpenIndex(isOpen ? null : idx)}
                 >
-                  <span className="font-bold text-lg text-[var(--ink)] pr-8">{faq.question}</span>
+                  <span className="font-bold text-lg text-[var(--text-primary)] pr-8">{faq.question}</span>
                   <ChevronDown 
-                    className={`w-5 h-5 text-[var(--ink-3)] shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} 
+                    className={`w-5 h-5 text-[var(--text-muted)] shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} 
                   />
                 </button>
                 <AnimatePresence>
@@ -64,7 +64,7 @@ export function MarketingFAQ() {
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
                     >
-                      <div className="px-6 pb-6 text-[var(--ink-2)] font-medium leading-relaxed">
+                      <div className="px-6 pb-6 text-[var(--text-secondary)] font-medium leading-relaxed">
                         {faq.answer}
                       </div>
                     </motion.div>

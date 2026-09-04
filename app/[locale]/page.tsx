@@ -28,7 +28,7 @@ export default async function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] font-sans selection:bg-[var(--brand)]/30">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text-primary)] font-sans selection:bg-[var(--brand)]/30">
       <MarketingNav />
       <main>
         <MarketingHero />

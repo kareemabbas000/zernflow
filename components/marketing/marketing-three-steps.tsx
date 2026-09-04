@@ -27,10 +27,10 @@ const steps = [
 
 export function MarketingThreeSteps() {
   return (
-    <section className="py-24 bg-[var(--paper)]">
+    <section className="py-24 bg-[var(--bg)]">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="text-center mb-20">
-          <h2 className="font-display text-3xl md:text-5xl font-black tracking-tight text-[var(--ink)]">
+          <h2 className="font-display text-3xl md:text-5xl font-black tracking-tight text-[var(--text-primary)]">
             Three steps to live.
           </h2>
         </div>
@@ -48,8 +48,8 @@ export function MarketingThreeSteps() {
                   </div>
                 </div>
               </div>
-              <h3 className="font-bold text-xl text-[var(--ink)] mb-2">{step.title}</h3>
-              <p className="text-[var(--ink-3)] font-medium">{step.desc}</p>
+              <h3 className="font-bold text-xl text-[var(--text-primary)] mb-2">{step.title}</h3>
+              <p className="text-[var(--text-muted)] font-medium">{step.desc}</p>
             </div>
           ))}
         </div>

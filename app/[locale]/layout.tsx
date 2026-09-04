@@ -75,7 +75,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} dir={dir} className={`${plusJakarta.variable} ${gabarito.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
-      <body className={`${plusJakarta.className} font-sans min-h-screen bg-[var(--paper)] text-[var(--ink)] antialiased`}>
+      <body className={`${plusJakarta.className} font-sans min-h-screen antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <NextIntlClientProvider locale={locale} messages={messages}>
             {children}

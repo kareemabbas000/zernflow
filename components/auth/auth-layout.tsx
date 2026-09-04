@@ -18,23 +18,23 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children, title, subtitle, testimonial }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] font-sans selection:bg-[var(--brand)]/30 flex">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text-primary)] font-sans selection:bg-[var(--brand)]/30 flex">
       {/* Left Panel: Form */}
       <div className="flex-1 flex flex-col px-6 sm:px-12 lg:px-24 xl:px-32 relative">
         <div className="pt-8 pb-12">
           <Link href="/" className="flex items-center gap-2 group w-fit">
             <BrandLogo size="md" showText={false} />
-            <span className="font-display text-xl font-bold tracking-tight text-[var(--ink)] group-hover:text-[var(--brand)] transition-colors">
+            <span className="font-display text-xl font-bold tracking-tight text-[var(--text-primary)] group-hover:text-[var(--brand)] transition-colors">
               FlowStage
             </span>
           </Link>
         </div>
 
         <div className="flex-1 flex flex-col justify-center w-full max-w-sm mx-auto pb-24 lg:pb-0">
-          <h1 className="font-display text-3xl font-black tracking-tight text-[var(--ink)] mb-2">
+          <h1 className="font-display text-3xl font-black tracking-tight text-[var(--text-primary)] mb-2">
             {title}
           </h1>
-          <p className="text-[var(--ink-2)] font-medium mb-8">
+          <p className="text-[var(--text-secondary)] font-medium mb-8">
             {subtitle}
           </p>
           
@@ -43,7 +43,7 @@ export function AuthLayout({ children, title, subtitle, testimonial }: AuthLayou
       </div>
 
       {/* Right Panel: Expressive Brand */}
-      <div className="hidden lg:flex flex-1 relative bg-gradient-to-br from-[var(--ink)] via-black to-[var(--ink-2)] overflow-hidden items-center justify-center p-12">
+      <div className="hidden lg:flex flex-1 relative bg-[var(--marketing-deep)] overflow-hidden items-center justify-center p-12">
         {/* Glow Effects */}
         <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-[var(--brand)]/20 blur-[100px] rounded-full mix-blend-screen" />
         <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[var(--lilac)]/20 blur-[100px] rounded-full mix-blend-screen" />

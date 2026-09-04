@@ -58,10 +58,10 @@ export function MarketingChannels() {
   return (
     <section className="py-24 bg-[var(--surface-2)]">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-        <h2 className="font-display text-3xl md:text-5xl font-black tracking-tight text-[var(--ink)] mb-4">
+        <h2 className="font-display text-3xl md:text-5xl font-black tracking-tight text-[var(--text-primary)] mb-4">
           Be everywhere they are.
         </h2>
-        <p className="text-lg text-[var(--ink-2)] font-medium max-w-2xl mx-auto mb-16">
+        <p className="text-lg text-[var(--text-secondary)] font-medium max-w-2xl mx-auto mb-16">
           Connect your favourite platforms in one click. Build a flow once, and deploy it across every channel simultaneously.
         </p>
 
@@ -69,16 +69,16 @@ export function MarketingChannels() {
           {channels.map((channel) => (
             <div
               key={channel.id}
-              className={`group flex items-center gap-4 p-6 rounded-2xl bg-white border border-[var(--border)] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer ${channel.hoverTint}`}
+              className={`group flex items-center gap-4 p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer ${channel.hoverTint}`}
             >
-              <div className={`p-3 rounded-xl bg-[var(--surface-2)] transition-colors group-hover:bg-white ${channel.iconColor}`}>
+              <div className={`p-3 rounded-xl bg-[var(--surface-2)] transition-colors group-hover:bg-[var(--bg)] ${channel.iconColor}`}>
                 {channel.icon}
               </div>
               <div className="text-left">
-                <h3 className="font-bold text-[var(--ink)] text-lg leading-tight">
+                <h3 className="font-bold text-[var(--text-primary)] text-lg leading-tight">
                   {channel.name}
                 </h3>
-                <p className="text-sm font-medium text-[var(--ink-3)] mt-1">
+                <p className="text-sm font-medium text-[var(--text-muted)] mt-1">
                   {channel.description}
                 </p>
               </div>

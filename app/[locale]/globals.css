@@ -1,46 +1,81 @@
 @import "tailwindcss";
 
 @theme {
-  /* Colors */
-  --color-ink: var(--ink);
-  --color-ink-2: var(--ink-2);
-  --color-ink-3: var(--ink-3);
-  --color-paper: var(--paper);
+  /* Theme variables mapping */
+  --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-inset: var(--surface-inset);
+  --color-marketing-deep: var(--marketing-deep);
+  --color-overlay-scrim: var(--overlay-scrim);
+
+  /* Deprecating old ink/paper in favor of semantic names, but keeping map for backwards compat during migration */
+  --color-ink: var(--text-primary);
+  --color-ink-2: var(--text-secondary);
+  --color-ink-3: var(--text-muted);
+  --color-paper: var(--bg);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-disabled: var(--text-disabled);
+  --color-text-on-brand: var(--text-on-brand);
+  --color-text-on-accent: var(--text-on-accent);
+
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
-  
+  --color-border-subtle: var(--border-subtle);
+
   --color-brand: var(--brand);
   --color-brand-hover: var(--brand-hover);
+  --color-brand-active: var(--brand-active);
   --color-brand-soft: var(--brand-soft);
-  
+  --color-brand-soft-border: var(--brand-soft-border);
+  --color-focus-ring: var(--focus-ring);
+
   --color-lime: var(--lime);
+  --color-lime-soft: var(--lime-soft);
   --color-coral: var(--coral);
+  --color-coral-soft: var(--coral-soft);
   --color-lilac: var(--lilac);
+  --color-lilac-soft: var(--lilac-soft);
   --color-butter: var(--butter);
-  
+  --color-butter-soft: var(--butter-soft);
+
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
+  --color-success-border: var(--success-border);
+  
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
+  --color-warning-border: var(--warning-border);
+  
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-danger-border: var(--danger-border);
+  
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  --color-info-border: var(--info-border);
 
-  /* Map to shadcn/ui generic requirements */
-  --color-background: var(--paper); /* Marketing default */
-  --color-foreground: var(--ink);
+  --color-skeleton-base: var(--skeleton-base);
+  --color-skeleton-shine: var(--skeleton-shine);
+
+  /* Shadcn standard mappings */
+  --color-background: var(--bg);
+  --color-foreground: var(--text-primary);
   --color-primary: var(--brand);
-  --color-primary-foreground: #FFFFFF;
+  --color-primary-foreground: var(--text-on-brand);
   --color-muted: var(--surface-2);
-  --color-muted-foreground: var(--ink-3);
+  --color-muted-foreground: var(--text-muted);
   --color-card: var(--surface);
-  --color-card-foreground: var(--ink);
-  --color-popover: var(--surface);
-  --color-popover-foreground: var(--ink);
-  
+  --color-card-foreground: var(--text-primary);
+  --color-popover: var(--surface-3);
+  --color-popover-foreground: var(--text-primary);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--text-on-brand);
+
   /* Radii scale: sm 8 / md 12 / lg 16 / xl 20 / 2xl 28 */
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -63,13 +98,11 @@
   --spacing-20: 80px;
   --spacing-24: 96px;
 
-  /* Shadows (Near-none on cards, medium on dropdowns, strong on modals. No glow) */
-  --shadow-sm: 0 1px 2px 0 rgba(11, 11, 15, 0.05); /* Cards/near-none */
+  /* Shadows - Strict rules: No glow, invisible on dark unless for scrim separation */
+  --shadow-sm: 0 1px 2px 0 rgba(11, 11, 15, 0.05); /* Cards */
   --shadow-md: 0 4px 6px -1px rgba(11, 11, 15, 0.1), 0 2px 4px -1px rgba(11, 11, 15, 0.06); /* Dropdowns */
   --shadow-lg: 0 10px 15px -3px rgba(11, 11, 15, 0.1), 0 4px 6px -2px rgba(11, 11, 15, 0.05); /* Modals */
   --shadow-none: 0 0 #0000;
-  
-  /* Remove colored shadows and glows */
   --shadow-glow: 0 0 #0000;
   --shadow-colored: 0 0 #0000;
 
@@ -95,7 +128,7 @@
     50% { transform: translateY(-10px); }
   }
 
-  /* Fonts (mapped from next/font) */
+  /* Fonts */
   --font-sans: var(--font-sans);
   --font-display: var(--font-display);
   --font-mono: var(--font-mono);
@@ -111,63 +144,151 @@
 }
 
 :root {
-  /* The strict 17 color tokens */
-  --ink: #0B0B0F;
-  --ink-2: #3A3A45;
-  --ink-3: #71717F;
-  
-  --paper: #FAF8F5;
+  /* LIGHT TOKENS */
+  --bg: #FAF8F5;
   --surface: #FFFFFF;
   --surface-2: #F5F3EF;
-  
+  --surface-3: #FFFFFF;
+  --surface-inset: #F5F3EF;
+  --marketing-deep: #08080C;
+  --overlay-scrim: rgba(11,11,15,0.40);
+
+  --text-primary: #0B0B0F;
+  --text-secondary: #3A3A45;
+  --text-muted: #71717F;
+  --text-disabled: #A8A6B2;
+  --text-on-brand: #FFFFFF;
+  --text-on-accent: #0B0B0F;
+
   --border: #E6E2DB;
   --border-strong: #D3CEC4;
-  
+  --border-subtle: #E6E2DB;
+
   --brand: #2D5BFF;
   --brand-hover: #1F45D6;
+  --brand-active: #1836B0;
   --brand-soft: #EAEFFF;
-  
+  --brand-soft-border: #C7D3FF;
+  --focus-ring: #2D5BFF;
+
   --lime: #C9F24D;
+  --lime-soft: #F4FCE3;
   --coral: #FF6B4A;
+  --coral-soft: #FFF0ED;
   --lilac: #C8B6FF;
+  --lilac-soft: #F3EEFF;
   --butter: #FFD84D;
-  
+  --butter-soft: #FFFBE6;
+
   --success: #16A34A;
   --success-soft: #E8F6EC;
-  
+  --success-border: #86EFAC;
+
   --warning: #D97706;
   --warning-soft: #FDF1DF;
-  
+  --warning-border: #FCD34D;
+
   --danger: #DC2626;
   --danger-soft: #FBEAEA;
-  
+  --danger-border: #FCA5A5;
+
   --info: #2D5BFF;
   --info-soft: #EAEFFF;
+  --info-border: #93C5FD;
+
+  --skeleton-base: #EDEAE4;
+  --skeleton-shine: #F7F5F1;
+  --selection-bg: rgba(45, 91, 255, 0.25);
+  --selection-text: #0B0B0F;
+
+  --chart-1: #2D5BFF;
+  --chart-2: #C9F24D;
+  --chart-3: #C8B6FF;
+  --chart-4: #FF6B4A;
+  --chart-5: #FFD84D;
+  --chart-6: #16A34A;
+  --chart-grid: #E6E2DB;
+  --chart-axis-text: #71717F;
+  
+  color-scheme: light;
 }
 
 .dark {
-  /* Dark Mode mapping (Structural Register calm) */
-  --ink: #FFFFFF;
-  --ink-2: #A1A1AA;
-  --ink-3: #71717A;
+  /* DARK TOKENS (Strictly from specifications) */
+  --bg: #0E0E13;
+  --surface: #16161D;
+  --surface-2: #1E1E27;
+  --surface-3: #262631;
+  --surface-inset: #101017;
+  --marketing-deep: #08080C;
+  --overlay-scrim: rgba(4,4,8,0.72);
+
+  --text-primary: #F2F0EC;
+  --text-secondary: #B6B4C0;
+  --text-muted: #82808E;
+  --text-disabled: #5C5A68;
+  --text-on-brand: #FFFFFF;
+  --text-on-accent: #0B0B0F;
+
+  --border: #2A2A36;
+  --border-strong: #3A3A48;
+  --border-subtle: #20202A;
+
+  --brand: #5B82FF;
+  --brand-hover: #7A99FF;
+  --brand-active: #4A6FF0;
+  --brand-soft: #16203C;
+  --brand-soft-border: #2C3A6B;
+  --focus-ring: #7A99FF;
+
+  --lime: #D4F76A;
+  --lime-soft: #1F2A10;
   
-  --paper: #09090B;
-  --surface: #18181B;
-  --surface-2: #27272A;
+  --coral: #FF8464;
+  --coral-soft: #2E1710;
   
-  --border: #27272A;
-  --border-strong: #3F3F46;
+  --lilac: #C8B6FF;
+  --lilac-soft: #221B3A;
   
-  /* Brand stays the same, or adapt slightly for dark mode contrast */
-  --brand: #2D5BFF;
-  --brand-hover: #1F45D6;
-  --brand-soft: #1E293B; /* darker soft blue */
-  
-  /* Accents */
-  --success-soft: #064E3B;
-  --warning-soft: #78350F;
-  --danger-soft: #7F1D1D;
-  --info-soft: #1E3A8A;
+  --butter: #FFE070;
+  --butter-soft: #2C2410;
+
+  --success: #4ADE80;
+  --success-soft: #10281A;
+  --success-border: #1E4630;
+
+  --warning: #FBBF24;
+  --warning-soft: #2A1F0B;
+  --warning-border: #4A3A14;
+
+  --danger: #F87171;
+  --danger-soft: #2C1414;
+  --danger-border: #532222;
+
+  --info: #5B82FF;
+  --info-soft: #16203C;
+  --info-border: #2C3A6B;
+
+  --skeleton-base: #1E1E27;
+  --skeleton-shine: #2C2C38;
+  --selection-bg: #24356E;
+  --selection-text: #F2F0EC;
+
+  --chart-1: #5B82FF;
+  --chart-2: #D4F76A;
+  --chart-3: #C8B6FF;
+  --chart-4: #FF8464;
+  --chart-5: #FFE070;
+  --chart-6: #4ADE80;
+  --chart-grid: #262631;
+  --chart-axis-text: #82808E;
+
+  /* Overrides for dark mode mechanics */
+  --shadow-sm: 0 0 #0000; 
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+
+  color-scheme: dark;
 }
 
 @layer base {
@@ -175,14 +296,17 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/25 selection:text-primary;
-    /* Smooth scroll behavior for anchors */
+    @apply bg-bg text-text-primary antialiased;
     scroll-behavior: smooth;
+  }
+  /* Selection styling */
+  ::selection {
+    background-color: var(--selection-bg);
+    color: var(--selection-text);
   }
 }
 
 @layer utilities {
-  /* Page Transition Animations */
   .page-transition-enter {
     opacity: 0;
     transform: translateY(10px) scale(0.99);
@@ -202,12 +326,17 @@
     transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1), transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
   }
   
-  /* Shared Skeleton animation */
   @keyframes pulse-subtle {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
   }
   .animate-pulse-subtle {
     animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Scrim styling */
+  .backdrop-blur-overlay {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 }

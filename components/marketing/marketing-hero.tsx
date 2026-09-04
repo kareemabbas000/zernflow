@@ -58,9 +58,9 @@ export function MarketingHero() {
   return (
     <section className="relative overflow-hidden pt-24 pb-20 lg:pt-36 lg:pb-28 px-6">
       {/* Background Gradients */}
-      <div className="absolute inset-0 -z-10 bg-[var(--paper)]">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] opacity-40 blur-[100px] bg-gradient-to-tr from-[var(--butter)] via-[var(--lilac)] to-[var(--lime)] rounded-full mix-blend-multiply pointer-events-none" />
-        <div className="absolute top-[20%] right-0 w-[600px] h-[600px] opacity-30 blur-[120px] bg-gradient-to-tl from-[var(--brand-soft)] to-[var(--coral)] rounded-full mix-blend-multiply pointer-events-none" />
+      <div className="absolute inset-0 -z-10 bg-[var(--bg)]">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] opacity-40 blur-[100px] bg-gradient-to-tr from-[var(--butter)] via-[var(--lilac)] to-[var(--lime)] rounded-full mix-blend-multiply pointer-events-none dark:mix-blend-lighten dark:opacity-20" />
+        <div className="absolute top-[20%] right-0 w-[600px] h-[600px] opacity-30 blur-[120px] bg-gradient-to-tl from-[var(--brand-soft)] to-[var(--coral)] rounded-full mix-blend-multiply pointer-events-none dark:mix-blend-lighten dark:opacity-10" />
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
@@ -70,7 +70,7 @@ export function MarketingHero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
-            className="font-display text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[1.1] text-[var(--ink)] mb-6"
+            className="font-display text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[1.1] text-[var(--text-primary)] mb-6"
           >
             Automate conversations. <br className="hidden md:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--brand)] to-[var(--brand-hover)]">Grow revenue faster.</span>
@@ -81,7 +81,7 @@ export function MarketingHero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-            className="text-xl md:text-2xl text-[var(--ink-2)] font-medium mb-10 max-w-2xl leading-relaxed"
+            className="text-xl md:text-2xl text-[var(--text-secondary)] font-medium mb-10 max-w-2xl leading-relaxed"
           >
             Build visual workflows, deploy AI copilots, and manage every channel from one powerful inbox.
           </motion.p>
@@ -93,15 +93,15 @@ export function MarketingHero() {
             transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
             className="flex flex-col items-center gap-4 w-full sm:w-auto"
           >
-            <Button asChild size="lg" className="h-16 px-10 rounded-full font-bold text-lg bg-[var(--brand)] hover:bg-[var(--brand-hover)] text-white shadow-xl shadow-[var(--brand)]/20 w-full sm:w-auto transition-all hover:scale-105">
+            <Button asChild size="lg" className="h-16 px-10 rounded-full font-bold text-lg bg-[var(--brand)] hover:bg-[var(--brand-hover)] text-[var(--text-on-brand)] shadow-xl shadow-[var(--brand)]/20 w-full sm:w-auto transition-all hover:scale-105">
               <Link href="/register">Start for free <ArrowRight className="ml-2 h-5 w-5" /></Link>
             </Button>
             <div className="flex items-center gap-4 mt-2">
-              <span className="text-sm font-medium text-[var(--ink-3)] flex items-center gap-1.5">
+              <span className="text-sm font-medium text-[var(--text-muted)] flex items-center gap-1.5">
                 <Check className="h-4 w-4 text-[var(--success)]" /> No credit card required
               </span>
               <span className="text-[var(--border-strong)]">|</span>
-              <Link href="/login" className="text-sm font-bold text-[var(--ink)] hover:text-[var(--brand)] underline decoration-2 decoration-[var(--border)] underline-offset-4 hover:decoration-[var(--brand)] transition-all">
+              <Link href="/login" className="text-sm font-bold text-[var(--text-primary)] hover:text-[var(--brand)] underline decoration-2 decoration-[var(--border)] underline-offset-4 hover:decoration-[var(--brand)] transition-all">
                 Sign in to your account
               </Link>
             </div>
@@ -128,14 +128,14 @@ export function MarketingHero() {
                 }}
                 className={`flex items-center gap-3 p-4 rounded-2xl shadow-xl shadow-black/5 border border-[var(--border)] ${card.color} backdrop-blur-md min-w-[240px] pointer-events-auto hover:-translate-y-1 transition-transform cursor-default`}
               >
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${card.icon}`}>
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center text-[var(--bg)] font-bold text-sm ${card.icon}`}>
                   {card.sender.charAt(0)}
                 </div>
                 <div>
-                  <p className="text-[13px] font-bold text-[var(--ink)]">{card.content}</p>
+                  <p className="text-[13px] font-bold text-[var(--text-primary)]">{card.content}</p>
                   <div className="flex justify-between items-center mt-1">
-                    <span className="text-[11px] font-medium text-[var(--ink-3)]">{card.sender}</span>
-                    <span className="text-[10px] font-semibold text-[var(--ink-3)]">{card.time}</span>
+                    <span className="text-[11px] font-medium text-[var(--text-secondary)]">{card.sender}</span>
+                    <span className="text-[10px] font-semibold text-[var(--text-muted)]">{card.time}</span>
                   </div>
                 </div>
               </motion.div>

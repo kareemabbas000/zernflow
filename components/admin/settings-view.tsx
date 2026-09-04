@@ -71,6 +71,12 @@ export function AdminSettingsView({
   const [savingApiKeys, setSavingApiKeys] = useState(false);
   const [savingMarketingSettings, setSavingMarketingSettings] = useState(false);
 
+  const [marketingJsonStr, setMarketingJsonStr] = useState(() => 
+    initialMarketingSettings?.social_proof_content 
+      ? JSON.stringify(initialMarketingSettings.social_proof_content, null, 2) 
+      : ""
+  );
+
   const [adminPassword, setAdminPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
 
@@ -119,7 +125,23 @@ export function AdminSettingsView({
     setSavingMarketingSettings(true);
     setFeedback(null);
 
-    const res = await updatePlatformSettingsAdmin("marketing_settings", marketingSettings);
+    let parsedContent = null;
+    if (marketingJsonStr.trim()) {
+      try {
+        parsedContent = JSON.parse(marketingJsonStr);
+      } catch (err) {
+        setFeedback({ message: "Invalid JSON in social proof content", type: "error" });
+        setSavingMarketingSettings(false);
+        return;
+      }
+    }
+
+    const payload = {
+      ...marketingSettings,
+      social_proof_content: parsedContent,
+    };
+
+    const res = await updatePlatformSettingsAdmin("marketing_settings", payload);
 
     if (res.error) {
       setFeedback({ message: res.error, type: "error" });
@@ -494,21 +516,8 @@ export function AdminSettingsView({
             <label className="text-xs font-medium text-muted-foreground">Social Proof JSON Content</label>
             <p className="text-[10px] text-muted-foreground mb-1">Leave empty or invalid JSON to use default content.</p>
             <textarea
-              value={marketingSettings.social_proof_content ? JSON.stringify(marketingSettings.social_proof_content, null, 2) : ""}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (!val) {
-                  setMarketingSettings({ ...marketingSettings, social_proof_content: null });
-                  return;
-                }
-                try {
-                  const parsed = JSON.parse(val);
-                  setMarketingSettings({ ...marketingSettings, social_proof_content: parsed });
-                } catch (err) {
-                  // Ignore invalid JSON while typing, only store if valid
-                  // To be fully robust, we would use a controlled string state, but this works for simple edits
-                }
-              }}
+              value={marketingJsonStr}
+              onChange={(e) => setMarketingJsonStr(e.target.value)}
               rows={8}
               placeholder="[{ ...testimonial object }]"
               className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-ring resize-y"

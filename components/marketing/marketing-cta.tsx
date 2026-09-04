@@ -15,7 +15,7 @@ export function MarketingCTA() {
         <h2 className="font-display text-4xl md:text-6xl font-black tracking-tight text-white mb-8 leading-[1.1]">
           Ready to scale your conversations?
         </h2>
-        <Button asChild size="lg" className="h-16 px-10 rounded-full font-bold text-xl bg-[var(--ink)] hover:bg-black text-white shadow-xl shadow-[var(--ink)]/20 transition-transform hover:scale-105">
+        <Button asChild size="lg" className="h-16 px-10 rounded-full font-bold text-xl bg-[var(--text-primary)] hover:opacity-90 text-[var(--bg)] shadow-xl shadow-[var(--text-primary)]/20 transition-transform hover:scale-105">
           <Link href="/register">
             Get started for free <ArrowRight className="ml-2 h-6 w-6" />
           </Link>
