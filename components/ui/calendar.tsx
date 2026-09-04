@@ -52,7 +52,7 @@ function Calendar({
           "aria-selected:bg-[var(--surface-2)] aria-selected:text-[var(--ink)]",
         day_hidden: "invisible",
         ...classNames,
-      }}
+      } as any}
       components={{
         IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
         IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
