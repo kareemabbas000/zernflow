@@ -55,6 +55,7 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 export default async function RootLayout({
   children,
@@ -74,10 +75,11 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} dir={dir} className={`${plusJakarta.variable} ${gabarito.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
-      <body className={`${plusJakarta.className} font-sans min-h-screen bg-background text-foreground antialiased`}>
+      <body className={`${plusJakarta.className} font-sans min-h-screen bg-[var(--paper)] text-[var(--ink)] antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <NextIntlClientProvider locale={locale} messages={messages}>
             {children}
+            <Toaster />
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>
