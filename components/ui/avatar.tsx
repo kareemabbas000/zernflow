@@ -23,7 +23,8 @@ export interface AvatarProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof avatarVariants> {
   src?: string | null
-  fallback?: string
+  fallback?: string | null
+  name?: string | null
 }
 
 const GRADIENT_PALETTES = [
@@ -44,14 +45,15 @@ function getGradient(name?: string): string {
 }
 
 const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
-  ({ className, size, src, fallback, ...props }, ref) => {
+  ({ className, size, src, fallback, name, ...props }, ref) => {
     const [hasError, setHasError] = React.useState(false)
 
     React.useEffect(() => {
       setHasError(false)
     }, [src])
 
-    const gradientClass = getGradient(fallback)
+    const textToUse = fallback || name
+    const gradientClass = getGradient(textToUse || undefined)
 
     return (
       <div
@@ -62,7 +64,7 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
         {src && !hasError ? (
           <img
             src={src}
-            alt={fallback || "Avatar"}
+            alt={textToUse || "Avatar"}
             className="aspect-square h-full w-full object-cover"
             onError={() => setHasError(true)}
           />
@@ -73,7 +75,7 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
               gradientClass
             )}
           >
-            {fallback?.slice(0, 2).toUpperCase() || "?"}
+            {textToUse?.slice(0, 2).toUpperCase() || "?"}
           </div>
         )}
       </div>
