@@ -26,7 +26,6 @@ import { useGlobalLiveSync, useRealtime } from "@/components/providers/global-li
 import { useConversationMessages } from "@/lib/hooks/use-inbox-queries";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/lib/types/database";
-import { motion, AnimatePresence } from "framer-motion";
 
 export type ChannelInfo = {
   id: string;
@@ -151,25 +150,25 @@ export function InboxView({
   return (
     <div
       ref={containerRef}
-      className="relative flex h-full w-full min-w-0 overflow-hidden overflow-x-hidden bg-background"
+      className="relative flex h-full w-full min-w-0 overflow-hidden overflow-x-hidden bg-[var(--paper)] font-sans"
     >
       {/* Left panel: Conversation list */}
       <div
         className={cn(
-          "flex flex-col border-r border-border bg-background transition-transform duration-300 ease-in-out absolute inset-0 z-10 md:relative md:w-80 lg:w-96 md:translate-x-0 md:shrink-0 min-w-0 overflow-hidden",
+          "flex flex-col border-r border-[var(--border)] bg-[var(--surface-2)] transition-transform duration-300 ease-in-out absolute inset-0 z-10 md:relative md:w-80 lg:w-96 md:translate-x-0 md:shrink-0 min-w-0 overflow-hidden",
           isMobile && selectedId ? "-translate-x-full" : "translate-x-0"
         )}
       >
         {/* Top Controls */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-muted/20 text-xs shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-2)] text-xs shrink-0">
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all",
+                "flex items-center gap-1.5 px-2 py-1 rounded transition-colors",
                 soundEnabled
-                  ? "text-primary hover:bg-primary/10 font-bold bg-primary/5"
-                  : "text-muted-foreground hover:bg-muted font-semibold"
+                  ? "text-[var(--brand)] bg-[var(--brand-soft)] font-medium"
+                  : "text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-[var(--ink)] font-medium"
               )}
               title={
                 soundEnabled
@@ -191,7 +190,7 @@ export function InboxView({
           <div className="flex items-center gap-1">
             <button
               onClick={handleEnableNotifications}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-muted-foreground font-semibold hover:text-foreground hover:bg-muted transition-colors"
+              className="flex items-center gap-1.5 px-2 py-1 rounded text-[var(--ink-2)] font-medium hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors"
               title="Enable desktop notifications"
             >
               <Bell className="h-4 w-4" />
@@ -200,7 +199,7 @@ export function InboxView({
           </div>
         </div>
 
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 bg-[var(--surface-2)]">
           <ConversationList
             conversations={displayConversations}
             channels={channels}
@@ -214,97 +213,85 @@ export function InboxView({
       {/* Center panel: Message thread */}
       <div 
         className={cn(
-          "flex min-h-0 min-w-0 flex-1 flex-col bg-background transition-transform duration-300 ease-in-out absolute inset-0 z-20 md:relative md:translate-x-0 overflow-hidden",
+          "flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--paper)] transition-transform duration-300 ease-in-out absolute inset-0 z-20 md:relative md:translate-x-0 overflow-hidden",
           isMobile ? (selectedId && !contactPanelOpen ? "translate-x-0" : selectedId && contactPanelOpen ? "-translate-x-full" : "translate-x-full") : ""
         )}
       >
         {/* Mobile: Back bar */}
         {isMobile && selectedId && (
-          <div className="flex items-center justify-between border-b border-border px-3 py-2 shrink-0 bg-card">
+          <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-2 shrink-0 bg-[var(--surface)]">
             <button
               onClick={() => selectConversation(null)}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold text-foreground bg-muted/60 hover:bg-muted transition-colors"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-[var(--ink)] bg-[var(--surface-2)] hover:bg-[var(--border)] transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span>Back to chats</span>
+              <span>Back</span>
             </button>
             <button
               onClick={() => setContactPanelOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-[var(--ink-2)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] transition-colors"
             >
               <User className="h-4 w-4" />
-              <span>Contact CRM</span>
+              <span>Contact</span>
             </button>
           </div>
         )}
 
         {/* Desktop: Contact panel toggle */}
         {!isMobile && selectedConversation && !contactPanelOpen && (
-          <div className="flex shrink-0 justify-end border-b border-border px-4 py-2 bg-background/50 backdrop-blur-md">
+          <div className="flex shrink-0 justify-end border-b border-[var(--border)] px-4 py-2 bg-[var(--paper)]">
             <button
               onClick={() => setContactPanelOpen(true)}
-              className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-bold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors border border-border/50 shadow-sm"
+              className="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium text-[var(--ink-2)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] transition-colors border border-[var(--border)]"
               aria-label="Show contact CRM info"
             >
-              <User className="h-4 w-4 text-primary" />
-              <span>Contact CRM</span>
+              <User className="h-4 w-4 text-[var(--brand)]" />
+              <span>Contact Profile</span>
             </button>
           </div>
         )}
 
-        <div className="min-h-0 flex-1 relative overflow-hidden">
-          {/* Ambient background glow inside thread */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10" />
-
+        <div className="min-h-0 flex-1 relative overflow-hidden flex flex-col">
           {displayConversations.length === 0 ? (
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex h-full flex-col items-center justify-center px-6 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 mb-6 shadow-inner relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent" />
-                <MessageSquare className="h-10 w-10 text-primary relative z-10" />
+            <div className="flex h-full flex-col items-center justify-center px-6 text-center animate-in fade-in duration-300">
+              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[var(--surface-2)] border border-[var(--border)] mb-6">
+                <MessageSquare className="h-8 w-8 text-[var(--ink-3)]" />
               </div>
-              <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                Live Inbox Ready <Sparkles className="h-5 w-5 text-amber-500" />
+              <h3 className="text-xl font-bold text-[var(--ink)] flex items-center gap-2">
+                Live Inbox Ready
               </h3>
-              <p className="mt-3 max-w-sm text-sm text-muted-foreground leading-relaxed">
-                Connect your social channels. Inbound customer messages from
-                Facebook, Instagram, WhatsApp, X, and Telegram appear here in
-                real-time.
+              <p className="mt-2 max-w-sm text-sm text-[var(--ink-2)] leading-relaxed">
+                Connect your social channels to see inbound messages here.
               </p>
               <Link
                 href="/dashboard/channels"
-                className="mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5"
+                className="mt-6 inline-flex items-center gap-2 rounded-md bg-[var(--brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--brand-hover)] transition-colors"
               >
                 Connect Channels
               </Link>
-            </motion.div>
+            </div>
           ) : !selectedConversation ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-full flex-col items-center justify-center px-6 text-center text-muted-foreground">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-muted/50 mb-6 shadow-inner">
-                <MessageSquare className="h-10 w-10 opacity-40" />
+            <div className="flex h-full flex-col items-center justify-center px-6 text-center text-[var(--ink-2)]">
+              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[var(--surface-2)] border border-[var(--border)] mb-4">
+                <MessageSquare className="h-8 w-8 text-[var(--ink-3)]" />
               </div>
-              <p className="text-base font-bold text-foreground">
+              <p className="text-base font-bold text-[var(--ink)]">
                 Select a conversation
               </p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm mt-1">
                 Choose a chat from the left to view messages
               </p>
-            </motion.div>
+            </div>
           ) : messagesLoading && effectiveMessages.length === 0 ? (
             <div className="flex h-full flex-col p-6 space-y-6">
               <div className="flex justify-start">
-                <Skeleton className="h-12 w-2/3 rounded-2xl rounded-tl-sm bg-muted/60" />
+                <Skeleton className="h-12 w-2/3 rounded-lg bg-[var(--surface-2)]" />
               </div>
               <div className="flex justify-end">
-                <Skeleton className="h-12 w-1/2 rounded-2xl rounded-tr-sm bg-primary/20" />
+                <Skeleton className="h-12 w-1/2 rounded-lg bg-[var(--brand-soft)]" />
               </div>
               <div className="flex justify-start">
-                <Skeleton className="h-20 w-3/4 rounded-2xl rounded-tl-sm bg-muted/60" />
-              </div>
-              <div className="flex justify-start">
-                <Skeleton className="h-10 w-1/3 rounded-2xl rounded-tl-sm bg-muted/60" />
-              </div>
-              <div className="flex justify-end">
-                <Skeleton className="h-16 w-2/3 rounded-2xl rounded-tr-sm bg-primary/20" />
+                <Skeleton className="h-20 w-3/4 rounded-lg bg-[var(--surface-2)]" />
               </div>
             </div>
           ) : (
@@ -319,12 +306,12 @@ export function InboxView({
       {/* Right panel: Contact info */}
       <div
         className={cn(
-          "bg-background transition-all duration-300 ease-in-out absolute inset-0 z-30",
+          "bg-[var(--surface-2)] transition-all duration-300 ease-in-out absolute inset-0 z-30 border-l border-[var(--border)]",
           isMobile
             ? (contactPanelOpen && selectedId ? "translate-x-0" : "translate-x-full")
             : !contactPanelOpen
             ? "hidden"
-            : "md:absolute md:inset-y-0 md:right-0 md:z-30 md:w-80 lg:w-96 md:shadow-2xl md:border-l md:border-border xl:relative xl:shadow-none xl:z-auto xl:w-96 xl:shrink-0"
+            : "md:absolute md:inset-y-0 md:right-0 md:z-30 md:w-80 lg:w-[360px] md:shadow-xl xl:relative xl:shadow-none xl:z-auto xl:w-[360px] xl:shrink-0"
         )}
       >
         {selectedConversation?.contact_id && (

@@ -339,32 +339,32 @@ export function ContactPanel({
   const phone = (details?.contact.metadata as Record<string, any>)?.phone || null;
 
   return (
-    <div className={cn("flex h-full flex-col border-l border-border bg-card shadow-sm select-none shrink-0", isMobile ? "w-full" : "w-84")}>
+    <div className={cn("flex h-full flex-col border-l border-[var(--border)] bg-[var(--paper)] shadow-sm select-none shrink-0", isMobile ? "w-full" : "w-84")}>
       {/* Header */}
-      <div className="flex h-14 items-center justify-between border-b border-border px-4 bg-muted/20">
+      <div className="flex h-14 items-center justify-between border-b border-[var(--border)] px-4 bg-[var(--surface-2)]">
         <div className="flex items-center gap-2">
           {isMobile && (
             <button
               onClick={onClose}
-              className="mr-1 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              className="mr-1 rounded-md p-1.5 text-[var(--ink-2)] hover:bg-accent hover:text-[var(--ink)] transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
           )}
           <User className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Contact CRM</h3>
+          <h3 className="text-sm font-semibold text-[var(--ink)]">Contact CRM</h3>
         </div>
         <div className="flex items-center gap-1">
           <Link
             href={`/dashboard/contacts/${contactId}`}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            className="rounded-md p-1.5 text-[var(--ink-2)] hover:bg-accent hover:text-[var(--ink)] transition-colors"
             title="Open full CRM profile"
           >
             <ExternalLink className="h-4 w-4" />
           </Link>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            className="rounded-md p-1.5 text-[var(--ink-2)] hover:bg-accent hover:text-[var(--ink)] transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -372,38 +372,38 @@ export function ContactPanel({
       </div>
 
       {loading ? (
-        <div className="flex flex-1 flex-col items-center p-5 space-y-6 bg-card">
+        <div className="flex flex-1 flex-col items-center p-5 space-y-6 bg-[var(--paper)]">
           <Skeleton className="h-16 w-16 rounded-full" />
           <div className="space-y-2 w-full flex flex-col items-center">
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-3 w-1/3" />
           </div>
-          <Skeleton className="h-10 w-full rounded-xl" />
-          <Skeleton className="h-10 w-full rounded-xl" />
+          <Skeleton className="h-10 w-full rounded-md" />
+          <Skeleton className="h-10 w-full rounded-md" />
           <div className="w-full space-y-3 mt-4">
             <Skeleton className="h-3 w-1/4" />
-            <Skeleton className="h-12 w-full rounded-lg" />
-            <Skeleton className="h-12 w-full rounded-lg" />
+            <Skeleton className="h-12 w-full rounded-md" />
+            <Skeleton className="h-12 w-full rounded-md" />
           </div>
         </div>
       ) : details ? (
         <div className="flex-1 overflow-y-auto divide-y divide-border/60">
           {/* Profile section */}
-          <div className="flex flex-col items-center p-5 text-center bg-card">
+          <div className="flex flex-col items-center p-5 text-center bg-[var(--paper)]">
             <Avatar
               src={details.contact.avatar_url}
               name={details.contact.display_name}
               size="xl"
               className="mb-2"
             />
-            <h4 className="mt-2 font-bold text-foreground text-base">
+            <h4 className="mt-2 font-bold text-[var(--ink)] text-base">
               {details.contact.display_name ?? "Customer"}
             </h4>
             {details.contact.email && (
-              <p className="text-xs text-muted-foreground mt-0.5">{details.contact.email}</p>
+              <p className="text-xs text-[var(--ink-2)] mt-0.5">{details.contact.email}</p>
             )}
             {phone && (
-              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+              <p className="text-xs text-[var(--ink-2)] mt-0.5 flex items-center gap-1">
                 <Phone className="h-3 w-3" />
                 {phone}
               </p>
@@ -416,7 +416,7 @@ export function ContactPanel({
                   onClick={handleToggleAutomation}
                   disabled={togglingAutomation}
                   className={cn(
-                    "w-full flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-semibold transition-all border",
+                    "w-full flex items-center justify-center gap-2 rounded-md py-2 px-3 text-xs font-semibold transition-all border",
                     details.isAutomationPaused
                       ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
                       : "bg-primary/10 border-primary/20 text-primary"
@@ -441,10 +441,10 @@ export function ContactPanel({
                   onClick={handleToggleMute}
                   disabled={togglingMute}
                   className={cn(
-                    "w-full flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-semibold transition-all border",
+                    "w-full flex items-center justify-center gap-2 rounded-md py-2 px-3 text-xs font-semibold transition-all border",
                     details.isMuted
-                      ? "bg-muted border-border text-muted-foreground"
-                      : "bg-background border-border text-foreground hover:bg-muted/50"
+                      ? "bg-[var(--surface)] border-[var(--border)] text-[var(--ink-2)]"
+                      : "bg-[var(--paper)] border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-2)]"
                   )}
                 >
                   {togglingMute ? (
@@ -463,16 +463,16 @@ export function ContactPanel({
           {/* Connected Channels */}
           {details.channels.length > 0 && (
             <div className="p-4 space-y-2">
-              <h5 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              <h5 className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)]">
                 Connected Channels
               </h5>
               <div className="space-y-1.5">
                 {details.channels.map((ch, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs bg-muted/30 rounded-lg p-2">
+                  <div key={i} className="flex items-center gap-2 text-xs bg-[var(--surface)]/30 rounded-md p-2">
                     <PlatformIcon platform={ch.platform} size={14} />
-                    <span className="capitalize font-medium text-foreground">{ch.platform}</span>
+                    <span className="capitalize font-medium text-[var(--ink)]">{ch.platform}</span>
                     {ch.platform_username && (
-                      <span className="truncate text-muted-foreground ml-auto">
+                      <span className="truncate text-[var(--ink-2)] ml-auto">
                         @{ch.platform_username}
                       </span>
                     )}
@@ -485,7 +485,7 @@ export function ContactPanel({
           {/* Tags Section */}
           <div className="p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h5 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <h5 className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] flex items-center gap-1.5">
                 <Tag className="h-3 w-3 text-primary" />
                 Tags ({details.tags.length})
               </h5>
@@ -508,7 +508,7 @@ export function ContactPanel({
                 </span>
               ))}
               {details.tags.length === 0 && (
-                <span className="text-xs text-muted-foreground/60 italic">No tags assigned</span>
+                <span className="text-xs text-[var(--ink-2)]/60 italic">No tags assigned</span>
               )}
             </div>
 
@@ -519,12 +519,12 @@ export function ContactPanel({
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
                 placeholder="+ Add tag..."
-                className="flex-1 rounded-lg border border-input bg-background px-2.5 py-1 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                className="flex-1 rounded-md border border-input bg-[var(--paper)] px-2.5 py-1 text-xs placeholder:text-[var(--ink-2)] focus:outline-none focus:ring-1 focus:ring-ring"
               />
               <button
                 type="submit"
                 disabled={!newTagName.trim() || addingTag}
-                className="rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                className="rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
                 {addingTag ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
               </button>
@@ -534,7 +534,7 @@ export function ContactPanel({
           {/* Internal Team Notes */}
           <div className="p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h5 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <h5 className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] flex items-center gap-1.5">
                 <FileText className="h-3 w-3 text-primary" />
                 Internal Notes ({notes.length})
               </h5>
@@ -547,13 +547,13 @@ export function ContactPanel({
                 onChange={(e) => setNewNoteContent(e.target.value)}
                 placeholder="Leave an internal note about this contact..."
                 rows={2}
-                className="w-full rounded-lg border border-input bg-background p-2 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                className="w-full rounded-md border border-input bg-[var(--paper)] p-2 text-xs placeholder:text-[var(--ink-2)] focus:outline-none focus:ring-1 focus:ring-ring resize-none"
               />
               <div className="flex justify-end">
                 <button
                   type="submit"
                   disabled={!newNoteContent.trim() || addingNote}
-                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
                   {addingNote && <Loader2 className="h-3 w-3 animate-spin" />}
                   Save Note
@@ -564,9 +564,9 @@ export function ContactPanel({
             {/* Notes List */}
             <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
               {notes.map((note) => (
-                <div key={note.id} className="rounded-xl border border-border bg-muted/20 p-2.5 text-xs space-y-1 group">
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                    <span className="font-semibold text-foreground">{note.author_name || "Agent"}</span>
+                <div key={note.id} className="rounded-md border border-[var(--border)] bg-[var(--surface-2)] p-2.5 text-xs space-y-1 group">
+                  <div className="flex items-center justify-between text-[10px] text-[var(--ink-2)]">
+                    <span className="font-semibold text-[var(--ink)]">{note.author_name || "Agent"}</span>
                     <div className="flex items-center gap-1">
                       <span>{formatDate(note.created_at)}</span>
                       <button
@@ -577,11 +577,11 @@ export function ContactPanel({
                       </button>
                     </div>
                   </div>
-                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{note.content}</p>
+                  <p className="text-[var(--ink)] whitespace-pre-wrap leading-relaxed">{note.content}</p>
                 </div>
               ))}
               {notes.length === 0 && (
-                <p className="text-xs text-muted-foreground/60 italic text-center py-2">No team notes yet</p>
+                <p className="text-xs text-[var(--ink-2)]/60 italic text-center py-2">No team notes yet</p>
               )}
             </div>
           </div>
@@ -589,7 +589,7 @@ export function ContactPanel({
           {/* Custom Fields & Attributes */}
           <div className="p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h5 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <h5 className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] flex items-center gap-1.5">
                 <Hash className="h-3 w-3 text-primary" />
                 Custom Attributes ({details.customFields.length})
               </h5>
@@ -603,20 +603,20 @@ export function ContactPanel({
             </div>
 
             {showAddField && (
-              <div className="rounded-lg border border-border bg-muted/20 p-2.5 space-y-2">
+              <div className="rounded-md border border-[var(--border)] bg-[var(--surface-2)] p-2.5 space-y-2">
                 <input
                   type="text"
                   placeholder="Attribute name (e.g. city, tier)"
                   value={newFieldKey}
                   onChange={(e) => setNewFieldKey(e.target.value)}
-                  className="w-full rounded border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="w-full rounded border border-input bg-[var(--paper)] px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
                 />
                 <input
                   type="text"
                   placeholder="Value (e.g. Cairo, VIP)"
                   value={newFieldValue}
                   onChange={(e) => setNewFieldValue(e.target.value)}
-                  className="w-full rounded border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="w-full rounded border border-input bg-[var(--paper)] px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
                 />
                 <button
                   type="button"
@@ -631,19 +631,19 @@ export function ContactPanel({
 
             <div className="space-y-1.5">
               {details.customFields.map((cf) => (
-                <div key={cf.definition.id} className="flex items-center justify-between rounded-lg bg-muted/20 p-2 text-xs">
-                  <span className="text-muted-foreground font-medium">{cf.definition.name}</span>
-                  <span className="font-semibold text-foreground truncate max-w-[140px]">{cf.value}</span>
+                <div key={cf.definition.id} className="flex items-center justify-between rounded-md bg-[var(--surface-2)] p-2 text-xs">
+                  <span className="text-[var(--ink-2)] font-medium">{cf.definition.name}</span>
+                  <span className="font-semibold text-[var(--ink)] truncate max-w-[140px]">{cf.value}</span>
                 </div>
               ))}
               {details.customFields.length === 0 && !showAddField && (
-                <p className="text-xs text-muted-foreground/60 italic">No custom attributes</p>
+                <p className="text-xs text-[var(--ink-2)]/60 italic">No custom attributes</p>
               )}
             </div>
           </div>
         </div>
       ) : (
-        <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
+        <div className="flex flex-1 items-center justify-center text-xs text-[var(--ink-2)]">
           Contact not found
         </div>
       )}

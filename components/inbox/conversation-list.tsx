@@ -272,7 +272,7 @@ export function ConversationList({
   );
 
   return (
-    <div className="flex h-full w-full max-w-full min-w-0 flex-col border-r border-border bg-background select-none relative overflow-hidden">
+    <div className="flex h-full w-full max-w-full min-w-0 flex-col border-r border-[var(--border)] bg-[var(--paper)] select-none relative overflow-hidden">
       {/* Right Click Context Menu */}
       {contextMenuState && (
         <ConversationContextMenu
@@ -283,13 +283,13 @@ export function ConversationList({
       )}
 
       {/* Header */}
-      <div className="flex h-14 items-center justify-between border-b border-border px-4 bg-muted/20 shrink-0">
+      <div className="flex h-14 items-center justify-between border-b border-[var(--border)] px-4 bg-[var(--surface-2)] shrink-0">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-extrabold text-foreground tracking-tight">
+          <h2 className="text-sm font-extrabold text-[var(--ink)] tracking-tight">
             Live Inbox
           </h2>
           {unreadAll > 0 && (
-            <span className="flex h-5 items-center justify-center rounded-full bg-rose-500 px-2 text-[10px] font-black text-white shadow-sm shadow-rose-500/30 animate-pulse">
+            <span className="flex h-5 items-center justify-center rounded-full bg-rose-500 px-2 text-[10px] font-black text-white shadow-none ">
               {unreadAll} unread
             </span>
           )}
@@ -299,14 +299,14 @@ export function ConversationList({
             type="button"
             onClick={() => loadMoreConversations(true)}
             disabled={syncingPlatform}
-            className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors disabled:opacity-50"
+            className="p-1 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)]/80 transition-colors disabled:opacity-50"
             title="Sync latest chats from Instagram/Facebook"
           >
             <RefreshCw className={cn("h-3.5 w-3.5", syncingPlatform && "animate-spin text-primary")} />
           </button>
-          <span className="text-xs font-semibold text-muted-foreground">
+          <span className="text-xs font-semibold text-[var(--ink-2)]">
             {unreadAll > 0 ? (
-              <span className="text-rose-600 dark:text-rose-400 font-bold">
+              <span className="text-[var(--danger)] font-bold">
                 {unreadAll} unread
               </span>
             ) : (
@@ -317,7 +317,7 @@ export function ConversationList({
       </div>
 
       {/* Platform Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border px-3 py-2 bg-background/50 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0">
+      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-[var(--border)] px-3 py-2 bg-[var(--paper)]/50 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0">
         {(
           [
             "all",
@@ -339,10 +339,10 @@ export function ConversationList({
               key={plat}
               onClick={() => setFilters({ platform: plat })}
               className={cn(
-                "flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
+                "flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all",
                 isSelected
-                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-[var(--brand)] text-white shadow-none"
+                  : "text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-[var(--ink)]"
               )}
             >
               {plat !== "all" && (
@@ -359,7 +359,7 @@ export function ConversationList({
                     "flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-black",
                     isSelected
                       ? "bg-white text-primary"
-                      : "bg-rose-500 text-white"
+                      : "bg-[var(--danger)] text-white"
                   )}
                 >
                   {count}
@@ -372,8 +372,8 @@ export function ConversationList({
 
       {/* Dynamic Multi-Channel Switcher Bar */}
       {channelsForActivePlatform.length > 1 && (
-        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/25 border-b border-border/60 overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 animate-in fade-in duration-150">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 shrink-0 select-none">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface)]/25 border-b border-[var(--border)] overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 animate-in fade-in duration-150">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-2)]/70 shrink-0 select-none">
             {filters.platform === "all" ? "Channels:" : "Pages:"}
           </span>
 
@@ -381,10 +381,10 @@ export function ConversationList({
           <button
             onClick={() => setFilters({ channelId: "all" })}
             className={cn(
-              "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all shrink-0 cursor-pointer",
+              "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10.5px] font-medium transition-all shrink-0 cursor-pointer",
               filters.channelId === "all"
                 ? "bg-foreground text-background font-bold shadow-xs"
-                : "bg-background/80 hover:bg-background text-muted-foreground hover:text-foreground border border-border/70"
+                : "bg-[var(--paper)]/80 hover:bg-[var(--paper)] text-[var(--ink-2)] hover:text-[var(--ink)] border border-[var(--border)]"
             )}
           >
             <span>{filters.platform === "all" ? "All Channels" : `All ${filters.platform.toUpperCase()}`}</span>
@@ -392,8 +392,8 @@ export function ConversationList({
               className={cn(
                 "px-1 py-0.2 rounded-full text-[9px] font-bold",
                 filters.channelId === "all"
-                  ? "bg-background/20 text-background"
-                  : "bg-muted text-muted-foreground"
+                  ? "bg-[var(--paper)]/20 text-background"
+                  : "bg-[var(--surface)] text-[var(--ink-2)]"
               )}
             >
               {filters.platform === "all"
@@ -413,10 +413,10 @@ export function ConversationList({
                 key={ch.id}
                 onClick={() => setFilters({ channelId: ch.id })}
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all shrink-0 cursor-pointer border",
+                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10.5px] font-medium transition-all shrink-0 cursor-pointer border",
                   isSelected
-                    ? "bg-card border-primary text-foreground font-bold shadow-xs ring-1.5 ring-primary/40"
-                    : "bg-background/80 hover:bg-background border-border/70 text-muted-foreground hover:text-foreground"
+                    ? "bg-[var(--paper)] border-primary text-[var(--ink)] font-bold shadow-xs ring-1.5 ring-primary/40"
+                    : "bg-[var(--paper)]/80 hover:bg-[var(--paper)] border-[var(--border)] text-[var(--ink-2)] hover:text-[var(--ink)]"
                 )}
                 title={`Filter to ${ch.name}${ch.username ? ` (@${ch.username.replace(/^@/, "")})` : ""}`}
               >
@@ -431,11 +431,11 @@ export function ConversationList({
                 )}
                 <span className="truncate max-w-[110px]">{ch.name}</span>
                 {unread > 0 ? (
-                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-500 text-white animate-pulse">
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-[var(--danger)] text-white ">
                     {unread}
                   </span>
                 ) : count > 0 ? (
-                  <span className="px-1 py-0.2 rounded-full text-[9px] font-medium bg-muted text-muted-foreground">
+                  <span className="px-1 py-0.2 rounded-full text-[9px] font-medium bg-[var(--surface)] text-[var(--ink-2)]">
                     {count}
                   </span>
                 ) : null}
@@ -448,18 +448,18 @@ export function ConversationList({
       {/* Search */}
       <div className="p-3 pb-2 shrink-0">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-2)]" />
           <input
             type="text"
             placeholder="Search conversations..."
             value={filters.search}
             onChange={(e) => setFilters({ search: e.target.value })}
-            className="w-full rounded-xl border border-input bg-background/80 py-2 pl-9 pr-8 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+            className="w-full rounded-md border border-input bg-[var(--paper)]/80 py-2 pl-9 pr-8 text-xs placeholder:text-[var(--ink-2)] focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
           />
           {filters.search && (
             <button
               onClick={() => setFilters({ search: "" })}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--ink-2)] hover:text-[var(--ink)] p-0.5 rounded-full"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -467,7 +467,7 @@ export function ConversationList({
         </div>
       </div>
 
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/60 bg-muted/15 shrink-0 gap-1.5 min-w-0">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--border)] bg-[var(--surface-2)] shrink-0 gap-1.5 min-w-0">
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden min-w-0 flex-1">
           {["all", "open", "closed", "snoozed", "archived"].map((status) => (
             <button
@@ -476,8 +476,8 @@ export function ConversationList({
               className={cn(
                 "rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize transition-all shrink-0",
                 filters.status === status
-                  ? "bg-muted text-foreground font-bold shadow-xs border border-border"
-                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  ? "bg-[var(--surface)] text-[var(--ink)] font-bold shadow-xs border border-[var(--border)]"
+                  : "text-[var(--ink-2)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
               )}
             >
               {status}
@@ -489,7 +489,7 @@ export function ConversationList({
           <select
             value={filters.channelId}
             onChange={(e) => setFilters({ channelId: e.target.value })}
-            className="text-[10px] font-medium rounded-lg border border-input bg-background/80 hover:bg-background px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground max-w-[105px] truncate shrink-0 shadow-xs cursor-pointer transition-colors"
+            className="text-[10px] font-medium rounded-md border border-input bg-[var(--paper)]/80 hover:bg-[var(--paper)] px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-primary/50 text-[var(--ink)] max-w-[105px] truncate shrink-0 shadow-xs cursor-pointer transition-colors"
             title="Filter by connected page or account"
           >
             <option value="all">
@@ -506,7 +506,7 @@ export function ConversationList({
           {filters.channelId !== "all" && (
             <button
               onClick={() => setFilters({ channelId: "all" })}
-              className="p-0.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 text-[10px]"
+              className="p-0.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)]/80 text-[10px]"
               title="Reset channel filter"
             >
               <X className="h-3 w-3" />
@@ -518,14 +518,14 @@ export function ConversationList({
       {/* Conversation list */}
       <div className="flex-1 overflow-y-auto divide-y divide-border/60 flex flex-col">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6 h-full flex-1 bg-background/50">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground mb-4 shadow-sm border border-border">
+          <div className="flex flex-col items-center justify-center py-20 text-center px-6 h-full flex-1 bg-[var(--paper)]/50">
+            <div className="flex h-16 w-16 items-center justify-center rounded-md bg-[var(--surface)] text-[var(--ink-2)] mb-4 shadow-sm border border-[var(--border)]">
               <MessageSquare className="h-8 w-8 opacity-50" />
             </div>
-            <p className="text-base font-bold text-foreground">
+            <p className="text-base font-bold text-[var(--ink)]">
               No conversations found
             </p>
-            <p className="text-sm text-muted-foreground mt-2 max-w-[220px] leading-relaxed">
+            <p className="text-sm text-[var(--ink-2)] mt-2 max-w-[220px] leading-relaxed">
               {filters.search
                 ? "Try a different search term"
                 : filters.status !== "all"
@@ -552,10 +552,10 @@ export function ConversationList({
                   className={cn(
                     "flex w-full items-start gap-3 p-3.5 text-left transition-all relative group cursor-pointer",
                     isSelected
-                      ? "bg-primary/10 dark:bg-primary/15 border-l-4 border-l-primary shadow-xs"
+                      ? "bg-[var(--surface)] border-l-2 border-[var(--brand)] shadow-xs"
                       : isUnread
-                      ? "bg-primary/[0.04] dark:bg-primary/[0.08] hover:bg-primary/[0.08] border-l-4 border-l-rose-500"
-                      : "hover:bg-muted/50 border-l-4 border-l-transparent"
+                      ? "bg-[var(--surface-2)] hover:bg-primary/[0.08] border-l-2 border-[var(--danger)]"
+                      : "hover:bg-[var(--surface-2)] border-l-2 border-transparent"
                   )}
                 >
                   {/* Avatar with platform badge */}
@@ -571,7 +571,7 @@ export function ConversationList({
                     <div className="flex items-center justify-between gap-1">
                       <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         {isUnread && (
-                          <span className="h-2 w-2 shrink-0 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50 animate-pulse" />
+                          <span className="h-2 w-2 shrink-0 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50 " />
                         )}
                         <div className="flex flex-col min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 min-w-0">
@@ -579,8 +579,8 @@ export function ConversationList({
                               className={cn(
                                 "truncate text-xs",
                                 isUnread
-                                  ? "font-bold text-foreground"
-                                  : "font-semibold text-foreground/80"
+                                  ? "font-bold text-[var(--ink)]"
+                                  : "font-semibold text-[var(--ink-2)]"
                               )}
                             >
                               {contactName}
@@ -590,7 +590,7 @@ export function ConversationList({
                                 className={cn(
                                   "shrink-0 rounded-full border px-1.5 py-0.2 text-[9px] font-bold tracking-tight capitalize",
                                   LEAD_STAGES[conversation.contacts.lead_stage]?.badgeClass ||
-                                    "bg-muted text-muted-foreground border-border"
+                                    "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)]"
                                 )}
                               >
                                 {LEAD_STAGES[conversation.contacts.lead_stage]?.label || conversation.contacts.lead_stage}
@@ -600,7 +600,7 @@ export function ConversationList({
                           {conversation.channels?.display_name && (
                             <div className="flex items-center gap-1 mt-0.5">
                               <span
-                                className="inline-flex items-center gap-1 rounded-md bg-muted/80 hover:bg-muted px-1.5 py-0.5 text-[9.5px] font-semibold text-foreground/80 border border-border/70 max-w-[130px] truncate shrink-0 shadow-2xs"
+                                className="inline-flex items-center gap-1 rounded-md bg-[var(--surface)]/80 hover:bg-[var(--surface)] px-1.5 py-0.5 text-[9.5px] font-semibold text-[var(--ink-2)] border border-[var(--border)] max-w-[130px] truncate shrink-0 shadow-2xs"
                                 title={`Connected via ${conversation.channels.display_name}`}
                               >
                                 {conversation.channels.profile_picture ? (
@@ -635,8 +635,8 @@ export function ConversationList({
                           className={cn(
                             "text-[10px]",
                             isUnread
-                              ? "font-bold text-rose-600 dark:text-rose-400"
-                              : "text-muted-foreground"
+                              ? "font-bold text-[var(--danger)]"
+                              : "text-[var(--ink-2)]"
                           )}
                         >
                           {mounted
@@ -656,7 +656,7 @@ export function ConversationList({
                               conversation,
                             });
                           }}
-                          className="opacity-70 group-hover:opacity-100 p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-opacity cursor-pointer"
+                          className="opacity-70 group-hover:opacity-100 p-1 rounded-md hover:bg-[var(--surface)] text-[var(--ink-2)] hover:text-[var(--ink)] transition-opacity cursor-pointer"
                           title="Conversation options"
                         >
                           <MoreVertical className="h-3.5 w-3.5" />
@@ -669,14 +669,14 @@ export function ConversationList({
                         className={cn(
                           "truncate text-xs leading-relaxed",
                           isUnread
-                            ? "font-semibold text-foreground"
-                            : "text-muted-foreground"
+                            ? "font-semibold text-[var(--ink)]"
+                            : "text-[var(--ink-2)]"
                         )}
                       >
                         {conversation.last_message_preview ?? "New conversation"}
                       </p>
                       {isUnread && (
-                        <span className="flex h-5 min-w-[20px] flex-shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-black text-white shadow-sm shadow-rose-500/40 animate-pulse">
+                        <span className="flex h-5 min-w-[20px] flex-shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-black text-white shadow-none ">
                           {conversation.unread_count}
                         </span>
                       )}
@@ -690,12 +690,12 @@ export function ConversationList({
 
         {/* AJAX Load More / Deep-dive Platform Button */}
         {filtered.length > 0 && (
-          <div className="p-3 bg-muted/10 border-t border-border/50 text-center space-y-2 shrink-0">
+          <div className="p-3 bg-[var(--surface)] border-t border-[var(--border)] text-center space-y-2 shrink-0">
             <button
               type="button"
               onClick={() => loadMoreConversations(false)}
               disabled={loadingMore || syncingPlatform}
-              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-foreground transition-all shadow-2xs disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-md border border-[var(--border)] bg-[var(--paper)] hover:bg-[var(--surface)] text-xs font-semibold text-[var(--ink)] transition-all shadow-2xs disabled:opacity-50"
             >
               {loadingMore ? (
                 <>
@@ -704,7 +704,7 @@ export function ConversationList({
                 </>
               ) : (
                 <>
-                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                  <ChevronDown className="h-3.5 w-3.5 text-[var(--ink-2)]" />
                   <span>Load More Conversations ({allConversations.length})</span>
                 </>
               )}

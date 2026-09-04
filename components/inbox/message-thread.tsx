@@ -144,7 +144,7 @@ function MessageBubble({
         <button
           type="button"
           onClick={() => onReply(message)}
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all shrink-0 mb-3 cursor-pointer shadow-2xs"
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-[var(--surface)] text-[var(--ink-2)] hover:text-[var(--ink)] transition-all shrink-0 mb-3 cursor-pointer shadow-2xs"
           title="Reply to this message"
         >
           <Reply className="h-3.5 w-3.5" />
@@ -154,12 +154,12 @@ function MessageBubble({
       <div className="max-w-[75%] sm:max-w-[70%] flex flex-col">
         <div
           className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm shadow-xs transition-shadow",
+            "rounded-md px-4 py-2.5 text-sm shadow-xs transition-shadow",
             isInbound
-              ? "rounded-tl-xs bg-muted text-foreground border border-border/40"
+              ? "rounded-tl-xs bg-[var(--surface)] text-[var(--ink)] border border-[var(--border)]/40"
               : message.is_internal 
                 ? "rounded-tr-xs bg-amber-500/10 text-amber-900 dark:text-amber-200 border border-amber-500/30"
-                : "rounded-tr-xs bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                : "rounded-tr-xs bg-[var(--brand)] text-white shadow-none"
           )}
         >
           {message.is_internal && (
@@ -172,9 +172,9 @@ function MessageBubble({
           {replyInfo && (
             <div
               className={cn(
-                "mb-2.5 rounded-xl border-l-3 px-3 py-1.5 text-xs select-none",
+                "mb-2.5 rounded-md border-l-3 px-3 py-1.5 text-xs select-none",
                 isInbound
-                  ? "border-primary bg-background/60 text-foreground"
+                  ? "border-primary bg-[var(--paper)]/60 text-[var(--ink)]"
                   : "border-primary-foreground/70 bg-black/20 text-primary-foreground"
               )}
             >
@@ -196,12 +196,12 @@ function MessageBubble({
             (!message.attachments || !Array.isArray(message.attachments) || message.attachments.length === 0) && (
               isInbound ? (
                 (message as any).referral ? (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium py-0.5">
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--ink-2)] font-medium py-0.5">
                     <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
                     <span>Started conversation from your Instagram Ad</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium py-0.5">
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--ink-2)] font-medium py-0.5">
                     <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
                     <span>Started conversation / Sent a reaction</span>
                   </div>
@@ -225,7 +225,7 @@ function MessageBubble({
 
         <div
           className={cn(
-            "mt-1 flex items-center gap-1 text-[10px] text-muted-foreground px-1",
+            "mt-1 flex items-center gap-1 text-[10px] text-[var(--ink-2)] px-1",
             isInbound ? "justify-start" : "justify-end"
           )}
         >
@@ -239,8 +239,8 @@ function MessageBubble({
           {!isInbound && (
             <span className="ml-1 flex items-center">
               {message.status === "pending" && <Clock className="h-3 w-3 animate-spin" />}
-              {message.delivery_status === "sent" && <Check className="h-3.5 w-3.5 text-muted-foreground" />}
-              {message.delivery_status === "delivered" && <CheckCheck className="h-3.5 w-3.5 text-muted-foreground" />}
+              {message.delivery_status === "sent" && <Check className="h-3.5 w-3.5 text-[var(--ink-2)]" />}
+              {message.delivery_status === "delivered" && <CheckCheck className="h-3.5 w-3.5 text-[var(--ink-2)]" />}
               {message.delivery_status === "read" && <CheckCheck className="h-3.5 w-3.5 text-blue-500" />}
               {message.status === "failed" && (
                 <div className="flex items-center gap-1 text-red-500 font-medium">
@@ -263,7 +263,7 @@ function MessageBubble({
         <button
           type="button"
           onClick={() => onReply(message)}
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all shrink-0 mb-3 cursor-pointer shadow-2xs"
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-[var(--surface)] text-[var(--ink-2)] hover:text-[var(--ink)] transition-all shrink-0 mb-3 cursor-pointer shadow-2xs"
           title="Reply to this message"
         >
           <Reply className="h-3.5 w-3.5" />
@@ -816,14 +816,14 @@ export function MessageThread({
 
   if (!conversation) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-background text-center px-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/60 mb-4">
-          <MessageSquare className="h-8 w-8 text-muted-foreground/40" />
+      <div className="flex h-full flex-col items-center justify-center bg-[var(--paper)] text-center px-4">
+        <div className="flex h-16 w-16 items-center justify-center rounded-md bg-[var(--surface)]/60 mb-4">
+          <MessageSquare className="h-8 w-8 text-[var(--ink-2)]/40" />
         </div>
-        <h3 className="text-sm font-semibold text-foreground">
+        <h3 className="text-sm font-semibold text-[var(--ink)]">
           Select a conversation
         </h3>
-        <p className="mt-1 text-xs text-muted-foreground max-w-xs">
+        <p className="mt-1 text-xs text-[var(--ink-2)] max-w-xs">
           Choose a chat from the list to view messages and interact with your customer
         </p>
       </div>
@@ -833,9 +833,9 @@ export function MessageThread({
   const contactName = conversation.contacts?.display_name || "Customer";
 
   return (
-    <div className="flex h-full flex-col bg-background relative">
+    <div className="flex h-full flex-col bg-[var(--paper)] relative">
       {/* Header */}
-      <div className="flex h-13 sm:h-14 items-center justify-between border-b border-border px-3 sm:px-4 bg-background/90 backdrop-blur-md shrink-0 z-10 gap-2">
+      <div className="flex h-13 sm:h-14 items-center justify-between border-b border-[var(--border)] px-3 sm:px-4 bg-[var(--paper)]/90 backdrop-blur-md shrink-0 z-10 gap-2">
         {/* Left: Contact Info */}
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <Avatar
@@ -846,7 +846,7 @@ export function MessageThread({
           />
           <div className="min-w-0 flex flex-col justify-center">
             <div className="flex items-center gap-1.5 min-w-0">
-              <p className="text-xs sm:text-sm font-bold text-foreground truncate max-w-[120px] sm:max-w-[200px] md:max-w-[280px]">
+              <p className="text-xs sm:text-sm font-bold text-[var(--ink)] truncate max-w-[120px] sm:max-w-[200px] md:max-w-[280px]">
                 {contactName}
               </p>
               {conversation.channels?.display_name && (
@@ -859,11 +859,11 @@ export function MessageThread({
                 </span>
               )}
             </div>
-            <div className="text-[10px] sm:text-[11px] text-muted-foreground capitalize flex items-center gap-1.5 truncate">
+            <div className="text-[10px] sm:text-[11px] text-[var(--ink-2)] capitalize flex items-center gap-1.5 truncate">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
               <span>{conversation.platform}</span>
-              <span className="text-muted-foreground/40">•</span>
-              <span className="text-muted-foreground/80">{conversation.status}</span>
+              <span className="text-[var(--ink-2)]/40">•</span>
+              <span className="text-[var(--ink-2)]/80">{conversation.status}</span>
               {conversation.is_muted && (
                 <span title="Conversation Muted" className="inline-flex items-center text-amber-500 ml-0.5">
                   <BellOff className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
@@ -893,7 +893,7 @@ export function MessageThread({
               className={cn(
                 "flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer shadow-2xs",
                 LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.badgeClass ||
-                  "bg-muted/60 text-muted-foreground border-border"
+                  "bg-[var(--surface)]/60 text-[var(--ink-2)] border-[var(--border)]"
               )}
               title="CRM Lead Stage"
             >
@@ -905,8 +905,8 @@ export function MessageThread({
             {stageMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setStageMenuOpen(false)} />
-                <div className="absolute right-0 mt-1.5 w-44 rounded-xl border border-border bg-card p-1.5 shadow-xl z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
-                  <p className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                <div className="absolute right-0 mt-1.5 w-44 rounded-md border border-[var(--border)] bg-[var(--paper)] p-1.5 shadow-xl z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
+                  <p className="px-2 py-1 text-[10px] font-bold text-[var(--ink-2)] uppercase tracking-wider">
                     CRM Lead Stage
                   </p>
                   <div className="space-y-0.5">
@@ -921,10 +921,10 @@ export function MessageThread({
                             setStageMenuOpen(false);
                           }}
                           className={cn(
-                            "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors cursor-pointer",
+                            "flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-xs transition-colors cursor-pointer",
                             isCurrent
                               ? "bg-primary/10 text-primary font-bold"
-                              : "text-foreground hover:bg-muted font-medium"
+                              : "text-[var(--ink)] hover:bg-[var(--surface)] font-medium"
                           )}
                         >
                           <div className="flex items-center gap-2">
@@ -961,8 +961,8 @@ export function MessageThread({
                       assignedMember
                         ? isAssignedToMe
                           ? "bg-primary/10 text-primary border-primary/30"
-                          : "bg-muted text-foreground border-border"
-                        : "bg-background/80 text-muted-foreground border-border hover:bg-muted"
+                          : "bg-[var(--surface)] text-[var(--ink)] border-[var(--border)]"
+                        : "bg-[var(--paper)]/80 text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--surface)]"
                     )}
                     title="Assigned team member"
                   >
@@ -971,7 +971,7 @@ export function MessageThread({
                         {assignedMember.name.slice(0, 1).toUpperCase()}
                       </div>
                     ) : (
-                      <User className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
+                      <User className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[var(--ink-2)]" />
                     )}
                     <span className="max-w-[65px] sm:max-w-[85px] truncate">
                       {assignedMember ? (isAssignedToMe ? "Me" : assignedMember.name) : "Unassigned"}
@@ -982,8 +982,8 @@ export function MessageThread({
                   {assigneeMenuOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setAssigneeMenuOpen(false)} />
-                      <div className="absolute right-0 mt-1.5 w-52 rounded-xl border border-border bg-card p-1.5 shadow-xl z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
-                        <p className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      <div className="absolute right-0 mt-1.5 w-52 rounded-md border border-[var(--border)] bg-[var(--paper)] p-1.5 shadow-xl z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
+                        <p className="px-2 py-1 text-[10px] font-bold text-[var(--ink-2)] uppercase tracking-wider">
                           Assign Conversation
                         </p>
 
@@ -992,7 +992,7 @@ export function MessageThread({
                           <button
                             type="button"
                             onClick={() => updateAssignee(currentUserId)}
-                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-primary hover:bg-primary/10 transition-colors font-semibold cursor-pointer"
+                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-primary hover:bg-primary/10 transition-colors font-semibold cursor-pointer"
                           >
                             <UserCheck className="h-3.5 w-3.5" />
                             <span>Assign to Me</span>
@@ -1003,10 +1003,10 @@ export function MessageThread({
                           type="button"
                           onClick={() => updateAssignee(null)}
                           className={cn(
-                            "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left transition-colors cursor-pointer",
+                            "flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left transition-colors cursor-pointer",
                             !conversation.assigned_to
-                              ? "bg-muted font-bold text-foreground"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                              ? "bg-[var(--surface)] font-bold text-[var(--ink)]"
+                              : "text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-[var(--ink)]"
                           )}
                         >
                           <span>Unassigned</span>
@@ -1015,7 +1015,7 @@ export function MessageThread({
 
                         {members.length > 0 && (
                           <>
-                            <div className="my-1 border-t border-border/50" />
+                            <div className="my-1 border-t border-[var(--border)]" />
                             <div className="max-h-48 overflow-y-auto space-y-0.5">
                               {members.map((m) => {
                                 const isSelected = conversation.assigned_to === m.userId;
@@ -1025,10 +1025,10 @@ export function MessageThread({
                                     type="button"
                                     onClick={() => updateAssignee(m.userId)}
                                     className={cn(
-                                      "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left transition-colors cursor-pointer",
+                                      "flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left transition-colors cursor-pointer",
                                       isSelected
                                         ? "bg-primary/10 text-primary font-bold"
-                                        : "text-foreground hover:bg-muted"
+                                        : "text-[var(--ink)] hover:bg-[var(--surface)]"
                                     )}
                                   >
                                     <div className="flex items-center gap-2 min-w-0">
@@ -1037,7 +1037,7 @@ export function MessageThread({
                                       </div>
                                       <div className="min-w-0 flex flex-col">
                                         <span className="truncate text-xs">{m.name}</span>
-                                        <span className="text-[9px] text-muted-foreground capitalize">{m.role}</span>
+                                        <span className="text-[9px] text-[var(--ink-2)] capitalize">{m.role}</span>
                                       </div>
                                     </div>
                                     {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
@@ -1060,7 +1060,7 @@ export function MessageThread({
             <button
               onClick={() => updateConversationStatus("closed")}
               title="Close chat"
-              className="flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground transition-all shadow-2xs cursor-pointer"
+              className="flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-[var(--surface)]/60 text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-[var(--ink)] transition-all shadow-2xs cursor-pointer"
             >
               <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               <span className="hidden md:inline">Close</span>
@@ -1080,7 +1080,7 @@ export function MessageThread({
           <div className="relative">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors"
               title="Chat Options"
             >
               <MoreVertical className="h-4 w-4" />
@@ -1089,14 +1089,14 @@ export function MessageThread({
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 mt-1 w-44 rounded-xl border border-border bg-card p-1 shadow-lg z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute right-0 mt-1 w-44 rounded-md border border-[var(--border)] bg-[var(--paper)] p-1 shadow-lg z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
                   <button
                     onClick={() => updateConversationStatus(conversation.status === "open" ? "closed" : "open")}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors"
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors"
                   >
                     {conversation.status === "open" ? (
                       <>
-                        <CheckCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                        <CheckCircle className="h-3.5 w-3.5 text-[var(--ink-2)]" />
                         <span>Mark as Closed</span>
                       </>
                     ) : (
@@ -1109,7 +1109,7 @@ export function MessageThread({
 
                   <button
                     onClick={toggleMute}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors cursor-pointer"
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors cursor-pointer"
                   >
                     {conversation.is_muted ? (
                       <>
@@ -1118,7 +1118,7 @@ export function MessageThread({
                       </>
                     ) : (
                       <>
-                        <BellOff className="h-3.5 w-3.5 text-muted-foreground" />
+                        <BellOff className="h-3.5 w-3.5 text-[var(--ink-2)]" />
                         <span>Mute Notifications</span>
                       </>
                     )}
@@ -1126,7 +1126,7 @@ export function MessageThread({
 
                   <button
                     onClick={toggleAutomation}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors cursor-pointer"
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors cursor-pointer"
                   >
                     {conversation.is_automation_paused ? (
                       <>
@@ -1141,11 +1141,11 @@ export function MessageThread({
                     )}
                   </button>
 
-                  <div className="my-1 border-t border-border/60" />
+                  <div className="my-1 border-t border-[var(--border)]" />
 
                   <button
                     onClick={() => updateConversationStatus("snoozed")}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors"
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors"
                   >
                     <Clock className="h-3.5 w-3.5 text-amber-500" />
                     <span>Snooze Chat</span>
@@ -1153,20 +1153,20 @@ export function MessageThread({
 
                   <button
                     onClick={() => updateConversationStatus("archived")}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted transition-colors"
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors"
                   >
                     <Archive className="h-3.5 w-3.5 text-indigo-500" />
                     <span>Archive Chat</span>
                   </button>
 
-                  <div className="my-1 border-t border-border/60" />
+                  <div className="my-1 border-t border-[var(--border)]" />
 
                   <button
                     onClick={() => {
                       setMenuOpen(false);
                       setDeleteConfirmOpen(true);
                     }}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     <span>Delete Chat</span>
@@ -1189,7 +1189,7 @@ export function MessageThread({
               {shouldShowDateSeparator(message, messages[i - 1]) && (
                 <div className="my-4 flex items-center gap-3">
                   <div className="h-px flex-1 bg-border/60" />
-                  <span className="text-[11px] font-semibold text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">
+                  <span className="text-[11px] font-semibold text-[var(--ink-2)] bg-[var(--surface)]/40 px-2 py-0.5 rounded-full">
                     {formatDateSeparator(message.created_at)}
                   </span>
                   <div className="h-px flex-1 bg-border/60" />
@@ -1212,9 +1212,9 @@ export function MessageThread({
       {/* Delete Confirmation Modal */}
       {deleteConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-2xl animate-in zoom-in-95 duration-150">
-            <h4 className="text-base font-bold text-foreground">Delete Conversation?</h4>
-            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+          <div className="w-full max-w-sm rounded-md border border-[var(--border)] bg-[var(--paper)] p-5 shadow-2xl animate-in zoom-in-95 duration-150">
+            <h4 className="text-base font-bold text-[var(--ink)]">Delete Conversation?</h4>
+            <p className="mt-2 text-xs text-[var(--ink-2)] leading-relaxed">
               This will permanently delete this conversation and its local message history for <strong>{contactName}</strong>.
             </p>
             <div className="mt-5 flex items-center justify-end gap-2">
@@ -1240,40 +1240,40 @@ export function MessageThread({
       {/* Comprehensive Microphone Permission Diagnostic Modal */}
       {micErrorInfo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-150">
+          <div className="w-full max-w-lg rounded-md border border-[var(--border)] bg-[var(--paper)] p-6 shadow-2xl animate-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3 text-rose-500 mb-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-500/10">
+              <div className="flex h-11 w-11 items-center justify-center rounded-md bg-rose-500/10">
                 <Mic className="h-6 w-6" />
               </div>
               <div>
-                <h4 className="text-base font-bold text-foreground">Microphone Access Denied</h4>
-                <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                <h4 className="text-base font-bold text-[var(--ink)]">Microphone Access Denied</h4>
+                <p className="text-[11px] text-[var(--ink-2)] font-mono mt-0.5">
                   Browser error: {micErrorInfo.name} ({micErrorInfo.message})
                 </p>
               </div>
             </div>
             
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-xs text-[var(--ink-2)] leading-relaxed">
               Google Chrome or macOS blocked access to your microphone hardware. Follow these two quick checks:
             </p>
 
             <div className="mt-4 space-y-3">
               {/* Check 1: Chrome Site Settings */}
-              <div className="bg-muted/40 p-3.5 rounded-xl border border-border/50 text-xs space-y-1.5">
-                <p className="font-bold text-foreground flex items-center gap-1.5">
+              <div className="bg-[var(--surface)]/40 p-3.5 rounded-md border border-[var(--border)] text-xs space-y-1.5">
+                <p className="font-bold text-[var(--ink)] flex items-center gap-1.5">
                   <span>1. Check Chrome Site Settings</span>
                 </p>
-                <p className="text-muted-foreground text-[11px]">
+                <p className="text-[var(--ink-2)] text-[11px]">
                   Click the <strong>Tune / Padlock icon 🔒</strong> on the far left of your address bar (URL) and ensure <strong>Microphone</strong> is set to <strong>Allow</strong>.
                 </p>
               </div>
 
               {/* Check 2: Mac System Settings */}
-              <div className="bg-muted/40 p-3.5 rounded-xl border border-border/50 text-xs space-y-1.5">
-                <p className="font-bold text-foreground flex items-center gap-1.5">
+              <div className="bg-[var(--surface)]/40 p-3.5 rounded-md border border-[var(--border)] text-xs space-y-1.5">
+                <p className="font-bold text-[var(--ink)] flex items-center gap-1.5">
                   <span>2. Check macOS System Permissions (Crucial on Mac)</span>
                 </p>
-                <p className="text-muted-foreground text-[11px]">
+                <p className="text-[var(--ink-2)] text-[11px]">
                   Open Mac <strong>System Settings</strong> ➔ <strong>Privacy & Security</strong> ➔ <strong>Microphone</strong> ➔ Make sure <strong>Google Chrome</strong> is toggled <strong>ON</strong>.
                 </p>
               </div>
@@ -1293,7 +1293,7 @@ export function MessageThread({
                   setMicErrorInfo(null);
                   startRecording();
                 }}
-                className="bg-primary text-primary-foreground flex items-center gap-1.5 shadow-sm"
+                className="bg-[var(--brand)] text-white flex items-center gap-1.5 shadow-sm"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 <span>Test Microphone Again</span>
@@ -1304,26 +1304,26 @@ export function MessageThread({
       )}
 
       {/* Composer */}
-      <div className="border-t border-border bg-background/95 backdrop-blur-md p-3 sm:p-4 shrink-0">
+      <div className="border-t border-[var(--border)] bg-[var(--paper)]/95 backdrop-blur-md p-3 sm:p-4 shrink-0">
         {/* Attachment previews */}
         {attachments.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
             {attachments.map((att, index) => (
               <div
                 key={index}
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/50 px-2.5 py-1 text-xs"
+                className="flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-xs"
               >
                 {att.type === "image" ? (
                   <ImageIcon className="h-3.5 w-3.5 text-primary" />
                 ) : att.type === "audio" ? (
                   <Volume2 className="h-3.5 w-3.5 text-emerald-500" />
                 ) : (
-                  <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Paperclip className="h-3.5 w-3.5 text-[var(--ink-2)]" />
                 )}
                 <span className="max-w-[150px] truncate font-medium">{att.name}</span>
                 <button
                   onClick={() => removeAttachment(index)}
-                  className="ml-1 text-muted-foreground hover:text-foreground p-0.5 rounded-full"
+                  className="ml-1 text-[var(--ink-2)] hover:text-[var(--ink)] p-0.5 rounded-full"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -1334,8 +1334,8 @@ export function MessageThread({
 
         {/* Recording active bar */}
         {isRecording ? (
-          <div className="flex items-center justify-between rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm animate-pulse">
-            <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold">
+          <div className="flex items-center justify-between rounded-md border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm ">
+            <div className="flex items-center gap-2 text-[var(--danger)] font-bold">
               <span className="h-3 w-3 rounded-full bg-rose-500 animate-ping" />
               <span>Recording Voice Note... {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, "0")}</span>
             </div>
@@ -1344,7 +1344,7 @@ export function MessageThread({
                 variant="ghost"
                 size="sm"
                 onClick={cancelRecording}
-                className="text-xs text-muted-foreground hover:text-foreground"
+                className="text-xs text-[var(--ink-2)] hover:text-[var(--ink)]"
               >
                 Cancel
               </Button>
@@ -1359,9 +1359,9 @@ export function MessageThread({
             </div>
           </div>
         ) : (
-          <div className="rounded-2xl border border-input bg-card shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all relative">
+          <div className="rounded-md border border-input bg-[var(--paper)] shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all relative">
             {/* Mode switch (Chat vs Internal Note) */}
-            <div className="flex items-center justify-between px-3 pt-2 pb-1 border-b border-border/40 text-xs">
+            <div className="flex items-center justify-between px-3 pt-2 pb-1 border-b border-[var(--border)]/40 text-xs">
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -1370,7 +1370,7 @@ export function MessageThread({
                     "px-2 py-0.5 rounded-md font-semibold transition-colors cursor-pointer",
                     !isInternal
                       ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted"
+                      : "text-[var(--ink-2)] hover:bg-[var(--surface)]"
                   )}
                 >
                   Reply to Customer
@@ -1382,7 +1382,7 @@ export function MessageThread({
                     "px-2 py-0.5 rounded-md font-semibold transition-colors cursor-pointer",
                     isInternal
                       ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
-                      : "text-muted-foreground hover:bg-muted"
+                      : "text-[var(--ink-2)] hover:bg-[var(--surface)]"
                   )}
                 >
                   Internal Note (Team Only)
@@ -1392,14 +1392,14 @@ export function MessageThread({
 
             {/* Quoting / Replying Banner */}
             {replyingTo && (
-              <div className="flex items-center justify-between border-b border-border/50 bg-primary/5 px-3 py-2 text-xs">
+              <div className="flex items-center justify-between border-b border-[var(--border)] bg-primary/5 px-3 py-2 text-xs">
                 <div className="flex items-center gap-2 min-w-0">
                   <Reply className="h-4 w-4 text-primary shrink-0" />
                   <div className="min-w-0">
                     <p className="font-bold text-[11px] text-primary truncate">
                       Replying to {replyingTo.direction === "inbound" ? contactName : "You"}
                     </p>
-                    <p className="text-[11px] text-muted-foreground truncate">
+                    <p className="text-[11px] text-[var(--ink-2)] truncate">
                       {replyingTo.text || ((replyingTo.attachments as any[])?.length ? "Attached media" : "Message")}
                     </p>
                   </div>
@@ -1407,7 +1407,7 @@ export function MessageThread({
                 <button
                   type="button"
                   onClick={() => setReplyingTo(null)}
-                  className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+                  className="rounded-md p-1 text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-[var(--ink)] transition-colors cursor-pointer"
                   title="Cancel reply"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -1435,7 +1435,7 @@ export function MessageThread({
                   : `Message ${contactName}...`
               }
               rows={2}
-              className="w-full resize-none bg-transparent px-4 py-2.5 text-xs focus:outline-none placeholder:text-muted-foreground/60"
+              className="w-full resize-none bg-transparent px-4 py-2.5 text-xs focus:outline-none placeholder:text-[var(--ink-2)]/60"
             />
 
             {/* Bottom tools */}
@@ -1452,7 +1452,7 @@ export function MessageThread({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingFiles}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                  className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors disabled:opacity-50"
                   title="Attach file"
                 >
                   <Paperclip className="h-4 w-4" />
@@ -1464,8 +1464,8 @@ export function MessageThread({
                     type="button"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                     className={cn(
-                      "p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
-                      showEmojiPicker && "bg-muted text-foreground"
+                      "p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors",
+                      showEmojiPicker && "bg-[var(--surface)] text-[var(--ink)]"
                     )}
                     title="Insert emoji"
                   >
@@ -1476,14 +1476,14 @@ export function MessageThread({
                   {showEmojiPicker && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
-                      <div className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-2xl border border-border bg-popover p-2.5 shadow-xl animate-in slide-in-from-bottom-2 fade-in">
+                      <div className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-md border border-[var(--border)] bg-popover p-2.5 shadow-xl animate-in slide-in-from-bottom-2 fade-in">
                         <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
                           {POPULAR_EMOJIS.map((emoji) => (
                             <button
                               key={emoji}
                               type="button"
                               onClick={() => handleInsertEmoji(emoji)}
-                              className="flex h-7 w-7 items-center justify-center rounded-lg hover:bg-muted text-base transition-transform hover:scale-125"
+                              className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--surface)] text-base transition-transform hover:scale-125"
                             >
                               {emoji}
                             </button>
@@ -1498,7 +1498,7 @@ export function MessageThread({
                   type="button"
                   onClick={startRecording}
                   disabled={uploadingFiles}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                  className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors disabled:opacity-50"
                   title="Record voice note"
                 >
                   <Mic className="h-4 w-4" />
@@ -1515,10 +1515,10 @@ export function MessageThread({
                     uploadingFiles
                   }
                   className={cn(
-                    "rounded-xl px-3 text-xs font-semibold shadow-sm transition-all",
+                    "rounded-md px-3 text-xs font-semibold shadow-sm transition-all",
                     isInternal
                       ? "bg-amber-500 hover:bg-amber-600 text-white"
-                      : "bg-primary text-primary-foreground hover:opacity-90"
+                      : "bg-[var(--brand)] text-white hover:opacity-90"
                   )}
                 >
                   {sending || uploadingFiles ? (

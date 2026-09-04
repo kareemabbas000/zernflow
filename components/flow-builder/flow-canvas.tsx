@@ -284,11 +284,11 @@ function FlowCanvasInner({ flow }: FlowCanvasProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Toolbar */}
-      <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2">
+      <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--paper)] px-4 py-2">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push("/dashboard/flows")}
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-accent-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -304,12 +304,12 @@ function FlowCanvasInner({ flow }: FlowCanvasProps) {
           />
           <span
             className={cn(
-              "inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium",
+              "inline-flex rounded-sm px-2 py-0.5 text-[10px] font-medium",
               flow.status === "published"
                 ? "bg-emerald-100 text-emerald-800"
                 : flow.status === "archived"
                   ? "bg-amber-100 text-amber-800"
-                  : "bg-muted text-muted-foreground"
+                  : "bg-[var(--surface)] text-[var(--ink-2)]"
             )}
           >
             {flow.status}
@@ -322,7 +322,7 @@ function FlowCanvasInner({ flow }: FlowCanvasProps) {
             </span>
           )}
           {!saveError && lastSaved && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-[var(--ink-2)]">
               Saved {lastSaved.toLocaleTimeString()}
             </span>
           )}
@@ -335,10 +335,10 @@ function FlowCanvasInner({ flow }: FlowCanvasProps) {
               }
             }}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
+              "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
               testPanelOpen
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border bg-background hover:bg-accent"
+                ? "border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]"
+                : "border-[var(--border)] bg-[var(--paper)] hover:bg-[var(--surface)]"
             )}
           >
             <Play className="h-3.5 w-3.5" />
@@ -353,10 +353,10 @@ function FlowCanvasInner({ flow }: FlowCanvasProps) {
               }
             }}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
+              "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
               versionPanelOpen
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border bg-background hover:bg-accent"
+                ? "border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]"
+                : "border-[var(--border)] bg-[var(--paper)] hover:bg-[var(--surface)]"
             )}
           >
             <History className="h-3.5 w-3.5" />
@@ -381,7 +381,7 @@ function FlowCanvasInner({ flow }: FlowCanvasProps) {
               a.click();
               URL.revokeObjectURL(url);
             }}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--paper)] px-3 py-1.5 text-sm font-medium hover:bg-[var(--surface)] transition-colors"
           >
             <Download className="h-3.5 w-3.5" />
             Export
@@ -389,7 +389,7 @@ function FlowCanvasInner({ flow }: FlowCanvasProps) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--paper)] px-3 py-1.5 text-sm font-medium hover:bg-[var(--surface)] transition-colors disabled:opacity-50"
           >
             {saving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -401,7 +401,7 @@ function FlowCanvasInner({ flow }: FlowCanvasProps) {
           <button
             onClick={handlePublish}
             disabled={publishing}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-[var(--brand)] px-3 py-1.5 text-sm font-medium text-[var(--brand)]-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {publishing ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -413,7 +413,7 @@ function FlowCanvasInner({ flow }: FlowCanvasProps) {
           <button
             onClick={() => setConfirmDelete(true)}
             disabled={deleting}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+            className="rounded-md p-2 text-[var(--ink-2)] hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
             title="Delete flow"
           >
             {deleting ? (
@@ -455,14 +455,14 @@ function FlowCanvasInner({ flow }: FlowCanvasProps) {
             fitView
             deleteKeyCode={["Backspace", "Delete"]}
             proOptions={{ hideAttribution: true }}
-            className="bg-background"
+            className="bg-[var(--paper)]"
           >
-            <Background gap={16} size={1} className="!bg-background" />
+            <Background gap={16} size={1} className="!bg-[var(--paper)]" />
             <Controls
-              className="!border-border !bg-card !shadow-sm [&>button]:!border-border [&>button]:!bg-card [&>button]:!text-foreground [&>button:hover]:!bg-accent"
+              className="!border-[var(--border)] !bg-[var(--paper)] !shadow-none [&>button]:!border-[var(--border)] [&>button]:!bg-[var(--paper)] [&>button]:!text-[var(--ink)] [&>button:hover]:!bg-[var(--surface)]"
             />
             <MiniMap
-              className="!border-border !bg-card"
+              className="!border-[var(--border)] !bg-[var(--paper)]"
               nodeColor={() => "var(--primary)"}
               maskColor="rgba(0, 0, 0, 0.1)"
             />

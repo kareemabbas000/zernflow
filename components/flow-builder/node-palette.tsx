@@ -158,15 +158,15 @@ function onDragStart(event: DragEvent, item: PaletteItem) {
 
 export function NodePalette() {
   return (
-    <div className="flex w-56 flex-col border-r border-border bg-card">
-      <div className="border-b border-border px-4 py-3">
+    <div className="flex w-56 flex-col border-r border-[var(--border)] bg-[var(--paper)]">
+      <div className="border-b border-[var(--border)] px-4 py-3">
         <h2 className="text-sm font-semibold">Nodes</h2>
-        <p className="text-xs text-muted-foreground">Drag to canvas</p>
+        <p className="text-xs text-[var(--ink-2)]">Drag to canvas</p>
       </div>
       <div className="flex-1 overflow-y-auto p-3">
         {categories.map((category) => (
           <div key={category.name} className="mb-4">
-            <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-2)]">
               {category.name}
             </h3>
             <div className="space-y-1">
@@ -177,9 +177,9 @@ export function NodePalette() {
                     key={item.nodeType}
                     draggable
                     onDragStart={(e) => onDragStart(e, item)}
-                    className="flex cursor-grab items-center gap-2.5 rounded-lg border border-border bg-background px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground active:cursor-grabbing"
+                    className="flex cursor-grab items-center gap-2.5 rounded-md border border-[var(--border)] bg-[var(--paper)] px-3 py-2 text-sm transition-colors hover:bg-[var(--surface)] hover:text-accent-foreground active:cursor-grabbing"
                   >
-                    <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-[var(--ink-2)]" />
                     <span className="text-xs font-medium">{item.label}</span>
                   </div>
                 );

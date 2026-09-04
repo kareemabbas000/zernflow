@@ -7,7 +7,7 @@ import type { SequenceStatus, Json } from "@/lib/types/database";
 const statusConfig: Record<SequenceStatus, { label: string; classes: string }> = {
   draft: {
     label: "Draft",
-    classes: "bg-muted text-muted-foreground",
+    classes: "bg-[var(--surface)] text-[var(--ink-2)]",
   },
   active: {
     label: "Active",
@@ -58,18 +58,18 @@ export default async function SequencesPage() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-background relative overflow-hidden">
+    <div className="flex h-full flex-col bg-[var(--paper)] relative overflow-hidden">
       {/* Ambient glow */}
-      <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-primary/10 rounded-full blur-[150px] pointer-events-none -z-10" />
+      <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[var(--brand-soft)] rounded-sm blur-[150px] pointer-events-none -z-10" />
 
-      <div className="border-b border-border/40 bg-background/50 backdrop-blur-xl px-8 py-6 shrink-0 relative z-10">
+      <div className="border-b border-[var(--border)]/40 bg-[var(--paper)]/50 backdrop-blur-xl px-8 py-6 shrink-0 relative z-10">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
-              <ListOrdered className="h-7 w-7 text-primary" />
+            <h1 className="text-3xl font-bold text-[var(--ink)] tracking-tight flex items-center gap-3">
+              <ListOrdered className="h-7 w-7 text-[var(--brand)]" />
               Sequences
             </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-[var(--ink-2)]">
               Create drip campaigns to nurture contacts over time
             </p>
           </div>
@@ -79,10 +79,10 @@ export default async function SequencesPage() {
 
       <div className="flex-1 overflow-auto px-8 py-6 relative z-10 custom-scrollbar">
       {!sequences || sequences.length === 0 ? (
-        <div className="mt-12 rounded-2xl border border-dashed border-border py-24 text-center bg-card/40 backdrop-blur-md">
-          <ListOrdered className="mx-auto h-12 w-12 text-muted-foreground/30" />
-          <h2 className="mt-4 text-base font-semibold text-foreground">No sequences yet</h2>
-          <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
+        <div className="mt-12 rounded-md border border-dashed border-[var(--border)] py-24 text-center bg-[var(--paper)]/40 backdrop-blur-md">
+          <ListOrdered className="mx-auto h-12 w-12 text-[var(--ink-2)]/30" />
+          <h2 className="mt-4 text-base font-semibold text-[var(--ink)]">No sequences yet</h2>
+          <p className="mt-1 text-xs text-[var(--ink-2)] max-w-sm mx-auto">
             Create your first sequence to start nurturing contacts automatically with timed messages.
           </p>
           <div className="mt-5">
@@ -104,29 +104,29 @@ export default async function SequencesPage() {
               <Link
                 key={sequence.id}
                 href={`/dashboard/sequences/${sequence.id}`}
-                className="group relative flex flex-col justify-between rounded-3xl border border-border bg-card/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 overflow-hidden"
+                className="group relative flex flex-col justify-between rounded-md border border-[var(--border)] bg-[var(--paper)]/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-[var(--brand)]/30 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 overflow-hidden"
               >
-                <div className="absolute -right-10 -bottom-10 w-40 h-40 rounded-full bg-primary/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute -right-10 -bottom-10 w-40 h-40 rounded-sm bg-[var(--brand)]/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="relative z-10">
                   <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-soft)] border border-[var(--brand)]/20 text-[var(--brand)]">
                       <ListOrdered className="h-5 w-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                        <h3 className="font-semibold text-[var(--ink)] group-hover:text-[var(--brand)] transition-colors line-clamp-1">
                           {sequence.name}
                         </h3>
                         <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${status.classes}`}
+                          className={`inline-flex rounded-sm px-2 py-0.5 text-[10px] font-bold ${status.classes}`}
                         >
                           {status.label}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-[var(--ink-2)] mt-1">
                         {stepCount} {stepCount === 1 ? "step" : "steps"}
                         {enrolled > 0 && (
-                          <span className="ml-2 font-medium text-foreground">
+                          <span className="ml-2 font-medium text-[var(--ink)]">
                             • {enrolled} enrolled
                           </span>
                         )}
@@ -134,11 +134,11 @@ export default async function SequencesPage() {
                     </div>
                   </div>
                   {sequence.description && (
-                    <p className="mt-4 text-xs text-muted-foreground line-clamp-2">
+                    <p className="mt-4 text-xs text-[var(--ink-2)] line-clamp-2">
                       {sequence.description}
                     </p>
                   )}
-                  <div className="mt-5 pt-4 border-t border-border/50 text-xs text-muted-foreground flex justify-between items-center">
+                  <div className="mt-5 pt-4 border-t border-[var(--border)] text-xs text-[var(--ink-2)] flex justify-between items-center">
                     <span>Updated {formatDate(sequence.updated_at || sequence.created_at || "")}</span>
                   </div>
                 </div>
