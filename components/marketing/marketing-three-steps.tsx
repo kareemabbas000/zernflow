@@ -41,9 +41,9 @@ export function MarketingThreeSteps() {
               <div className="text-6xl font-mono font-black text-[var(--border-strong)] mb-6 group-hover:text-[var(--brand)] transition-colors">
                 {step.num}
               </div>
-              <div className="w-full aspect-square rounded-[24px] border border-[var(--border)] overflow-hidden bg-[var(--surface)] mb-6 shadow-sm p-1">
-                <div className="w-full h-full rounded-[18px] overflow-hidden flex items-center justify-center">
-                  <div className="w-full h-full scale-[0.65] origin-center -m-12">
+              <div className="w-full aspect-square rounded-[32px] border border-[var(--border)] overflow-hidden bg-[var(--surface)] mb-8 shadow-xl p-2 relative group-hover:border-[var(--brand)] transition-colors">
+                <div className="w-full h-full rounded-[24px] overflow-hidden relative bg-[var(--surface-inset)]">
+                  <div className="absolute top-1/2 left-1/2 w-[200%] h-[200%] -translate-x-1/2 -translate-y-1/2 scale-50 origin-center pointer-events-none">
                     {step.mockup}
                   </div>
                 </div>
