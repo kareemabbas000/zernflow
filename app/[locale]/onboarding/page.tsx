@@ -28,7 +28,7 @@ export default function OnboardingPage() {
         <Link href="/" className="flex items-center gap-2 group w-max">
           <BrandLogo size="md" showText={false} />
           <span className="font-display text-xl font-bold tracking-tight text-[var(--ink)] group-hover:text-[var(--brand)] transition-colors">
-            FlowStage
+            FlowLoop
           </span>
         </Link>
       </header>
@@ -68,7 +68,7 @@ export default function OnboardingPage() {
                 Invite your team
               </h1>
               <p className="text-[var(--ink-2)] font-medium mb-8">
-                FlowStage works best when the whole team is collaborating.
+                FlowLoop works best when the whole team is collaborating.
               </p>
               <div className="space-y-4 text-left mb-6">
                 <Input 

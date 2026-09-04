@@ -9,7 +9,7 @@ export default function PrivacyPolicyPage() {
         
         <div className="space-y-6 text-[var(--text-secondary)] leading-relaxed">
           <p>
-            FlowStage ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how your personal information is collected, used, and disclosed by FlowStage.
+            FlowLoop ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how your personal information is collected, used, and disclosed by FlowLoop.
           </p>
 
           <h2 className="font-bold text-2xl text-[var(--text-primary)] mt-8 mb-4">1. Information We Collect</h2>
@@ -39,7 +39,7 @@ export default function PrivacyPolicyPage() {
           <p>
             If you have any questions regarding this privacy policy, you may contact us using the information below:
             <br /><br />
-            legal@flowstage.io
+            legal@flowloop.io
           </p>
         </div>
       </div>

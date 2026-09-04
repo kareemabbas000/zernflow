@@ -21,7 +21,7 @@ export default function DrowningInDMsPage() {
             Your customers are messaging you on WhatsApp, sliding into your Instagram DMs, replying to your marketing emails, and texting you. Keeping up requires 10 tabs and constant context switching.
           </p>
           <div className="bg-[var(--surface-2)] p-6 md:p-8 rounded-3xl border border-[var(--border)] mb-12">
-            <h3 className="font-bold text-lg text-[var(--ink)] mb-4">The FlowStage Solution</h3>
+            <h3 className="font-bold text-lg text-[var(--ink)] mb-4">The FlowLoop Solution</h3>
             <p className="text-[var(--ink-2)] leading-relaxed mb-6">
               Connect all your channels into a single, unified Inbox. When a customer messages you on Instagram, and follows up on WhatsApp, you see the entire thread in one place. No tabs, no lost messages.
             </p>

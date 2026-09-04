@@ -49,7 +49,7 @@ export default function LoginPage() {
       title="Welcome back"
       subtitle="Enter your details to access your workspace."
       testimonial={{
-        quote: "FlowStage completely replaced our chaotic support inbox. It's just calm now.",
+        quote: "FlowLoop completely replaced our chaotic support inbox. It's just calm now.",
         author: "Marcus Thorne",
         role: "Founder, Zenith"
       }}

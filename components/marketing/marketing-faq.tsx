@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     question: "How do I connect my existing Shopify or CRM?",
-    answer: "FlowStage includes native, one-click integrations for Shopify, Salesforce, HubSpot, and Stripe. You can pull real-time order data, update lead statuses, or trigger refund flows directly from the visual canvas without writing any code."
+    answer: "FlowLoop includes native, one-click integrations for Shopify, Salesforce, HubSpot, and Stripe. You can pull real-time order data, update lead statuses, or trigger refund flows directly from the visual canvas without writing any code."
   },
   {
     question: "Is there a limit on conversations per month?",
@@ -23,7 +23,7 @@ const faqs = [
   },
   {
     question: "How does collision detection work?",
-    answer: "When multiple agents are working in the live inbox, FlowStage shows real-time typing indicators and locks conversations that are actively being handled. This ensures two agents never reply to the same customer simultaneously."
+    answer: "When multiple agents are working in the live inbox, FlowLoop shows real-time typing indicators and locks conversations that are actively being handled. This ensures two agents never reply to the same customer simultaneously."
   }
 ]
 

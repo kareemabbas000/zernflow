@@ -53,7 +53,7 @@ export function BrandLogo({
 
       {showText && (
         <span className={cn("text-foreground font-black tracking-tight", textSizes[size], textClassName)}>
-          FlowStage
+          FlowLoop
         </span>
       )}
     </div>

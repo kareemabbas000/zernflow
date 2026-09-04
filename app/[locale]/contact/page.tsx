@@ -46,7 +46,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-[var(--ink)]">Support</h3>
-                  <p className="text-sm font-medium text-[var(--ink-3)]">support@flowstage.com</p>
+                  <p className="text-sm font-medium text-[var(--ink-3)]">support@flowloop.com</p>
                 </div>
               </div>
               <div className="flex items-center gap-4 p-6 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)]">
@@ -55,7 +55,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-[var(--ink)]">Sales</h3>
-                  <p className="text-sm font-medium text-[var(--ink-3)]">sales@flowstage.com</p>
+                  <p className="text-sm font-medium text-[var(--ink-3)]">sales@flowloop.com</p>
                 </div>
               </div>
             </div>

@@ -14,7 +14,7 @@ export function MarketingFooter() {
             <Link href="/" className="flex items-center gap-2 group">
               <BrandLogo size="md" showText={false} />
               <span className="font-display text-xl font-bold tracking-tight text-white">
-                FlowStage
+                FlowLoop
               </span>
             </Link>
             <p className="text-white/60 text-sm font-medium leading-relaxed max-w-xs">
@@ -59,7 +59,7 @@ export function MarketingFooter() {
 
         <div className="mt-20 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-white/60 text-sm font-medium">
-            &copy; {new Date().getFullYear()} FlowStage Inc. All rights reserved.
+            &copy; {new Date().getFullYear()} FlowLoop Inc. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
             <a href="#" className="text-white/60 hover:text-white transition-colors">

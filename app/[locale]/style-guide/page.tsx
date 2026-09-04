@@ -13,7 +13,7 @@ export default function StyleGuide() {
         <header className="flex items-center justify-between border-b border-[var(--border)] pb-8">
           <div>
             <h1 className="text-5xl font-display font-bold tracking-tight">Style Guide</h1>
-            <p className="text-xl text-[var(--ink-3)] mt-2 font-medium">FlowStage Phase 1: Tokens & Typography</p>
+            <p className="text-xl text-[var(--ink-3)] mt-2 font-medium">FlowLoop Phase 1: Tokens & Typography</p>
           </div>
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

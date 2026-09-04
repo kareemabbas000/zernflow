@@ -21,9 +21,9 @@ export default function CantLogOffPage() {
             Answering the same "where is my order?" question 50 times a day drains your team's energy. Support teams get bogged down in repetitive queries instead of solving complex problems.
           </p>
           <div className="bg-[var(--surface-2)] p-6 md:p-8 rounded-3xl border border-[var(--border)] mb-12">
-            <h3 className="font-bold text-lg text-[var(--ink)] mb-4">The FlowStage Solution</h3>
+            <h3 className="font-bold text-lg text-[var(--ink)] mb-4">The FlowLoop Solution</h3>
             <p className="text-[var(--ink-2)] leading-relaxed mb-6">
-              Deflect up to 70% of repetitive queries using visual workflows and AI. Let FlowStage automatically fetch tracking numbers from Shopify and handle refunds, freeing up your team to tackle the 30% of tickets that actually require a human touch.
+              Deflect up to 70% of repetitive queries using visual workflows and AI. Let FlowLoop automatically fetch tracking numbers from Shopify and handle refunds, freeing up your team to tackle the 30% of tickets that actually require a human touch.
             </p>
             <ul className="space-y-3 font-medium text-[var(--ink)]">
               <li className="flex items-center gap-2">

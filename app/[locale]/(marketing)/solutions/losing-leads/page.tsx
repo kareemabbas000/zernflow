@@ -21,7 +21,7 @@ export default function LosingLeadsPage() {
             Customers expect instant responses 24/7. When they message you at 2 AM asking about sizing or availability, and you don't reply until 9 AM, they've already bought from your competitor.
           </p>
           <div className="bg-[var(--surface-2)] p-6 md:p-8 rounded-3xl border border-[var(--border)] mb-12">
-            <h3 className="font-bold text-lg text-[var(--ink)] mb-4">The FlowStage Solution</h3>
+            <h3 className="font-bold text-lg text-[var(--ink)] mb-4">The FlowLoop Solution</h3>
             <p className="text-[var(--ink-2)] leading-relaxed mb-6">
               Deploy an AI Copilot that never sleeps. Our models ingest your knowledge base and can instantly answer pre-sales questions, recommend products, and even capture lead information in the middle of the night.
             </p>

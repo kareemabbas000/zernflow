@@ -8,8 +8,8 @@ import { ArrowRight } from "lucide-react";
 
 const posts = [
   {
-    slug: "introducing-flowstage-2",
-    title: "Introducing FlowStage 2.0",
+    slug: "introducing-flowloop-2",
+    title: "Introducing FlowLoop 2.0",
     excerpt: "A complete rebuild of our engine, making visual automation 10x faster and bringing AI natively into every node.",
     date: "Oct 24, 2024",
     category: "Product",
@@ -41,7 +41,7 @@ export default function BlogIndexPage() {
         <div className="max-w-7xl mx-auto">
           <div className="mb-20">
             <h1 className="font-display text-5xl md:text-7xl font-black tracking-tighter leading-[1.1] text-[var(--ink)] mb-6">
-              The FlowStage <span className="text-[var(--brand)]">Blog.</span>
+              The FlowLoop <span className="text-[var(--brand)]">Blog.</span>
             </h1>
             <p className="text-xl text-[var(--ink-2)] font-medium max-w-2xl leading-relaxed">
               Thoughts on product, engineering, and the future of automated customer operations.

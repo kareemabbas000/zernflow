@@ -327,7 +327,7 @@ export function SettingsView({
             </Link>
           </motion.section>
 
-          {/* About FlowStage & Legal Attribution */}
+          {/* About FlowLoop & Legal Attribution */}
           <motion.section variants={itemVariants} className="rounded-3xl border border-border/80 bg-muted/30 p-8 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -336,7 +336,7 @@ export function SettingsView({
                       <Sparkles className="h-4 w-4 text-white" />
                    </div>
                 </div>
-                <span className="font-bold text-foreground text-lg tracking-tight">FlowStage</span>
+                <span className="font-bold text-foreground text-lg tracking-tight">FlowLoop</span>
               </div>
               <Link
                 href="/legal/open-source"
@@ -347,10 +347,10 @@ export function SettingsView({
               </Link>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
-              FlowStage is an AI-powered omnichannel communication and customer engagement platform built for modern teams.
+              FlowLoop is an AI-powered omnichannel communication and customer engagement platform built for modern teams.
             </p>
             <div className="pt-4 border-t border-border/60 flex items-center justify-between text-xs font-semibold text-muted-foreground">
-              <span>© {new Date().getFullYear()} FlowStage Inc. All rights reserved.</span>
+              <span>© {new Date().getFullYear()} FlowLoop Inc. All rights reserved.</span>
             </div>
           </motion.section>
 

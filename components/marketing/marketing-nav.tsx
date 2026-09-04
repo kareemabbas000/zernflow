@@ -41,7 +41,7 @@ export function MarketingNav() {
           <Link href="/" className="flex items-center gap-2 group">
             <BrandLogo size="md" showText={false} />
             <span className="font-display text-xl font-bold tracking-tight text-[var(--text-primary)] group-hover:text-[var(--brand)] transition-colors">
-              FlowStage
+              FlowLoop
             </span>
           </Link>
         </div>
@@ -86,7 +86,7 @@ export function MarketingNav() {
                 <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
                   <BrandLogo size="md" showText={false} />
                   <span className="font-display text-xl font-bold tracking-tight text-[var(--text-primary)]">
-                    FlowStage
+                    FlowLoop
                   </span>
                 </Link>
               </div>

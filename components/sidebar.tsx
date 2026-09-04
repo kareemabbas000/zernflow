@@ -152,7 +152,7 @@ export function Sidebar({
           </div>
           {!sidebarCollapsed && (
             <span className="text-base font-bold text-[var(--ink)] whitespace-nowrap">
-              FlowStage
+              FlowLoop
             </span>
           )}
         </Link>

@@ -14,12 +14,12 @@ export default function TermsOfServicePage() {
 
           <h2 className="font-bold text-2xl text-[var(--text-primary)] mt-8 mb-4">1. Acceptance of Terms</h2>
           <p>
-            By accessing or using FlowStage, you agree to be bound by these Terms. If you disagree with any part of the terms, then you may not access the Service.
+            By accessing or using FlowLoop, you agree to be bound by these Terms. If you disagree with any part of the terms, then you may not access the Service.
           </p>
 
           <h2 className="font-bold text-2xl text-[var(--text-primary)] mt-8 mb-4">2. Description of Service</h2>
           <p>
-            FlowStage provides an omnichannel customer communication platform, including visual flow builders and AI-assisted conversational tools. We reserve the right to modify or discontinue, temporarily or permanently, the Service (or any part thereof) with or without notice.
+            FlowLoop provides an omnichannel customer communication platform, including visual flow builders and AI-assisted conversational tools. We reserve the right to modify or discontinue, temporarily or permanently, the Service (or any part thereof) with or without notice.
           </p>
 
           <h2 className="font-bold text-2xl text-[var(--text-primary)] mt-8 mb-4">3. User Responsibilities</h2>
@@ -34,7 +34,7 @@ export default function TermsOfServicePage() {
 
           <h2 className="font-bold text-2xl text-[var(--text-primary)] mt-8 mb-4">5. Limitation of Liability</h2>
           <p>
-            In no event shall FlowStage, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.
+            In no event shall FlowLoop, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.
           </p>
         </div>
       </div>

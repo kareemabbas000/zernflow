@@ -25,7 +25,7 @@ export function AuthLayout({ children, title, subtitle, testimonial }: AuthLayou
           <Link href="/" className="flex items-center gap-2 group w-fit">
             <BrandLogo size="md" showText={false} />
             <span className="font-display text-xl font-bold tracking-tight text-[var(--text-primary)] group-hover:text-[var(--brand)] transition-colors">
-              FlowStage
+              FlowLoop
             </span>
           </Link>
         </div>

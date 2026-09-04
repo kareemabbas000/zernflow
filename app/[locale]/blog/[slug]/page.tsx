@@ -25,7 +25,7 @@ export default function BlogPostPage() {
               <span className="text-sm font-medium text-[var(--ink-3)]">Oct 24, 2024</span>
             </div>
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter leading-[1.1] text-[var(--ink)] mb-8">
-              Introducing FlowStage 2.0: The AI-Native Era
+              Introducing FlowLoop 2.0: The AI-Native Era
             </h1>
             <div className="flex items-center gap-4">
               <img src="https://i.pravatar.cc/150?u=author" alt="Author" className="w-12 h-12 rounded-full border border-[var(--border)]" />
@@ -42,7 +42,7 @@ export default function BlogPostPage() {
 
           <article className="prose prose-lg prose-slate max-w-none prose-headings:font-display prose-headings:font-bold prose-headings:tracking-tight prose-a:text-[var(--brand)] hover:prose-a:text-[var(--brand-hover)] prose-p:text-[var(--ink-2)] prose-p:font-medium prose-p:leading-relaxed">
             <p>
-              Today, we're thrilled to announce the biggest update in our company's history. We've completely rebuilt the FlowStage engine from the ground up to make visual automation 10x faster, and we've brought Large Language Models (LLMs) natively into every node of the canvas.
+              Today, we're thrilled to announce the biggest update in our company's history. We've completely rebuilt the FlowLoop engine from the ground up to make visual automation 10x faster, and we've brought Large Language Models (LLMs) natively into every node of the canvas.
             </p>
             <h2>The problem with traditional chatbots</h2>
             <p>
@@ -53,14 +53,14 @@ export default function BlogPostPage() {
             </p>
             <h2>Enter the AI Copilot Node</h2>
             <p>
-              With FlowStage 2.0, you can drag an "AI Copilot" node right onto your canvas. You simply prompt it with your business rules and attach your knowledge base. When a user reaches this node, the AI takes over dynamically, ensuring human-like, accurate responses.
+              With FlowLoop 2.0, you can drag an "AI Copilot" node right onto your canvas. You simply prompt it with your business rules and attach your knowledge base. When a user reaches this node, the AI takes over dynamically, ensuring human-like, accurate responses.
             </p>
             <blockquote>
               "It's not just a feature; it's a paradigm shift. We're moving from 'if-this-then-that' to 'understand-and-resolve'."
             </blockquote>
             <h2>Available Today</h2>
             <p>
-              FlowStage 2.0 is rolling out today for all Professional and Enterprise customers. We can't wait to see what you build.
+              FlowLoop 2.0 is rolling out today for all Professional and Enterprise customers. We can't wait to see what you build.
             </p>
           </article>
         </div>

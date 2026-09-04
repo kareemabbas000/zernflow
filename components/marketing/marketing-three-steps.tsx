@@ -91,7 +91,7 @@ const steps = [
   {
     num: "03",
     title: "Go live instantly",
-    desc: "Hit publish. FlowStage instantly takes over routine conversations.",
+    desc: "Hit publish. FlowLoop instantly takes over routine conversations.",
     mockup: <MiniStep3 />
   }
 ]

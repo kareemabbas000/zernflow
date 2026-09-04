@@ -109,7 +109,7 @@ export function MarketingHero() {
         </div>
 
         {/* Floating Cards (Hidden on mobile for cleaner hero) */}
-        <div className="hidden lg:block absolute inset-0 pointer-events-none -z-0">
+        <div className="hidden lg:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-full max-w-5xl pointer-events-none -z-0">
           {floatingCards.map((card) => (
             <motion.div
               key={card.id}

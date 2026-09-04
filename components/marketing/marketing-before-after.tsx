@@ -29,7 +29,7 @@ export function MarketingBeforeAfter() {
             Stop doing it the hard way.
           </h2>
           <p className="text-lg font-medium text-white/70 max-w-2xl mx-auto">
-            The old way of managing customer conversations is slow, expensive, and frustrating. FlowStage changes the physics of support.
+            The old way of managing customer conversations is slow, expensive, and frustrating. FlowLoop changes the physics of support.
           </p>
         </div>
 
@@ -37,7 +37,7 @@ export function MarketingBeforeAfter() {
           {/* Before */}
           <div className="bg-white/5 border border-white/10 rounded-[28px] p-8 lg:p-12 flex flex-col justify-center">
             <h3 className="font-bold text-xl mb-8 text-white/50 uppercase tracking-wider font-mono">
-              Before FlowStage
+              Before FlowLoop
             </h3>
             <div className="space-y-6">
               {pains.map((pain, idx) => (
@@ -53,11 +53,11 @@ export function MarketingBeforeAfter() {
           <div className="bg-[var(--surface)] border-2 border-[var(--lime)] rounded-[28px] p-8 lg:p-12 flex flex-col justify-center shadow-2xl shadow-[var(--lime)]/10 relative">
             <div className="absolute top-0 right-8 -translate-y-1/2">
               <span className="bg-[var(--lime)] text-[var(--bg)] font-bold px-4 py-1.5 rounded-full text-sm shadow-sm">
-                The FlowStage Way
+                The FlowLoop Way
               </span>
             </div>
             <h3 className="font-bold text-xl mb-8 text-[var(--text-primary)] uppercase tracking-wider font-mono">
-              After FlowStage
+              After FlowLoop
             </h3>
             <div className="space-y-6 mb-10">
               {reliefs.map((relief, idx) => (

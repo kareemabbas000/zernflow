@@ -27,23 +27,23 @@ import { locales } from "../../i18n";
 
 export const metadata: Metadata = {
   title: {
-    default: "FlowStage — AI-Powered Omnichannel Communication",
-    template: "%s | FlowStage",
+    default: "FlowLoop — AI-Powered Omnichannel Communication",
+    template: "%s | FlowLoop",
   },
   description:
     "Manage customer conversations across Facebook, Instagram, WhatsApp, X, and Telegram with a unified inbox, visual automations, and AI agents.",
-  metadataBase: new URL("https://flowstage.com"),
+  metadataBase: new URL("https://flowloop.com"),
   openGraph: {
-    title: "FlowStage — AI-Powered Omnichannel Communication",
+    title: "FlowLoop — AI-Powered Omnichannel Communication",
     description:
       "Every conversation in one intelligent workspace. Seamless messaging across Facebook, Instagram, WhatsApp, X, and Telegram.",
-    url: "https://flowstage.com",
-    siteName: "FlowStage",
+    url: "https://flowloop.com",
+    siteName: "FlowLoop",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "FlowStage — AI-Powered Omnichannel Communication",
+    title: "FlowLoop — AI-Powered Omnichannel Communication",
     description:
       "Manage all your customer conversations from one intelligent workspace with AI and automation.",
   },

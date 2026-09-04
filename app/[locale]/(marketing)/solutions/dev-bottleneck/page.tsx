@@ -21,7 +21,7 @@ export default function DevBottleneckPage() {
             You want to set up an automated welcome sequence or integrate a new AI model, but you have to file a Jira ticket and wait weeks for your dev team to build custom scripts.
           </p>
           <div className="bg-[var(--surface-2)] p-6 md:p-8 rounded-3xl border border-[var(--border)] mb-12">
-            <h3 className="font-bold text-lg text-[var(--ink)] mb-4">The FlowStage Solution</h3>
+            <h3 className="font-bold text-lg text-[var(--ink)] mb-4">The FlowLoop Solution</h3>
             <p className="text-[var(--ink-2)] leading-relaxed mb-6">
               Our Visual Studio empowers CX leaders and marketers to build complex, branching logic flows without writing a single line of code. Connect APIs, add conditions, and embed AI models entirely via drag-and-drop.
             </p>

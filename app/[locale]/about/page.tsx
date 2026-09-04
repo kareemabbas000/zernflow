@@ -19,7 +19,7 @@ export default function AboutPage() {
             Making automation feel <span className="text-[var(--brand)]">human.</span>
           </h1>
           <p className="text-xl text-[var(--ink-2)] font-medium max-w-2xl mx-auto leading-relaxed">
-            We started FlowStage because we were tired of seeing support teams drowning in messages while developers spent months building basic chatbots. We believed there had to be a better way.
+            We started FlowLoop because we were tired of seeing support teams drowning in messages while developers spent months building basic chatbots. We believed there had to be a better way.
           </p>
         </div>
 
