@@ -1,6 +1,8 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
+import { PlatformIcon } from "@/components/platform-icon"
+import type { Platform } from "@/lib/types/database"
 
 const avatarVariants = cva(
   "relative flex shrink-0 overflow-hidden rounded-full",
@@ -25,6 +27,7 @@ export interface AvatarProps
   src?: string | null
   fallback?: string | null
   name?: string | null
+  platform?: Platform
 }
 
 const GRADIENT_PALETTES = [
@@ -45,7 +48,7 @@ function getGradient(name?: string): string {
 }
 
 const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
-  ({ className, size, src, fallback, name, ...props }, ref) => {
+  ({ className, size, src, fallback, name, platform, ...props }, ref) => {
     const [hasError, setHasError] = React.useState(false)
 
     React.useEffect(() => {
@@ -55,9 +58,9 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
     const textToUse = fallback || name
     const gradientClass = getGradient(textToUse || undefined)
 
-    return (
+    const avatarContent = (
       <div
-        ref={ref}
+        ref={platform ? undefined : ref}
         className={cn(avatarVariants({ size, className }), "ring-1 ring-[var(--border)]")}
         {...props}
       >
@@ -80,6 +83,19 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
         )}
       </div>
     )
+
+    if (platform) {
+      return (
+        <div className="relative inline-flex" ref={ref}>
+          {avatarContent}
+          <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--surface)] ring-1 ring-[var(--border)]">
+            <PlatformIcon platform={platform} size={10} />
+          </div>
+        </div>
+      )
+    }
+
+    return avatarContent
   }
 )
 Avatar.displayName = "Avatar"
