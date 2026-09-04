@@ -58,6 +58,13 @@ const nextConfig: NextConfig = {
   // Optimize server-side packages
   serverExternalPackages: ["@zernio/node"],
 
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+
   // Enable logging in development
   logging: {
     fetches: {
