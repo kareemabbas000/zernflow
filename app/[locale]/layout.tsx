@@ -42,6 +42,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { ThemeProvider } from "@/components/theme-provider";
+
 export default async function RootLayout({
   children,
   params,
@@ -60,17 +62,12 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} dir={dir} className={plusJakarta.variable} suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{if(localStorage.getItem("theme")==="dark"||(!localStorage.getItem("theme")&&matchMedia("(prefers-color-scheme:dark)").matches))document.documentElement.classList.add("dark")}catch(e){}`,
-          }}
-        />
-      </head>
       <body className={`${plusJakarta.className} font-sans min-h-screen bg-background text-foreground antialiased`}>
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          {children}
-        </NextIntlClientProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            {children}
+          </NextIntlClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
