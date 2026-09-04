@@ -1,5 +1,6 @@
 import { getWorkspace } from "@/lib/workspace";
 import { Sidebar } from "@/components/sidebar";
+import { Topbar } from "@/components/topbar";
 import { GlobalLiveSyncProvider } from "@/components/providers/global-live-sync-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ResponsiveLayoutWrapper } from "@/components/responsive-layout-wrapper";
@@ -44,10 +45,6 @@ export default async function DashboardLayout({
     <QueryProvider>
       <GlobalLiveSyncProvider workspaceId={workspace.id}>
         <ResponsiveLayoutWrapper>
-          <div className="absolute inset-0 pointer-events-none -z-50 overflow-hidden">
-             <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px]" />
-             <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[120px]" />
-          </div>
           <CommandPalette />
           <Sidebar
             workspace={workspace}
@@ -55,9 +52,14 @@ export default async function DashboardLayout({
             workspaces={workspaces}
             isSuperAdmin={isSuperAdmin}
           />
-          <main className="min-h-0 min-w-0 flex-1 overflow-hidden overflow-x-hidden relative bg-background/50">
-            {children}
-          </main>
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[var(--paper)]">
+            <Topbar user={user} />
+            <main className="flex-1 overflow-auto overflow-x-hidden relative">
+              <div className="max-w-[1200px] mx-auto w-full p-4 lg:p-8">
+                {children}
+              </div>
+            </main>
+          </div>
         </ResponsiveLayoutWrapper>
       </GlobalLiveSyncProvider>
     </QueryProvider>

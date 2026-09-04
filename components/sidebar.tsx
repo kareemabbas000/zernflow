@@ -30,7 +30,6 @@ import { WorkspaceSwitcher } from "@/components/workspace-switcher";
 import { useInboxStore } from "@/lib/stores/inbox-store";
 import { useUIStore, selectIsMobile } from "@/lib/stores/ui-store";
 import type { Database } from "@/lib/types/database";
-import { motion, AnimatePresence } from "framer-motion";
 
 type Workspace = Database["public"]["Tables"]["workspaces"]["Row"];
 
@@ -108,7 +107,7 @@ export function Sidebar({
 
   if (isMobile) {
     return (
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-[72px] items-center justify-around border-t border-border/40 bg-background/80 backdrop-blur-2xl safe-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-[var(--border)] bg-[var(--paper)] safe-bottom">
         {mobileNavItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const isInbox = item.href === "/dashboard/inbox";
@@ -118,27 +117,19 @@ export function Sidebar({
               key={item.name}
               href={item.href}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-1 px-3 py-2 transition-all duration-300 flex-1 h-full",
-                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                "relative flex flex-col items-center justify-center gap-1 px-3 py-2 transition-colors flex-1 h-full",
+                isActive ? "text-[var(--brand)]" : "text-[var(--ink-3)] hover:text-[var(--ink)]"
               )}
             >
-              {isActive && (
-                <motion.div
-                  layoutId="mobile-nav-active"
-                  className="absolute inset-0 bg-primary/10 rounded-xl"
-                  initial={false}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                />
-              )}
               <div className="relative z-10">
-                <item.icon className={cn("h-[22px] w-[22px] transition-transform", isActive && "scale-110")} />
+                <item.icon className="h-5 w-5" />
                 {isInbox && unreadCount > 0 && (
-                  <span className="absolute -top-2 -right-2.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-black text-white shadow-lg shadow-destructive/50 animate-pulse">
+                  <span className="absolute -top-1 -right-2 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-[var(--danger)] px-1 text-[8px] font-bold text-white">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-bold z-10">{item.name}</span>
+              <span className="text-[10px] font-medium">{item.name}</span>
             </Link>
           );
         })}
@@ -147,51 +138,33 @@ export function Sidebar({
   }
 
   return (
-    <motion.div
-      initial={false}
-      animate={{ width: sidebarCollapsed ? 80 : 280 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="flex h-full flex-col bg-background/95 backdrop-blur-3xl border-r border-border/40 select-none shrink-0 relative z-40"
+    <div
+      style={{ width: sidebarCollapsed ? 64 : 260 }}
+      className="flex h-full flex-col bg-[var(--surface-2)] border-r border-[var(--border)] select-none shrink-0 relative z-40 transition-[width] duration-200 ease-in-out font-sans text-sm"
     >
       {/* Brand Header */}
-      <div className="border-b border-border/40 px-5 py-4 flex items-center justify-between shrink-0 h-20">
-        <Link href="/dashboard/inbox" className="group flex items-center gap-3 overflow-hidden">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-primary via-blue-500 to-purple-600 p-[1.5px] shrink-0 shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
-             <div className="w-full h-full bg-background rounded-[10px] flex items-center justify-center">
-                <Zap className="text-foreground h-5 w-5 group-hover:text-primary transition-colors" />
-             </div>
+      <div className="border-b border-[var(--border)] px-4 py-4 flex items-center h-[60px] shrink-0">
+        <Link href="/dashboard/inbox" className="flex items-center gap-2 overflow-hidden">
+          <div className="h-8 w-8 rounded-md bg-[var(--brand)] text-white flex items-center justify-center shrink-0">
+            <Zap className="h-4 w-4" />
           </div>
-          <AnimatePresence>
-            {!sidebarCollapsed && (
-              <motion.span 
-                initial={{ opacity: 0, x: -10 }} 
-                animate={{ opacity: 1, x: 0 }} 
-                exit={{ opacity: 0, x: -10 }} 
-                className="text-xl font-black tracking-tight text-foreground whitespace-nowrap"
-              >
-                FlowStage
-              </motion.span>
-            )}
-          </AnimatePresence>
+          {!sidebarCollapsed && (
+            <span className="text-base font-bold text-[var(--ink)] whitespace-nowrap">
+              FlowStage
+            </span>
+          )}
         </Link>
       </div>
 
       {/* Workspace Switcher */}
-      <AnimatePresence>
-        {!sidebarCollapsed && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }} 
-            animate={{ opacity: 1, height: "auto" }} 
-            exit={{ opacity: 0, height: 0 }} 
-            className="border-b border-border/40 px-5 py-4 bg-muted/10 shrink-0"
-          >
-            <WorkspaceSwitcher current={workspace} workspaces={workspaces} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {!sidebarCollapsed && (
+        <div className="border-b border-[var(--border)] px-4 py-3 shrink-0">
+          <WorkspaceSwitcher current={workspace} workspaces={workspaces} />
+        </div>
+      )}
 
       {/* Main Navigation */}
-      <nav className="flex-1 space-y-1.5 p-4 overflow-y-auto overflow-x-hidden custom-scrollbar">
+      <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden custom-scrollbar">
         {navigation.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const isInbox = item.href === "/dashboard/inbox";
@@ -203,25 +176,15 @@ export function Sidebar({
                 href={item.href}
                 title={item.name}
                 className={cn(
-                  "group relative flex items-center justify-center rounded-2xl p-3 mb-2 transition-all duration-300",
+                  "relative flex items-center justify-center p-3 mb-1 mx-2 rounded-md transition-colors",
                   isActive
-                    ? "text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-[var(--surface)] text-[var(--brand)]"
+                    : "text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-[var(--ink)]"
                 )}
               >
-                {isActive && (
-                  <motion.div
-                    layoutId="sidebar-active"
-                    className="absolute inset-0 bg-primary/10 rounded-2xl border border-primary/20"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
-                <item.icon className={cn("h-6 w-6 relative z-10 transition-transform", isActive && "scale-110")} />
+                <item.icon className="h-5 w-5" />
                 {isInbox && unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[8px] font-black text-white shadow-lg shadow-destructive/50 z-20">
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </span>
+                  <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-[var(--danger)]" />
                 )}
               </Link>
             );
@@ -232,31 +195,26 @@ export function Sidebar({
               key={item.name}
               href={item.href}
               className={cn(
-                "group relative flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold mb-1.5 transition-colors",
+                "relative flex items-center justify-between px-4 py-2 mb-0.5 mx-2 rounded-md transition-colors font-medium",
                 isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-[var(--surface)] text-[var(--brand)]"
+                  : "text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-[var(--ink)]"
               )}
             >
               {isActive && (
-                <motion.div
-                  layoutId="sidebar-active"
-                  className="absolute inset-0 bg-primary/10 rounded-xl border border-primary/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
-                  initial={false}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                />
+                <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[var(--brand)] rounded-r-full -ml-2" />
               )}
-              <div className="flex items-center gap-3 relative z-10">
-                <item.icon className={cn("h-5 w-5 transition-transform group-hover:scale-110", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+              <div className="flex items-center gap-3">
+                <item.icon className={cn("h-4 w-4", isActive ? "text-[var(--brand)]" : "text-[var(--ink-3)]")} />
                 <span>{item.name}</span>
               </div>
-              <div className="flex items-center gap-1.5 relative z-10">
+              <div className="flex items-center gap-1.5">
                 {isInbox && unreadCount > 0 ? (
-                  <span className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-destructive px-1.5 text-[11px] font-black text-white shadow-lg shadow-destructive/40">
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--danger-soft)] px-1.5 text-[10px] font-bold text-[var(--danger)]">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 ) : item.badge ? (
-                  <span className="rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                  <span className="rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider bg-[var(--brand-soft)] text-[var(--brand)]">
                     {item.badge}
                   </span>
                 ) : null}
@@ -267,37 +225,31 @@ export function Sidebar({
       </nav>
 
       {/* Sidebar Footer */}
-      <div className="border-t border-border/40 p-4 space-y-3 bg-background/80 backdrop-blur-sm shrink-0">
-        <AnimatePresence>
-          {isSuperAdmin && !sidebarCollapsed && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-              <Link
-                href="/admin"
-                className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-bold text-destructive bg-destructive/10 hover:bg-destructive/20 transition-all border border-destructive/20 shadow-sm"
-              >
-                <ShieldAlert className="h-4 w-4 shrink-0" />
-                Platform Admin
-              </Link>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      <div className="border-t border-[var(--border)] p-3 space-y-2 shrink-0">
+        {isSuperAdmin && !sidebarCollapsed && (
+          <Link
+            href="/admin"
+            className="flex w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-[var(--danger)] hover:bg-[var(--danger-soft)] transition-colors"
+          >
+            <ShieldAlert className="h-4 w-4 shrink-0" />
+            Platform Admin
+          </Link>
+        )}
 
         {/* Theme Switcher */}
         {!sidebarCollapsed && mounted && (
-          <div className="flex items-center justify-between px-4 py-3 rounded-xl border border-border/60 bg-muted/30">
-            <span className="text-xs font-bold text-muted-foreground">Theme</span>
-            <div className="flex items-center gap-1 bg-background/80 rounded-lg p-1 border border-border/50">
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className="text-xs font-medium text-[var(--ink-3)]">Theme</span>
+            <div className="flex items-center gap-1 bg-[var(--surface)] rounded p-0.5 border border-[var(--border)]">
               <button
                 onClick={() => setTheme("light")}
-                className={cn("p-1.5 rounded-md transition-all", theme === "light" ? "bg-muted shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
-                title="Light mode"
+                className={cn("p-1 rounded transition-colors", theme === "light" ? "bg-white shadow-sm text-[var(--ink)]" : "text-[var(--ink-3)] hover:text-[var(--ink)]")}
               >
                 <Sun className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => setTheme("dark")}
-                className={cn("p-1.5 rounded-md transition-all", theme === "dark" ? "bg-muted shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
-                title="Dark mode"
+                className={cn("p-1 rounded transition-colors", theme === "dark" ? "bg-[var(--ink)] shadow-sm text-white" : "text-[var(--ink-3)] hover:text-[var(--ink)]")}
               >
                 <Moon className="h-3.5 w-3.5" />
               </button>
@@ -305,45 +257,33 @@ export function Sidebar({
           </div>
         )}
 
-        {sidebarCollapsed && mounted && (
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="rounded-2xl p-3 text-muted-foreground hover:bg-muted hover:text-foreground transition-all w-full flex justify-center mb-2"
-            title="Toggle theme"
-          >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </button>
-        )}
-
         {sidebarCollapsed ? (
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-2">
             <button
               onClick={() => setSidebarCollapsed(false)}
-              className="rounded-2xl p-3 text-muted-foreground hover:bg-muted hover:text-foreground transition-all w-full flex justify-center"
-              title="Expand Sidebar"
+              className="rounded-md p-2 text-[var(--ink-3)] hover:bg-[var(--surface)] hover:text-[var(--ink)] transition-colors w-full flex justify-center"
             >
-              <ChevronRight className="h-6 w-6" />
+              <ChevronRight className="h-5 w-5" />
             </button>
             <button
               onClick={handleSignOut}
-              title="Sign out"
-              className="rounded-2xl p-3 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all w-full flex justify-center"
+              className="rounded-md p-2 text-[var(--ink-3)] hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] transition-colors w-full flex justify-center"
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut className="h-4 w-4" />
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSidebarCollapsed(true)}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-3 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+              className="flex-1 flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-[var(--ink-3)] hover:bg-[var(--surface)] hover:text-[var(--ink)] transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
               Collapse
             </button>
             <button
               onClick={handleSignOut}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-3 text-xs font-bold text-destructive hover:bg-destructive hover:text-white transition-all shadow-sm"
+              className="flex-1 flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-[var(--ink-3)] hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] transition-colors"
             >
               <LogOut className="h-4 w-4" />
               Sign Out
@@ -351,6 +291,6 @@ export function Sidebar({
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
