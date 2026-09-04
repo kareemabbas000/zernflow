@@ -4,6 +4,8 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import { Search, Bell, Menu, User } from "lucide-react";
 import { useUIStore } from "@/lib/stores/ui-store";
+import { UserMenu } from "@/components/user-menu";
+import { NotificationDropdown } from "@/components/notification-dropdown";
 
 export function Topbar({ user }: { user?: { email?: string; id?: string } }) {
   const pathname = usePathname();
@@ -46,7 +48,10 @@ export function Topbar({ user }: { user?: { email?: string; id?: string } }) {
 
       <div className="flex items-center gap-4">
         {/* Global Command Palette Trigger */}
-        <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[var(--surface-2)] border border-[var(--border)] rounded-md text-sm text-[var(--ink-3)] hover:text-[var(--ink)] hover:border-[var(--border-strong)] transition-colors w-64 justify-between">
+        <button 
+          onClick={() => window.dispatchEvent(new Event("open-command-palette"))}
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[var(--surface-2)] border border-[var(--border)] rounded-md text-sm text-[var(--ink-3)] hover:text-[var(--ink)] hover:border-[var(--border-strong)] transition-colors w-64 justify-between"
+        >
           <div className="flex items-center gap-2">
             <Search className="h-4 w-4" />
             <span>Search...</span>
@@ -56,24 +61,18 @@ export function Topbar({ user }: { user?: { email?: string; id?: string } }) {
           </kbd>
         </button>
 
-        <button className="sm:hidden p-2 text-[var(--ink-2)] hover:text-[var(--ink)]">
+        <button 
+          onClick={() => window.dispatchEvent(new Event("open-command-palette"))}
+          className="sm:hidden p-2 text-[var(--ink-2)] hover:text-[var(--ink)]"
+        >
           <Search className="h-5 w-5" />
         </button>
 
         {/* Notifications */}
-        <button className="p-2 text-[var(--ink-2)] hover:text-[var(--ink)] relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-[var(--brand)] border-2 border-[var(--paper)]" />
-        </button>
+        <NotificationDropdown />
 
         {/* User Profile */}
-        <div className="h-8 w-8 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center overflow-hidden ml-2 cursor-pointer">
-          {user?.email ? (
-            <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${user.email}`} alt="User profile" className="h-full w-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
-          ) : (
-             <User className="h-4 w-4 text-[var(--ink-3)]" />
-          )}
-        </div>
+        <UserMenu user={user} />
       </div>
     </header>
   );

@@ -1,9 +1,11 @@
 import { getWorkspace } from "@/lib/workspace";
+import { getDashboardMetrics } from "@/lib/actions/dashboard";
 import { Users, MessageSquare, Zap, Activity, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import Link from "next/link";
 
 export default async function DashboardPage() {
   const { workspace } = await getWorkspace();
+  const metrics = await getDashboardMetrics();
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 font-sans">
@@ -26,7 +28,7 @@ export default async function DashboardPage() {
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-[var(--ink)]">12,482</span>
+            <span className="text-3xl font-bold text-[var(--ink)]">{metrics.contactsCount.toLocaleString()}</span>
             <span className="text-xs font-medium text-[var(--success)] flex items-center">
               <ArrowUpRight className="w-3 h-3 mr-0.5" /> 12%
             </span>
@@ -42,7 +44,7 @@ export default async function DashboardPage() {
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-[var(--ink)]">48,291</span>
+            <span className="text-3xl font-bold text-[var(--ink)]">{metrics.messagesCount.toLocaleString()}</span>
             <span className="text-xs font-medium text-[var(--success)] flex items-center">
               <ArrowUpRight className="w-3 h-3 mr-0.5" /> 8%
             </span>
@@ -58,7 +60,7 @@ export default async function DashboardPage() {
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-[var(--ink)]">14.2%</span>
+            <span className="text-3xl font-bold text-[var(--ink)]">{metrics.handoffRate}%</span>
             <span className="text-xs font-medium text-[var(--success)] flex items-center">
               <ArrowDownRight className="w-3 h-3 mr-0.5" /> 2.1%
             </span>
@@ -76,44 +78,32 @@ export default async function DashboardPage() {
             </Link>
           </div>
           <div className="bg-white rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-[var(--surface-2)] text-[var(--ink-3)] text-xs uppercase font-medium">
-                <tr>
-                  <th className="px-6 py-3">Name</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3">Last Edited</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)]">
-                <tr className="hover:bg-[var(--surface)] transition-colors">
-                  <td className="px-6 py-4 font-medium text-[var(--ink)]">WhatsApp Welcome Flow</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--success-soft)] text-[var(--success)] px-2 py-0.5 text-xs font-bold">
-                      Live
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-[var(--ink-2)]">2 hours ago</td>
-                </tr>
-                <tr className="hover:bg-[var(--surface)] transition-colors">
-                  <td className="px-6 py-4 font-medium text-[var(--ink)]">Instagram FAQ Auto-reply</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--success-soft)] text-[var(--success)] px-2 py-0.5 text-xs font-bold">
-                      Live
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-[var(--ink-2)]">Yesterday</td>
-                </tr>
-                <tr className="hover:bg-[var(--surface)] transition-colors">
-                  <td className="px-6 py-4 font-medium text-[var(--ink)]">VIP Lead Qualification</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-2)] text-[var(--ink-3)] border border-[var(--border)] px-2 py-0.5 text-xs font-bold">
-                      Draft
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-[var(--ink-2)]">Oct 24, 2024</td>
-                </tr>
-              </tbody>
-            </table>
+            {metrics.recentFlows.length === 0 ? (
+               <div className="p-8 text-center text-[var(--ink-3)] text-sm">No recent flows found.</div>
+            ) : (
+              <table className="w-full text-sm text-left">
+                <thead className="bg-[var(--surface-2)] text-[var(--ink-3)] text-xs uppercase font-medium">
+                  <tr>
+                    <th className="px-6 py-3">Name</th>
+                    <th className="px-6 py-3">Status</th>
+                    <th className="px-6 py-3">Last Edited</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border)]">
+                  {metrics.recentFlows.map((flow) => (
+                    <tr key={flow.id} className="hover:bg-[var(--surface)] transition-colors">
+                      <td className="px-6 py-4 font-medium text-[var(--ink)]">{flow.name}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-bold ${flow.status === 'published' ? 'bg-[var(--success-soft)] text-[var(--success)]' : 'bg-[var(--surface-2)] text-[var(--ink-3)] border border-[var(--border)]'}`}>
+                          {flow.status === 'published' ? 'Live' : 'Draft'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-[var(--ink-2)] capitalize">{flow.formatted_date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
@@ -121,42 +111,24 @@ export default async function DashboardPage() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-[var(--ink)]">Activity Feed</h2>
           <div className="bg-white rounded-xl border border-[var(--border)] shadow-sm p-5 space-y-6">
-            <div className="flex gap-4">
-              <div className="mt-0.5">
-                <div className="w-8 h-8 rounded-full bg-[var(--surface-2)] flex items-center justify-center border border-[var(--border)]">
-                  <Activity className="w-4 h-4 text-[var(--ink-3)]" />
+            {metrics.activityFeed.length === 0 ? (
+               <div className="text-center text-[var(--ink-3)] text-sm py-4">No recent activity.</div>
+            ) : (
+              metrics.activityFeed.map((feed) => (
+                <div key={feed.id} className="flex gap-4">
+                  <div className="mt-0.5">
+                    <div className="w-8 h-8 rounded-full bg-[var(--surface-2)] flex items-center justify-center border border-[var(--border)]">
+                      <Activity className="w-4 h-4 text-[var(--ink-3)]" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[var(--ink)]">{feed.title}</p>
+                    <p className="text-xs text-[var(--ink-2)] mt-1">{feed.message}</p>
+                    <p className="text-xs text-[var(--ink-3)] mt-2">{feed.time} by {feed.email}</p>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[var(--ink)]">New member joined</p>
-                <p className="text-xs text-[var(--ink-2)] mt-1">Jane Doe joined the workspace.</p>
-                <p className="text-xs text-[var(--ink-3)] mt-2">10 mins ago</p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="mt-0.5">
-                <div className="w-8 h-8 rounded-full bg-[var(--brand-soft)] flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-[var(--brand)]" />
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[var(--ink)]">Flow Published</p>
-                <p className="text-xs text-[var(--ink-2)] mt-1">"WhatsApp Welcome Flow" is now live.</p>
-                <p className="text-xs text-[var(--ink-3)] mt-2">2 hours ago</p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="mt-0.5">
-                <div className="w-8 h-8 rounded-full bg-[var(--surface-2)] flex items-center justify-center border border-[var(--border)]">
-                  <Users className="w-4 h-4 text-[var(--ink-3)]" />
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[var(--ink)]">Audience import completed</p>
-                <p className="text-xs text-[var(--ink-2)] mt-1">Imported 500 contacts successfully.</p>
-                <p className="text-xs text-[var(--ink-3)] mt-2">Yesterday</p>
-              </div>
-            </div>
+              ))
+            )}
           </div>
         </div>
       </div>

@@ -41,6 +41,7 @@ interface WorkspaceItem {
 }
 
 const navigation = [
+  { name: "Main", href: "/dashboard", icon: Zap },
   { name: "Live Inbox", href: "/dashboard/inbox", icon: MessageSquare, badge: "Live" },
   { name: "Flow Studio", href: "/dashboard/flows", icon: GitBranch },
   { name: "Contacts CRM", href: "/dashboard/contacts", icon: Users },
@@ -53,6 +54,7 @@ const navigation = [
 ];
 
 const mobileNavItems = [
+  { name: "Main", href: "/dashboard", icon: Zap },
   { name: "Inbox", href: "/dashboard/inbox", icon: MessageSquare },
   { name: "Flows", href: "/dashboard/flows", icon: GitBranch },
   { name: "Contacts", href: "/dashboard/contacts", icon: Users },
