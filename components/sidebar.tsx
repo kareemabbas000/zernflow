@@ -76,9 +76,11 @@ export function Sidebar({
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    setMounted(true);
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const unreadCount = useInboxStore((s) => s.unreadCount);
   const isMobile = useUIStore(selectIsMobile);

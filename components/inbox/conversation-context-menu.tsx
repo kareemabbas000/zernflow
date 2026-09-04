@@ -82,17 +82,17 @@ export function ConversationContextMenu({
     };
   }, [menuPosition, onClose]);
 
+  const openTimeRef = useRef(Date.now());
+  useEffect(() => {
+    openTimeRef.current = Date.now();
+  }, [menuPosition]);
+
   if (!mounted || !menuPosition || !conversation) return null;
 
   const isUnread = (conversation.unread_count || 0) > 0;
   const isAutomationPaused = conversation.is_automation_paused || false;
   const isMuted = conversation.is_muted || false;
   const contactName = conversation.contacts?.display_name || "Customer";
-
-  const openTimeRef = useRef(Date.now());
-  useEffect(() => {
-    openTimeRef.current = Date.now();
-  }, [menuPosition]);
 
   // Position calculation for desktop
   const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1000;

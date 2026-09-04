@@ -101,7 +101,7 @@ export function MarketingSocialProof() {
                 </div>
               </div>
               <p className="text-[var(--ink-2)] font-medium text-sm leading-relaxed mt-4">
-                "{testimonial.quote}"
+                &quot;{testimonial.quote}&quot;
               </p>
             </div>
           ))}

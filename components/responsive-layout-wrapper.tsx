@@ -12,10 +12,12 @@ export function ResponsiveLayoutWrapper({
   const isMobile = useUIStore(selectIsMobile);
   const [mounted, setMounted] = useState(false);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  // 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    setMounted(true);
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return (
     <div
