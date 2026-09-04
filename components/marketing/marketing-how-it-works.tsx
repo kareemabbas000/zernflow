@@ -4,7 +4,7 @@ import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Globe, Plus, Check, Play, Zap, ArrowRight } from "lucide-react"
 
-const MockupChannels = () => (
+export const MockupChannels = () => (
   <div className="w-full h-full bg-[var(--paper)] flex items-center justify-center p-8 relative">
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-lg">
       {[
@@ -43,7 +43,7 @@ const MockupChannels = () => (
   </div>
 );
 
-const MockupLogic = () => (
+export const MockupLogic = () => (
   <div className="w-full h-full bg-[var(--surface-2)] flex items-center justify-center p-8 relative overflow-hidden">
     <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
     
@@ -84,7 +84,7 @@ const MockupLogic = () => (
   </div>
 );
 
-const MockupDeploy = () => (
+export const MockupDeploy = () => (
   <div className="w-full h-full bg-[var(--paper)] flex flex-col items-center justify-center p-8 relative">
     <div className="absolute inset-0 bg-gradient-to-tr from-[var(--brand-soft)]/50 to-transparent pointer-events-none" />
     

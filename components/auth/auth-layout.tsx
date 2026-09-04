@@ -62,12 +62,34 @@ export function AuthLayout({ children, title, subtitle, testimonial }: AuthLayou
             </div>
           </div>
         ) : (
-          <div className="relative z-10 max-w-md bg-white/10 backdrop-blur-xl border border-white/20 p-10 rounded-[32px] shadow-2xl">
-             <div className="w-full aspect-video rounded-xl bg-black/50 mb-6 flex items-center justify-center border border-white/10">
-               <span className="text-white/50 font-display font-bold uppercase tracking-widest text-sm">Product Video</span>
-             </div>
-             <h3 className="text-xl font-bold text-white mb-2">Automate at the speed of thought.</h3>
-             <p className="text-white/70 font-medium">Join 500+ teams building the future of customer operations.</p>
+          <div className="relative z-10 max-w-md bg-white/10 backdrop-blur-xl border border-white/20 p-10 rounded-[32px] shadow-2xl overflow-hidden group">
+            {/* Aesthetic Graphic Background */}
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 pointer-events-none" />
+            
+            <div className="w-full aspect-video rounded-2xl bg-black/40 border border-white/10 mb-8 flex flex-col items-center justify-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
+              
+              {/* Floating nodes visual */}
+              <div className="flex gap-4 items-center absolute z-0 group-hover:scale-105 transition-transform duration-700 ease-in-out">
+                 <div className="w-12 h-12 rounded-xl bg-[var(--brand)]/20 border border-[var(--brand)]/50 flex items-center justify-center shadow-[0_0_15px_rgba(var(--brand-rgb),0.3)] animate-pulse">
+                   <div className="w-6 h-6 rounded-md bg-[var(--brand)]" />
+                 </div>
+                 <div className="w-8 h-0.5 bg-gradient-to-r from-[var(--brand)] to-[var(--lilac)] opacity-50" />
+                 <div className="w-12 h-12 rounded-xl bg-[var(--lilac)]/20 border border-[var(--lilac)]/50 flex items-center justify-center shadow-[0_0_15px_rgba(var(--lilac-rgb),0.3)]">
+                   <div className="w-6 h-6 rounded-md bg-[var(--lilac)]" />
+                 </div>
+              </div>
+              
+              <div className="relative z-20 text-center mt-12">
+                 <Sparkles className="w-6 h-6 text-white/50 mx-auto mb-2" />
+                 <span className="text-white font-display font-bold text-sm tracking-wider uppercase">Visual Studio</span>
+              </div>
+            </div>
+            
+            <h3 className="text-2xl font-black text-white mb-3">Automate at the speed of thought.</h3>
+            <p className="text-white/70 font-medium text-lg leading-relaxed">
+              Join 500+ teams building the future of customer operations with AI-native workflows.
+            </p>
           </div>
         )}
       </div>
