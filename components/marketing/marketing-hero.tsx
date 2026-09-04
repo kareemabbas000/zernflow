@@ -15,7 +15,7 @@ const floatingCards = [
     time: "Just now",
     color: "bg-[var(--surface)]",
     icon: "bg-[var(--success)]",
-    position: "left-[10%] top-[20%]",
+    position: "left-0 xl:-left-[5%] top-[20%]",
     delay: 0,
     yOffset: 20
   },
@@ -26,7 +26,7 @@ const floatingCards = [
     time: "2m ago",
     color: "bg-[var(--surface)]",
     icon: "bg-[var(--brand)]",
-    position: "right-[8%] top-[10%]",
+    position: "right-0 xl:-right-[5%] top-[10%]",
     delay: 1.2,
     yOffset: 25
   },
@@ -37,7 +37,7 @@ const floatingCards = [
     time: "5m ago",
     color: "bg-[var(--surface)]",
     icon: "bg-[var(--warning)]",
-    position: "left-[5%] bottom-[20%]",
+    position: "left-0 xl:-left-[8%] bottom-[20%]",
     delay: 0.8,
     yOffset: 15
   },
@@ -48,7 +48,7 @@ const floatingCards = [
     time: "10m ago",
     color: "bg-[var(--surface)]",
     icon: "bg-[var(--lilac)]",
-    position: "right-[5%] bottom-[25%]",
+    position: "right-0 xl:-right-[8%] bottom-[25%]",
     delay: 2,
     yOffset: 30
   }
