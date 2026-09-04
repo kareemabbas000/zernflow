@@ -276,8 +276,6 @@ export function BroadcastsView({
                     </p>
                   </div>
 
-                  </div>
-
                   <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground relative z-10">
                     <span className="flex items-center gap-1.5 font-medium">
                       <Users className="h-4 w-4 text-primary" />

@@ -299,7 +299,7 @@ export default function LandingPage() {
                 </div>
              </div>
           </motion.div>
-        </div>
+        </motion.div>
       </section>
 
       {/* ── Integrations Marquee ────────────────────────────────────── */}
