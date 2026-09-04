@@ -6,16 +6,50 @@ import { AuthLayout } from "@/components/auth/auth-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
+
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const router = useRouter()
+  const supabase = createClient()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate register
-    setTimeout(() => {
-      window.location.href = "/onboarding"
-    }, 1000)
+    setError(null)
+    
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+    const firstName = formData.get("firstName") as string
+    const lastName = formData.get("lastName") as string
+
+    try {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+          },
+        },
+      })
+
+      if (signUpError) {
+        setError(signUpError.message)
+        setIsLoading(false)
+        return
+      }
+
+      router.push("/onboarding")
+      router.refresh()
+    } catch (err) {
+      setError("An unexpected error occurred.")
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -55,24 +89,29 @@ export default function RegisterPage() {
           <div className="grid grid-cols-2 gap-4">
              <div className="space-y-1">
               <label className="text-sm font-bold text-[var(--ink)]">First Name</label>
-              <Input type="text" placeholder="Jane" required className="h-12 rounded-xl bg-[var(--surface)] border-[var(--border)]" />
+              <Input name="firstName" type="text" placeholder="Jane" required className="h-12 rounded-xl bg-[var(--surface)] border-[var(--border)]" />
             </div>
             <div className="space-y-1">
               <label className="text-sm font-bold text-[var(--ink)]">Last Name</label>
-              <Input type="text" placeholder="Doe" required className="h-12 rounded-xl bg-[var(--surface)] border-[var(--border)]" />
+              <Input name="lastName" type="text" placeholder="Doe" required className="h-12 rounded-xl bg-[var(--surface)] border-[var(--border)]" />
             </div>
           </div>
           <div className="space-y-1">
             <label className="text-sm font-bold text-[var(--ink)]">Work Email</label>
-            <Input type="email" placeholder="jane@company.com" required className="h-12 rounded-xl bg-[var(--surface)] border-[var(--border)]" />
+            <Input name="email" type="email" placeholder="jane@company.com" required className="h-12 rounded-xl bg-[var(--surface)] border-[var(--border)]" />
           </div>
           <div className="space-y-1">
             <label className="text-sm font-bold text-[var(--ink)]">Password</label>
-            <Input type="password" placeholder="••••••••" required className="h-12 rounded-xl bg-[var(--surface)] border-[var(--border)]" />
+            <Input name="password" type="password" placeholder="••••••••" required className="h-12 rounded-xl bg-[var(--surface)] border-[var(--border)]" />
           </div>
           <Button type="submit" disabled={isLoading} className="w-full h-12 rounded-xl font-bold bg-[var(--ink)] text-white hover:bg-black mt-2">
             {isLoading ? "Creating account..." : "Create account"}
           </Button>
+          {error && (
+            <p className="text-sm font-medium text-[var(--danger)] text-center mt-2">
+              {error}
+            </p>
+          )}
         </form>
 
         <p className="text-center text-xs font-medium text-[var(--ink-3)] leading-relaxed mt-4">

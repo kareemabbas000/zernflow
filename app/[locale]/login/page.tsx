@@ -2,6 +2,8 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import { AuthLayout } from "@/components/auth/auth-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,14 +11,37 @@ import { Check } from "lucide-react"
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const router = useRouter()
+  const supabase = createClient()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate login
-    setTimeout(() => {
-      window.location.href = "/dashboard"
-    }, 1000)
+    setError(null)
+    
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        setError(signInError.message)
+        setIsLoading(false)
+        return
+      }
+
+      router.push("/dashboard")
+      router.refresh()
+    } catch (err) {
+      setError("An unexpected error occurred.")
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -60,7 +85,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
             <label className="text-sm font-bold text-[var(--ink)]">Email</label>
-            <Input type="email" placeholder="jane@company.com" required className="h-12 rounded-xl bg-[var(--surface)] border-[var(--border)]" />
+            <Input name="email" type="email" placeholder="jane@company.com" required className="h-12 rounded-xl bg-[var(--surface)] border-[var(--border)]" />
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
@@ -69,11 +94,16 @@ export default function LoginPage() {
                 Forgot password?
               </Link>
             </div>
-            <Input type="password" placeholder="••••••••" required className="h-12 rounded-xl bg-[var(--surface)] border-[var(--border)]" />
+            <Input name="password" type="password" placeholder="••••••••" required className="h-12 rounded-xl bg-[var(--surface)] border-[var(--border)]" />
           </div>
           <Button type="submit" disabled={isLoading} className="w-full h-12 rounded-xl font-bold bg-[var(--ink)] text-white hover:bg-black mt-2">
             {isLoading ? "Signing in..." : "Sign in"}
           </Button>
+          {error && (
+            <p className="text-sm font-medium text-[var(--danger)] text-center mt-2">
+              {error}
+            </p>
+          )}
         </form>
 
         <p className="text-center text-sm font-medium text-[var(--ink-2)] mt-8">
