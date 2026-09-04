@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { AlertTriangle, RefreshCcw, Home } from "lucide-react";
 import Link from "next/link";
+import { MarketingNav } from "@/components/marketing/marketing-nav";
+import { MarketingFooter } from "@/components/marketing/marketing-footer";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, RotateCcw } from "lucide-react";
 
-export default function GlobalError({
+export default function ErrorPage({
   error,
   reset,
 }: {
@@ -12,53 +15,39 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service like Sentry
-    console.error("Global Error Caught:", error);
+    // Log the error to an error reporting service
+    console.error(error);
   }, [error]);
 
   return (
-    <div className="flex min-h-[400px] w-full flex-col items-center justify-center p-8 text-center">
-      <div className="rounded-full bg-red-100 p-4 dark:bg-red-900/30 mb-6">
-        <AlertTriangle className="h-10 w-10 text-red-600 dark:text-red-500" />
-      </div>
+    <div className="min-h-screen flex flex-col bg-[var(--paper)] text-[var(--ink)] font-sans selection:bg-[var(--brand)]/30">
+      <MarketingNav />
       
-      <h2 className="mb-2 text-2xl font-bold tracking-tight">Something went wrong!</h2>
-      
-      <p className="mb-8 max-w-md text-sm text-muted-foreground">
-        We encountered an unexpected error while loading this page. Our team has been notified. 
-        You can try reloading the page or return to the dashboard.
-      </p>
-
-      <div className="flex flex-col sm:flex-row items-center gap-4">
-        <button
-          onClick={() => reset()}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
-          <RefreshCcw className="h-4 w-4" />
-          Try Again
-        </button>
-        
-        <Link 
-          href="/dashboard"
-          className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-5 py-2.5 text-sm font-semibold hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          <Home className="h-4 w-4" />
-          Go to Dashboard
-        </Link>
-      </div>
-
-      {process.env.NODE_ENV === "development" && (
-        <div className="mt-12 w-full max-w-2xl text-left">
-          <div className="rounded-lg bg-muted p-4">
-            <p className="font-mono text-xs text-red-500 mb-2">Development Details:</p>
-            <pre className="overflow-auto text-[10px] text-muted-foreground">
-              {error.message}
-              {"\n\n"}
-              {error.stack}
-            </pre>
+      <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md mx-auto">
+          <div className="w-24 h-24 bg-[var(--danger)]/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-[var(--danger)]/20">
+            <AlertTriangle className="w-10 h-10 text-[var(--danger)]" />
+          </div>
+          <h1 className="font-display text-4xl font-black tracking-tight text-[var(--ink)] mb-4">
+            Something went wrong.
+          </h1>
+          <p className="text-[var(--ink-2)] font-medium mb-8 leading-relaxed">
+            We've encountered an unexpected error. Our team has been notified. 
+          </p>
+          <div className="flex items-center justify-center gap-4">
+            <Button onClick={() => reset()} size="lg" className="rounded-full font-bold bg-[var(--ink)] text-white hover:bg-black h-14 px-8">
+              <RotateCcw className="w-5 h-5 mr-2" /> Try again
+            </Button>
+            <Button asChild size="lg" variant="outline" className="rounded-full font-bold h-14 px-8 border-[var(--border-strong)]">
+              <Link href="/">
+                Go home
+              </Link>
+            </Button>
           </div>
         </div>
-      )}
+      </main>
+
+      <MarketingFooter />
     </div>
   );
 }
