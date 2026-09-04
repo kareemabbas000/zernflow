@@ -83,10 +83,6 @@ export function MarketingNav() {
                     FlowStage
                   </span>
                 </Link>
-                <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)} className="-m-2.5">
-                  <span className="sr-only">Close menu</span>
-                  <X className="h-6 w-6" aria-hidden="true" />
-                </Button>
               </div>
               <div className="mt-6 flow-root">
                 <div className="-my-6 divide-y divide-[var(--border)]">

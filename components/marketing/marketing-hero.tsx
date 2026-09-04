@@ -26,7 +26,7 @@ const floatingCards = [
     time: "2m ago",
     color: "bg-white",
     icon: "bg-[var(--brand)]",
-    position: "right-0 xl:-right-[5%] top-[5%]",
+    position: "right-[8%] top-[10%]",
     delay: 1.2,
     yOffset: 25
   },
