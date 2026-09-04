@@ -15,17 +15,25 @@ import { MarketingFooter } from "@/components/marketing/marketing-footer";
 export const dynamic = "force-dynamic";
 
 export default async function LandingPage() {
-  const serviceClient = await createServiceClient();
-  const { data: settingsRow } = await serviceClient
-    .from("platform_settings")
-    .select("value")
-    .eq("key", "marketing_settings")
-    .maybeSingle();
-
-  const marketingSettings = (settingsRow?.value as any) || {
+  let marketingSettings = {
     social_proof_enabled: true,
     social_proof_content: null // will fall back to default if null
   };
+
+  try {
+    const serviceClient = await createServiceClient();
+    const { data: settingsRow, error } = await serviceClient
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "marketing_settings")
+      .maybeSingle();
+
+    if (!error && settingsRow?.value) {
+      marketingSettings = settingsRow.value as any;
+    }
+  } catch (err) {
+    console.error("Failed to load marketing settings, falling back to defaults.", err);
+  }
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text-primary)] font-sans selection:bg-[var(--brand)]/30">

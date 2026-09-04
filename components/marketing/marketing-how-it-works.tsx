@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Globe, Plus, Check, Zap, Play, Workflow } from "lucide-react"
+import { Globe, Plus, Check, Zap, Play, Workflow, Cpu } from "lucide-react"
 
 export const MockupChannels = () => (
   <div className="w-full h-full bg-[var(--surface-inset)] flex items-center justify-center p-4 md:p-8 relative">
