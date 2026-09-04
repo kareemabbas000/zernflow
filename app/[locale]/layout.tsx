@@ -1,11 +1,23 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Gabarito, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600"],
   variable: "--font-sans",
+});
+
+const gabarito = Gabarito({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  variable: "--font-display",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["500"],
+  variable: "--font-mono",
 });
 
 import { NextIntlClientProvider } from "next-intl";
@@ -61,7 +73,7 @@ export default async function RootLayout({
   const dir = locale === "ar" ? "rtl" : "ltr";
 
   return (
-    <html lang={locale} dir={dir} className={plusJakarta.variable} suppressHydrationWarning>
+    <html lang={locale} dir={dir} className={`${plusJakarta.variable} ${gabarito.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body className={`${plusJakarta.className} font-sans min-h-screen bg-background text-foreground antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <NextIntlClientProvider locale={locale} messages={messages}>
