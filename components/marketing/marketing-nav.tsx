@@ -35,7 +35,7 @@ export function MarketingNav() {
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 lg:px-8">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 lg:flex-1">
           <Link href="/" className="flex items-center gap-2 group">
             <BrandLogo size="md" showText={false} />
             <span className="font-display text-xl font-bold tracking-tight text-[var(--ink)] group-hover:text-[var(--brand)] transition-colors">

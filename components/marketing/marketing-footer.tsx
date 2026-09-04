@@ -8,7 +8,7 @@ export function MarketingFooter() {
   return (
     <footer className="bg-[var(--ink)] text-white py-20">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-12 lg:gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-12 lg:gap-8">
           {/* Brand Col */}
           <div className="col-span-2 md:col-span-1 flex flex-col gap-6">
             <Link href="/" className="flex items-center gap-2 group">
@@ -36,23 +36,6 @@ export function MarketingFooter() {
             </Link>
             <Link href="/solutions/dev-bottleneck" className="text-[var(--ink-3)] text-sm font-medium hover:text-[var(--lime)] transition-colors">
               Waiting on engineering
-            </Link>
-          </div>
-
-          {/* Product */}
-          <div className="flex flex-col gap-4">
-            <h4 className="font-bold text-white mb-2">Product</h4>
-            <Link href="/pricing" className="text-[var(--ink-3)] text-sm font-medium hover:text-white transition-colors">
-              Pricing
-            </Link>
-            <Link href="/integrations" className="text-[var(--ink-3)] text-sm font-medium hover:text-white transition-colors">
-              Integrations
-            </Link>
-            <Link href="/templates" className="text-[var(--ink-3)] text-sm font-medium hover:text-white transition-colors">
-              Templates
-            </Link>
-            <Link href="/changelog" className="text-[var(--ink-3)] text-sm font-medium hover:text-white transition-colors">
-              Changelog
             </Link>
           </div>
 

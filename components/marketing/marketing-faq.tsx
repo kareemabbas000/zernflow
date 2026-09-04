@@ -6,24 +6,24 @@ import { ChevronDown } from "lucide-react"
 
 const faqs = [
   {
-    question: "Do I need to know how to code to build automations?",
-    answer: "Not at all. If you can draw a flow chart on a whiteboard, you can build automations in FlowStage. We handle all the complex API connections under the hood."
+    question: "Can the AI seamlessly hand off to a human agent?",
+    answer: "Absolutely. You can add 'Human Handoff' nodes anywhere in your flow. If the AI detects frustration, complex intent, or an explicit request for a human, it immediately routes the conversation to your inbox and notifies the assigned agent."
   },
   {
-    question: "How long does it take to get set up?",
-    answer: "You can connect your first channel and publish a basic flow in under 5 minutes. But taking a coffee break first is highly recommended."
+    question: "Which AI models do you support?",
+    answer: "We support industry-leading models including OpenAI's GPT-4o, Anthropic's Claude 3.5 Sonnet, and Gemini 1.5 Pro. You can select the best model for your specific node based on speed, reasoning requirements, and cost."
   },
   {
-    question: "What if the AI hallucinates or gives the wrong answer?",
-    answer: "You are always in control. You can set the AI to 'Draft only' mode, where a human agent approves every message, or restrict its knowledge base strictly to your help docs so it doesn't try to sell your customers a bridge."
+    question: "How do I connect my existing Shopify or CRM?",
+    answer: "FlowStage includes native, one-click integrations for Shopify, Salesforce, HubSpot, and Stripe. You can pull real-time order data, update lead statuses, or trigger refund flows directly from the visual canvas without writing any code."
   },
   {
-    question: "Can I bring my whole support team?",
-    answer: "Yes. Our Professional and Enterprise plans include team seats, collision detection (so two agents don't reply to the same message), and internal notes."
+    question: "Is there a limit on conversations per month?",
+    answer: "Our starter plans include a generous allowance of monthly active conversations (MACs). Once you exceed that limit, we charge a low, flat rate per additional conversation. You'll never be hard-capped or cut off."
   },
   {
-    question: "Is there a limit on how many flows I can build?",
-    answer: "Nope. Build as many flows as you need. We only price based on team seats and message volume."
+    question: "How does collision detection work?",
+    answer: "When multiple agents are working in the live inbox, FlowStage shows real-time typing indicators and locks conversations that are actively being handled. This ensures two agents never reply to the same customer simultaneously."
   }
 ]
 
