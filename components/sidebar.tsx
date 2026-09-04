@@ -41,7 +41,7 @@ interface WorkspaceItem {
 }
 
 const navigation = [
-  { name: "Main", href: "/dashboard", icon: Zap },
+  { name: "Home", href: "/dashboard", icon: Zap },
   { name: "Live Inbox", href: "/dashboard/inbox", icon: MessageSquare, badge: "Live" },
   { name: "Flow Studio", href: "/dashboard/flows", icon: GitBranch },
   { name: "Contacts CRM", href: "/dashboard/contacts", icon: Users },
@@ -54,7 +54,7 @@ const navigation = [
 ];
 
 const mobileNavItems = [
-  { name: "Main", href: "/dashboard", icon: Zap },
+  { name: "Home", href: "/dashboard", icon: Zap },
   { name: "Inbox", href: "/dashboard/inbox", icon: MessageSquare },
   { name: "Flows", href: "/dashboard/flows", icon: GitBranch },
   { name: "Contacts", href: "/dashboard/contacts", icon: Users },
@@ -113,7 +113,7 @@ export function Sidebar({
     return (
       <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-[var(--border)] bg-[var(--paper)] safe-bottom">
         {mobileNavItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
           const isInbox = item.href === "/dashboard/inbox";
 
           return (
@@ -170,7 +170,7 @@ export function Sidebar({
       {/* Main Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden custom-scrollbar">
         {navigation.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
           const isInbox = item.href === "/dashboard/inbox";
 
           if (sidebarCollapsed) {
