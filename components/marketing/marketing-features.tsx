@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { motion } from "framer-motion"
-import { Workflow, Cpu, Globe, BarChart3, MessageSquare, Zap, Sparkles, TrendingUp, Users, CheckCircle2 } from "lucide-react"
+import { Workflow, Cpu, Globe, BarChart3, MessageSquare, Zap, Sparkles, TrendingUp, Users, CheckCircle2, Plus } from "lucide-react"
 
 // Authentic Social Icons
 const WhatsAppIcon = ({ className }: { className?: string }) => (

@@ -15,9 +15,9 @@ import { MarketingFooter } from "@/components/marketing/marketing-footer";
 export const dynamic = "force-dynamic";
 
 export default async function LandingPage() {
-  let marketingSettings = {
+  let marketingSettings: { social_proof_enabled: boolean; social_proof_content: any[] | undefined } = {
     social_proof_enabled: true,
-    social_proof_content: null // will fall back to default if null
+    social_proof_content: undefined // will fall back to default if undefined
   };
 
   try {
