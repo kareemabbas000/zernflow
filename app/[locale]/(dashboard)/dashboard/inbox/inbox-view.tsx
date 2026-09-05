@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { useSearchParams } from "next/navigation";
 import { Sparkles, PanelRightClose, PanelRightOpen, MessageSquare } from "lucide-react";
 import { ConversationList } from "@/components/inbox/conversation-list";
@@ -129,12 +130,12 @@ export function InboxView({
             {selectedId ? (
               <div className="flex-1 flex flex-col relative w-full h-full">
                 {effectiveMessages ? (
-                  <MessageThread
+                  <ErrorBoundary fallback={<div className="flex h-full items-center justify-center p-4"><div className="bg-red-50 text-red-500 p-4 rounded-xl border border-red-200">MessageThread crashed.</div></div>}><MessageThread
                     conversation={selectedConversation}
                     messages={effectiveMessages}
                     onOpenProfile={() => setContactPanelOpen(!contactPanelOpen)}
                     isProfileOpen={contactPanelOpen}
-                  />
+                  /></ErrorBoundary>
                 ) : (
                   <div className="flex h-full items-center justify-center bg-[var(--paper)]">
                     <div className="flex flex-col items-center gap-4">
@@ -169,12 +170,12 @@ export function InboxView({
                           isMobile ? "w-full sm:w-[380px]" : "w-[380px]"
                         )}
                       >
-                        <ContactPanel
+                        <ErrorBoundary fallback={<div className="flex h-full items-center justify-center p-4"><div className="bg-red-50 text-red-500 p-4 rounded-xl border border-red-200">ContactPanel crashed.</div></div>}><ContactPanel
                           contactId={selectedConversation.contacts?.id!}
                           workspaceId={workspaceId}
                           onClose={() => setContactPanelOpen(false)}
                           isMobile={isMobile}
-                        />
+                        /></ErrorBoundary>
                       </motion.div>
                     </>
                   )}
