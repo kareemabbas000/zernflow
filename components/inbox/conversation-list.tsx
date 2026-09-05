@@ -79,6 +79,8 @@ export function ConversationList({
   const selectedConversations = useInboxStore((s) => s.selectedConversations);
   const toggleSelection = useInboxStore((s) => s.toggleSelection);
   const clearSelection = useInboxStore((s) => s.clearSelection);
+  const isSoundMuted = useInboxStore((s) => s.isSoundMuted);
+  const isToastsMuted = useInboxStore((s) => s.isToastsMuted);
 
   const executeBulkAction = async (action: string) => {
     try {
