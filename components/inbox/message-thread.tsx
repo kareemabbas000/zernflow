@@ -162,6 +162,7 @@ function MessageBubble({
   onReply?: (msg: Message) => void;
   contactName?: string | null;
   avatarUrl?: string | null;
+  channelAvatar?: string | null;
   platform?: Platform | null;
   isSequentialNext?: boolean;
   isSequentialPrev?: boolean;
@@ -337,9 +338,17 @@ function MessageBubble({
       )}
 
       {!isInbound && !isBot && (
-        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold mb-1">
-          You
-        </div>
+        channelAvatar ? (
+          <img
+            src={channelAvatar}
+            alt="Channel"
+            className="h-6 w-6 flex-shrink-0 rounded-full object-cover mb-1 border border-[var(--border)] shadow-sm"
+          />
+        ) : (
+          <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold mb-1 shadow-sm">
+            You
+          </div>
+        )
       )}
       {!isInbound && isBot && (
         <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary mb-1">
@@ -1409,6 +1418,7 @@ export function MessageThread({
                   onReply={setReplyingTo}
                   contactName={contactName}
                   avatarUrl={conversation.contacts?.avatar_url}
+                  channelAvatar={conversation?.channels?.profile_picture}
                   platform={conversation.platform as Platform}
                   isSequentialNext={isSequentialNext}
                   isSequentialPrev={isSequentialPrev}
