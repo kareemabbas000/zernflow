@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MessageSquare, X, Archive, Clock, CheckCircle, RotateCcw, Loader2, RefreshCw, ChevronDown, Sparkles, MoreVertical, BellOff, BotOff, Trash2, Mail, MailOpen } from "lucide-react";
+import { Search, MessageSquare, X, Archive, Clock, CheckCircle, RotateCcw, Loader2, RefreshCw, ChevronDown, Sparkles, MoreVertical, BellOff, BotOff, Trash2, Mail, MailOpen, Volume2, VolumeX, Bell } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useInboxStore,
@@ -386,17 +386,17 @@ export function ConversationList({
                   type="button"
                   onClick={() => useInboxStore.getState().toggleSoundMute()}
                   className="p-1 rounded-md transition-colors text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)]"
-                  title={useInboxStore((s) => s.isSoundMuted) ? "Unmute Sound" : "Mute Sound"}
+                  title={isSoundMuted ? "Unmute Sound" : "Mute Sound"}
                 >
-                  {useInboxStore((s) => s.isSoundMuted) ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+                  {isSoundMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
                 </button>
                 <button
                   type="button"
                   onClick={() => useInboxStore.getState().toggleToastsMute()}
                   className="p-1 rounded-md transition-colors text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)]"
-                  title={useInboxStore((s) => s.isToastsMuted) ? "Unmute Popups" : "Mute Popups"}
+                  title={isToastsMuted ? "Unmute Popups" : "Mute Popups"}
                 >
-                  {useInboxStore((s) => s.isToastsMuted) ? <BellOff className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
+                  {isToastsMuted ? <BellOff className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
                 </button>
               </div>
               <button
