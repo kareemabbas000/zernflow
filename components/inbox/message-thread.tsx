@@ -849,6 +849,8 @@ export function MessageThread({
   );
 
   const [userScrolled, setUserScrolled] = useState(false);
+  const userScrolledRef = useRef(userScrolled);
+  useEffect(() => { userScrolledRef.current = userScrolled; }, [userScrolled]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -860,17 +862,19 @@ export function MessageThread({
       }
     };
 
+    // Only scroll instantly when the conversation changes
     scrollToBottom("instant");
 
     const observer = new ResizeObserver(() => {
-      if (!userScrolled) {
+      // Use the ref to avoid stale closures and infinite re-renders
+      if (!userScrolledRef.current) {
         scrollToBottom("smooth");
       }
     });
 
     observer.observe(container);
     return () => observer.disconnect();
-  }, [conversation?.id, messages.length, userScrolled]);
+  }, [conversation?.id]); // ONLY re-run when conversation changes
 
   async function handleSend() {
     if (
