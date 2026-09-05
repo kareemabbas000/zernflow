@@ -253,7 +253,17 @@ export const useInboxStore = create<InboxState>()(
         
         if (convIndex !== -1) {
           const conv = state.conversations[convIndex];
-          const newPreview = message.content?.text || (message.content?.attachments ? "Attachment" : "New message");
+          let newPreview = message.text || "";
+          if (!newPreview && message.attachments) {
+            const firstAtt = Array.isArray(message.attachments) ? message.attachments[0] : null;
+            newPreview = (firstAtt as any)?.isVoiceNote ? "🎤 Voice Note"
+              : (firstAtt as any)?.type === "image" ? "📸 Photo"
+              : (firstAtt as any)?.type === "video" ? "🎬 Video"
+              : "📎 Attachment";
+          }
+          newPreview = newPreview || "New message";
+          if (message.is_internal) newPreview = `[Internal Note] ${newPreview}`;
+
           const newTime = message.created_at;
           
           // Only update if the new message is actually newer than what we have
@@ -303,12 +313,50 @@ export const useInboxStore = create<InboxState>()(
     },
 
     setMessages: (conversationId, messages) => {
-      set((state) => ({
-        messagesByConversation: {
-          ...state.messagesByConversation,
-          [conversationId]: messages,
-        },
-      }));
+      set((state) => {
+        // Automatically update the conversation preview if the latest message is newer
+        let updatedConversations = state.conversations;
+        if (messages.length > 0) {
+          const latestMsg = messages[messages.length - 1];
+          const convIndex = state.conversations.findIndex((c) => c.id === conversationId);
+          if (convIndex !== -1) {
+            const conv = state.conversations[convIndex];
+            if (!conv.last_message_at || new Date(latestMsg.created_at).getTime() >= new Date(conv.last_message_at).getTime()) {
+              let newPreview = latestMsg.text || "";
+              if (!newPreview && latestMsg.attachments) {
+                const firstAtt = Array.isArray(latestMsg.attachments) ? latestMsg.attachments[0] : null;
+                newPreview = (firstAtt as any)?.isVoiceNote ? "🎤 Voice Note"
+                  : (firstAtt as any)?.type === "image" ? "📸 Photo"
+                  : (firstAtt as any)?.type === "video" ? "🎬 Video"
+                  : "📎 Attachment";
+              }
+              newPreview = newPreview || "New message";
+              if (latestMsg.is_internal) newPreview = `[Internal Note] ${newPreview}`;
+
+              const updatedConv = {
+                ...conv,
+                last_message_preview: newPreview,
+                last_message_at: latestMsg.created_at,
+              };
+              const nextList = [...state.conversations];
+              nextList[convIndex] = updatedConv;
+              updatedConversations = nextList.sort((a, b) => {
+                const dateA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+                const dateB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+                return dateB - dateA;
+              });
+            }
+          }
+        }
+
+        return {
+          messagesByConversation: {
+            ...state.messagesByConversation,
+            [conversationId]: messages,
+          },
+          conversations: updatedConversations,
+        };
+      });
     },
 
     // ── Optimistic Operations ───────────────────────────────────────
