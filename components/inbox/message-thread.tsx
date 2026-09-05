@@ -352,9 +352,13 @@ function MessageBubble({
 export function MessageThread({
   conversation,
   messages: initialMessages,
+  isProfileOpen,
+  onOpenProfile,
 }: {
   conversation: Conversation | null;
   messages: Message[];
+  isProfileOpen?: boolean;
+  onOpenProfile?: () => void;
 }) {
   const router = useRouter();
 
@@ -1289,6 +1293,22 @@ export function MessageThread({
             </button>
           )}
 
+          {/* Contact Profile Toggle */}
+          {onOpenProfile && (
+            <button
+              onClick={onOpenProfile}
+              className={cn(
+                "p-1.5 rounded-md transition-colors",
+                isProfileOpen 
+                  ? "bg-primary/10 text-primary" 
+                  : "text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)]"
+              )}
+              title="Contact Profile"
+            >
+              <Info className="h-4 w-4" />
+            </button>
+          )}
+
           {/* More Actions Dropdown */}
           <div className="relative">
             <button
@@ -1401,7 +1421,7 @@ export function MessageThread({
       {/* Messages Scroll Area */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto px-4 md:px-8 pt-6 pb-[180px] scroll-smooth"
+        className="flex-1 overflow-y-auto px-4 md:px-8 pt-6 pb-4 scroll-smooth"
       >
         <div className="flex flex-col gap-2 min-h-full justify-end mx-auto max-w-4xl space-y-0.5 px-2 md:px-6">
           {messages.map((message, i) => {
@@ -1558,10 +1578,9 @@ export function MessageThread({
         </div>
       )}
 
-      {/* Floating Composer */}
-      <div className="absolute bottom-6 left-6 right-6 z-30 pointer-events-none">
-        {/* Container for composer */}
-        <div className="mx-auto max-w-4xl relative pointer-events-auto bg-[var(--surface-2)]/80 backdrop-blur-3xl p-3 md:p-4 rounded-[2.5rem] shadow-2xl border border-[var(--border)] ring-1 ring-black/5">
+      {/* Bottom Composer */}
+      <div className="border-t border-[var(--border)] bg-[var(--surface)] shrink-0 z-30">
+        <div className="mx-auto max-w-4xl p-3 md:p-4">
           {/* Attachment previews */}
           {attachments.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-2">

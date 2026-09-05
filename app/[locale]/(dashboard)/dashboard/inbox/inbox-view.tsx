@@ -1,17 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import {
-  MessageSquare,
-  User,
-  Volume2,
-  VolumeX,
-  Bell,
-  ArrowLeft,
-  Sparkles,
-} from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { Sparkles, PanelRightClose, PanelRightOpen, MessageSquare } from "lucide-react";
 import { ConversationList } from "@/components/inbox/conversation-list";
 import { MessageThread } from "@/components/inbox/message-thread";
 import { ContactPanel } from "@/components/inbox/contact-panel";
@@ -22,7 +13,7 @@ import { useGlobalLiveSync, useRealtime } from "@/components/providers/global-li
 import { useConversationMessages } from "@/lib/hooks/use-inbox-queries";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/lib/types/database";
-import { motion, AnimatePresence, Variants } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export type ChannelInfo = {
   id: string;
@@ -51,8 +42,7 @@ export function InboxView({
   const searchParams = useSearchParams();
   const targetConvId = searchParams.get("conversationId");
 
-  const { soundEnabled, setSoundEnabled, markConversationAsRead } = useGlobalLiveSync();
-  const { connectionStatus } = useRealtime();
+  const { markConversationAsRead } = useGlobalLiveSync();
 
   const conversations = useInboxStore((s) => s.conversations);
   const selectedId = useInboxStore((s) => s.selectedConversationId);
@@ -67,7 +57,7 @@ export function InboxView({
   const contactPanelOpen = useUIStore((s) => s.contactPanelOpen);
   const setContactPanelOpen = useUIStore((s) => s.setContactPanelOpen);
 
-  const { data: queryMessages, isLoading: messagesLoading } = useConversationMessages(selectedId);
+  const { data: queryMessages } = useConversationMessages(selectedId);
 
   useEffect(() => {
     if (selectedId && queryMessages) {
@@ -89,8 +79,11 @@ export function InboxView({
       if (conv.unread_count > 0) {
         markConversationAsRead(conv.id);
       }
+      if (isMobile) {
+        setContactPanelOpen(false); // Close panel on mobile when selecting new conversation
+      }
     },
-    [selectConversation, markConversationAsRead]
+    [selectConversation, markConversationAsRead, isMobile, setContactPanelOpen]
   );
 
   useEffect(() => {
@@ -102,127 +95,115 @@ export function InboxView({
     }
   }, [targetConvId, displayConversations, selectedId, handleSelectConversation]);
 
-  function handleEnableNotifications() {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      Notification.requestPermission().then((perm) => {
-        if (perm === "granted") {
-          soundManager.showDesktopNotification("Notifications Enabled", {
-            body: "You will receive instant alerts when new messages arrive.",
-          });
-        }
-      });
-    }
-  }
-
   const effectiveMessages = queryMessages || storeMessages;
 
-  const slideVariants: Variants = {
-    initial: { opacity: 0, scale: 0.95, y: 20 },
-    animate: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 30 } },
-    exit: { opacity: 0, scale: 0.95, y: 20, transition: { duration: 0.2 } },
-  };
-
   return (
-    <div className="relative flex h-[calc(100vh-70px)] w-full min-w-0 overflow-hidden bg-[var(--surface-2)] p-2 sm:p-4 gap-4 font-sans">
+    <div className="flex h-[calc(100vh-64px)] w-full bg-[var(--surface-2)] overflow-hidden font-sans">
       
-      {/* 1. LEFT PANEL: Conversation List (Floating Island) */}
+      {/* 1. LEFT PANE: Native Conversation List */}
       <AnimatePresence>
         {(!isMobile || (isMobile && !selectedId)) && (
           <motion.div
-            key="conversation-list"
-            initial={isMobile ? { x: -100, opacity: 0 } : false}
-            animate={{ x: 0, opacity: 1 }}
-            exit={isMobile ? { x: -100, opacity: 0 } : undefined}
+            key="left-pane"
+            initial={isMobile ? { x: "-100%" } : false}
+            animate={{ x: 0 }}
+            exit={isMobile ? { x: "-100%" } : undefined}
+            transition={{ type: "spring", bounce: 0, duration: 0.4 }}
             className={cn(
-              "flex flex-col bg-[var(--paper)] shadow-xl shadow-black/5 rounded-[2rem] border border-[var(--border)] overflow-hidden z-10 shrink-0 transition-all",
-              isMobile ? "absolute inset-4" : "w-[360px] xl:w-[400px]"
+              "flex flex-col bg-[var(--surface-2)] border-r border-[var(--border)] overflow-hidden shrink-0 z-10",
+              isMobile ? "absolute inset-0" : "w-[320px]"
             )}
           >
-            <div className="flex-1 min-h-0">
-              <ConversationList
-                conversations={displayConversations}
-                channels={channels}
-                workspaceId={workspaceId}
-                selectedId={selectedId}
-                onSelect={handleSelectConversation}
-              />
-            </div>
+            <ConversationList
+              conversations={displayConversations}
+              channels={channels}
+              workspaceId={workspaceId}
+              selectedId={selectedId}
+              onSelect={handleSelectConversation}
+            />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 2. CENTER PANEL: Message Thread (Floating Island) */}
+      {/* 2. RIGHT PANE: Message Thread Canvas */}
       <AnimatePresence mode="wait">
         {(!isMobile || (isMobile && selectedId)) && (
           <motion.div
-            key="message-thread-container"
-            variants={slideVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
+            key="right-pane"
+            initial={isMobile ? { x: "100%" } : false}
+            animate={{ x: 0 }}
+            exit={isMobile ? { x: "100%" } : undefined}
+            transition={{ type: "spring", bounce: 0, duration: 0.4 }}
             className={cn(
-              "flex flex-col flex-1 min-w-0 bg-[var(--paper)] shadow-2xl shadow-black/10 rounded-[2rem] border border-[var(--border)] relative overflow-hidden z-20",
-              isMobile ? "absolute inset-4" : ""
+              "flex flex-col flex-1 min-w-0 bg-[var(--paper)] relative z-20",
+              isMobile ? "absolute inset-0" : ""
             )}
           >
-            {/* Thread Container */}
             {selectedId ? (
-              <div className="flex-1 min-h-0 flex flex-col relative">
+              <div className="flex-1 flex flex-col relative w-full h-full">
                 {effectiveMessages ? (
                   <MessageThread
                     conversation={selectedConversation}
                     messages={effectiveMessages}
-                    workspaceId={workspaceId}
-                    onBack={isMobile ? () => selectConversation(null) : undefined}
-                    onOpenProfile={() => setContactPanelOpen(true)}
+                    onOpenProfile={() => setContactPanelOpen(!contactPanelOpen)}
+                    isProfileOpen={contactPanelOpen}
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center bg-[var(--paper)]">
                     <div className="flex flex-col items-center gap-4">
-                      <div className="h-12 w-12 rounded-full border-4 border-[var(--surface-2)] border-t-[var(--brand)] animate-spin" />
-                      <p className="text-[var(--ink-2)] text-sm font-bold animate-pulse">Decrypting thread...</p>
+                      <div className="h-10 w-10 rounded-full border-2 border-[var(--surface-2)] border-t-[var(--brand)] animate-spin" />
+                      <p className="text-[var(--ink-2)] text-sm font-medium animate-pulse">Loading thread...</p>
                     </div>
                   </div>
                 )}
+
+                {/* OVERLAY: Contact Panel Drawer */}
+                <AnimatePresence>
+                  {contactPanelOpen && selectedConversation && (
+                    <>
+                      {/* Mobile Backdrop */}
+                      {isMobile && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="absolute inset-0 bg-black/20 z-40"
+                          onClick={() => setContactPanelOpen(false)}
+                        />
+                      )}
+                      
+                      <motion.div
+                        initial={{ x: "100%", opacity: 0.5 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: "100%", opacity: 0.5 }}
+                        transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                        className={cn(
+                          "absolute top-0 bottom-0 right-0 z-50 flex flex-col bg-[var(--surface-2)] shadow-2xl border-l border-[var(--border)] overflow-hidden",
+                          isMobile ? "w-full sm:w-[380px]" : "w-[380px]"
+                        )}
+                      >
+                        <ContactPanel
+                          contactId={selectedConversation.contacts?.id!}
+                          workspaceId={workspaceId}
+                          onClose={() => setContactPanelOpen(false)}
+                          isMobile={isMobile}
+                        />
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
               </div>
             ) : (
               <div className="flex flex-1 items-center justify-center bg-[var(--paper)] text-[var(--ink-2)] relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-[var(--brand)]/5 to-transparent pointer-events-none" />
-                <div className="text-center space-y-6 max-w-md relative z-10 p-8">
-                  <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[2rem] bg-gradient-to-tr from-[var(--brand)] to-blue-400 shadow-2xl shadow-[var(--brand)]/20 rotate-3 hover:rotate-6 transition-all duration-500">
-                    <Sparkles className="h-10 w-10 text-white" />
+                <div className="text-center space-y-4 max-w-sm relative z-10 p-8">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--surface-2)] shadow-inner mb-6">
+                    <MessageSquare className="h-8 w-8 text-[var(--ink-3)]" />
                   </div>
-                  <div>
-                    <h3 className="text-3xl font-black text-[var(--ink)] tracking-tight mb-2">Intelligence Hub</h3>
-                    <p className="text-base text-[var(--ink-2)] font-medium">Select a conversation from the left to start engaging with your customers.</p>
-                  </div>
+                  <h3 className="text-xl font-semibold text-[var(--ink)] tracking-tight">Select a conversation</h3>
+                  <p className="text-sm text-[var(--ink-2)]">Choose a message from the list on the left to start engaging.</p>
                 </div>
               </div>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 3. RIGHT PANEL: Contact Panel (Floating Island) */}
-      <AnimatePresence>
-        {contactPanelOpen && selectedConversation && (!isMobile || (isMobile && selectedId)) && (
-          <motion.div
-            key="contact-panel"
-            initial={{ opacity: 0, x: 50, scale: 0.95 }}
-            animate={{ opacity: 1, x: 0, scale: 1, transition: { type: "spring", stiffness: 400, damping: 30 } }}
-            exit={{ opacity: 0, x: 50, scale: 0.95 }}
-            className={cn(
-              "flex flex-col bg-[var(--paper)] shadow-2xl shadow-black/10 rounded-[2rem] border border-[var(--border)] overflow-hidden z-30 shrink-0",
-              isMobile ? "absolute inset-4" : "w-[340px] xl:w-[380px]"
-            )}
-          >
-            <ContactPanel
-              contactId={selectedConversation.contacts?.id!}
-              conversationId={selectedConversation.id}
-              workspaceId={workspaceId}
-              onClose={() => setContactPanelOpen(false)}
-              isMobile={isMobile}
-            />
           </motion.div>
         )}
       </AnimatePresence>
