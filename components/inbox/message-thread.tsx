@@ -1398,12 +1398,12 @@ export function MessageThread({
         </div>
       </div>
 
-      {/* Messages Feed */}
+      {/* Messages Scroll Area */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth"
+        className="flex-1 overflow-y-auto px-4 md:px-8 pt-6 pb-[180px] scroll-smooth"
       >
-        <div className="mx-auto max-w-4xl space-y-0.5 px-2 md:px-6">
+        <div className="flex flex-col gap-2 min-h-full justify-end mx-auto max-w-4xl space-y-0.5 px-2 md:px-6">
           {messages.map((message, i) => {
             const nextMessage = messages[i + 1];
             const prevMessage = messages[i - 1];
@@ -1558,10 +1558,10 @@ export function MessageThread({
         </div>
       )}
 
-      {/* Composer */}
-      <div className="bg-[var(--surface-2)]/90 backdrop-blur-xl p-4 md:p-6 shrink-0 relative z-20">
+      {/* Floating Composer */}
+      <div className="absolute bottom-6 left-6 right-6 z-30 pointer-events-none">
         {/* Container for composer */}
-        <div className="mx-auto max-w-4xl relative">
+        <div className="mx-auto max-w-4xl relative pointer-events-auto bg-[var(--surface-2)]/80 backdrop-blur-3xl p-3 md:p-4 rounded-[2.5rem] shadow-2xl border border-[var(--border)] ring-1 ring-black/5">
           {/* Attachment previews */}
           {attachments.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-2">
