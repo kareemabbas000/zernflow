@@ -1375,6 +1375,7 @@ export function MessageThread({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
       </div>
 
       {/* Messages Scroll Area */}

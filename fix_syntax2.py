@@ -208,7 +208,8 @@ options_new = """          {/* More Actions Dropdown */}
                 <span>Delete Chat</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>\n"""
+          </DropdownMenu>
+        </div>\n"""
 
 # Note: removing a trailing newline if it exists on assignee_old or options_old to match accurately.
 text = text.replace(assignee_old, assignee_new)
