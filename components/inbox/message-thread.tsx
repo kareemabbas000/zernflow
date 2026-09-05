@@ -848,6 +848,10 @@ export function MessageThread({
     [conversation, updatingStage, upsertConversation],
   );
 
+    useEffect(() => {
+    setUserScrolled(false);
+  }, [conversation?.id]);
+
   const [userScrolled, setUserScrolled] = useState(false);
   const userScrolledRef = useRef(userScrolled);
   useEffect(() => { userScrolledRef.current = userScrolled; }, [userScrolled]);
@@ -868,13 +872,24 @@ export function MessageThread({
     const observer = new ResizeObserver(() => {
       // Use the ref to avoid stale closures and infinite re-renders
       if (!userScrolledRef.current) {
-        scrollToBottom("smooth");
+        requestAnimationFrame(() => scrollToBottom("smooth"));
       }
     });
 
     observer.observe(container);
     return () => observer.disconnect();
-  }, [conversation?.id]); // ONLY re-run when conversation changes
+  }, [conversation?.id]);
+
+  useEffect(() => {
+    // When messages change (new message sent/received or loaded), scroll down
+    if (!userScrolledRef.current && messagesEndRef.current) {
+      // Small timeout to allow layout shifts (e.g. from avatars/images) to settle
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+      }, 50);
+    }
+  }, [messages.length, conversation?.id]);
+
 
   async function handleSend() {
     if (
