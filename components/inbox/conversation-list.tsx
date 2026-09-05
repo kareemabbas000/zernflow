@@ -79,6 +79,27 @@ export function ConversationList({
   const selectedConversations = useInboxStore((s) => s.selectedConversations);
   const toggleSelection = useInboxStore((s) => s.toggleSelection);
   const clearSelection = useInboxStore((s) => s.clearSelection);
+
+  const executeBulkAction = async (action: string) => {
+    try {
+      const selected = Array.from(selectedConversations);
+      if (selected.length === 0) return;
+      
+      const response = await fetch('/api/v1/conversations/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, conversationIds: selected }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to execute bulk action');
+      
+      clearSelection();
+      setIsBulkMode(false);
+      // In a real app we'd mutate SWR or trigger a refresh here
+    } catch (err) {
+      console.error(err);
+    }
+  };
   const selectAll = useInboxStore((s) => s.selectAll);
 
   const allConversations = useInboxStore(selectConversations);
@@ -808,7 +829,7 @@ export function ConversationList({
               onClick={async () => {
                 await executeBulkAction('mark_read');
               }}
-              disabled={messagesLoading}
+              
               className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-white/10 rounded-xl transition-colors text-xs font-semibold"
             >
               <MailOpen className="h-3.5 w-3.5" />
@@ -819,7 +840,7 @@ export function ConversationList({
               onClick={async () => {
                 await executeBulkAction('close');
               }}
-              disabled={messagesLoading}
+              
               className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-white/10 rounded-xl transition-colors text-xs font-semibold"
             >
               <CheckCircle className="h-3.5 w-3.5" />
@@ -830,7 +851,7 @@ export function ConversationList({
               onClick={async () => {
                 await executeBulkAction('archive');
               }}
-              disabled={messagesLoading}
+              
               className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-white/10 rounded-xl transition-colors text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
             >
               <Archive className="h-3.5 w-3.5" />
