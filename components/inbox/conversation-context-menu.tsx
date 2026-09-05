@@ -60,6 +60,7 @@ export function ConversationContextMenu({
   const removeConversationFromStore = useInboxStore((s) => s.removeConversation);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 640);
