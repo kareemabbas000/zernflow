@@ -38,7 +38,7 @@ export const useUIStore = create<UIState>()(
     (set, get) => ({
       sidebarOpen: false,
       sidebarCollapsed: false,
-      contactPanelOpen: true,
+      contactPanelOpen: false,
       breakpoint: "desktop",
       soundEnabled: true,
 
@@ -56,7 +56,7 @@ export const useUIStore = create<UIState>()(
           // Auto-collapse sidebar on tablet
           sidebarCollapsed: bp === "tablet",
           // Auto-close contact panel on mobile
-          contactPanelOpen: bp !== "mobile",
+          contactPanelOpen: false, // Do not auto-open on desktop
         });
       },
       setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),

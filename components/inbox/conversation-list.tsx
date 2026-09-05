@@ -558,7 +558,7 @@ export function ConversationList({
                   className={cn(
                     "flex w-full items-start gap-3 p-4 text-left transition-all duration-300 relative group cursor-pointer border-b border-[var(--border)]/40",
                     isSelected
-                      ? "bg-background border-l-4 border-[var(--brand)]"
+                      ? "bg-primary/5 border-y border-l-4 border-r border-[var(--brand)] shadow-md z-10 relative"
                       : isUnread
                         ? "bg-[var(--surface-2)] hover:bg-[var(--surface)] border-l-4 border-[var(--brand)]/20"
                         : "bg-[var(--surface-2)] hover:bg-[var(--surface)] border-l-4 border-transparent",
