@@ -218,48 +218,47 @@ export function GlobalLiveSyncProvider({
             const updated =
               payload.new as Database["public"]["Tables"]["conversations"]["Row"];
 
-            // Fetch the full conversation with contact data
-            const { data: fullConv } = await supabase
-              .from("conversations")
-              .select("*, contacts(*), channels(*)")
-              .eq("id", updated.id)
-              .single();
+            const { conversations } = useInboxStore.getState();
+            const exists = conversations.find(c => c.id === updated.id);
 
-            if (fullConv) {
-              const typed = fullConv as Conversation;
-              upsertConversation(typed);
+            let typed: Conversation;
 
-              const msgTime = typed.last_message_at ? new Date(typed.last_message_at).getTime() : 0;
-              const lastKnownTime = lastSeenMessageTimeByConv.current.get(typed.id) || 0;
-              const isGenuinelyNewMessage = msgTime > lastKnownTime;
-
-              // Update last seen timestamp
-              if (msgTime > 0) {
-                lastSeenMessageTimeByConv.current.set(typed.id, Math.max(msgTime, lastKnownTime));
-              }
-
-              // Trigger notification ONLY if this is a genuinely new message received after initial load
-              if (
-                !isInitialLoadRef.current &&
-                isGenuinelyNewMessage &&
-                typed.unread_count > 0
-              ) {
-                triggerNotification(typed);
-              }
+            // Only fetch full conversation with joins if it's a completely new conversation we don't have yet
+            if (!exists) {
+              const { data: fullConv } = await supabase
+                .from("conversations")
+                .select("*, contacts(*), channels(*)")
+                .eq("id", updated.id)
+                .single();
               
-              // If this conversation is currently open, instantly refetch the messages thread
-              const { selectedConversationId, setMessages } = useInboxStore.getState();
-              if (selectedConversationId === typed.id && !isInitialLoadRef.current) {
-                fetch(`/api/v1/messages?conversationId=${typed.id}`)
-                  .then((res) => res.json())
-                  .then((data) => {
-                    if (Array.isArray(data)) {
-                      setMessages(typed.id, data);
-                    }
-                  })
-                  .catch((err) => console.error("[realtime] failed to fetch updated thread:", err));
-              }
+              if (!fullConv) return;
+              typed = fullConv as Conversation;
+            } else {
+              typed = updated as Conversation;
             }
+
+            upsertConversation(typed);
+
+            const msgTime = typed.last_message_at ? new Date(typed.last_message_at).getTime() : 0;
+            const lastKnownTime = lastSeenMessageTimeByConv.current.get(typed.id) || 0;
+            const isGenuinelyNewMessage = msgTime > lastKnownTime;
+
+            // Update last seen timestamp
+            if (msgTime > 0) {
+              lastSeenMessageTimeByConv.current.set(typed.id, Math.max(msgTime, lastKnownTime));
+            }
+
+            // Trigger notification ONLY if this is a genuinely new message received after initial load
+            if (
+              !isInitialLoadRef.current &&
+              isGenuinelyNewMessage &&
+              typed.unread_count > 0
+            ) {
+              triggerNotification(typed);
+            }
+            
+            // Note: We deliberately removed the redundant fetch(/api/v1/messages) here.
+            // The 'messages' INSERT listener below optimally handles appending new messages to the thread.
           } else if (payload.eventType === "DELETE") {
             const deleted =
               payload.old as Database["public"]["Tables"]["conversations"]["Row"];
