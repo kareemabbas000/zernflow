@@ -85,6 +85,9 @@ interface InboxState {
 export const useInboxStore = create<InboxState>()(
   subscribeWithSelector((set, get) => ({
     // ── Initial State ─────────────────────────────────────────────
+    isSoundMuted: false,
+    isToastsMuted: false,
+
     conversations: [],
     selectedConversationId: null,
     selectedConversations: new Set(),
@@ -95,6 +98,18 @@ export const useInboxStore = create<InboxState>()(
 
     messagesByConversation: {},
     messagesLoading: false,
+
+    // ── Global Mute Toggles ───────────────────────────────────────
+    toggleSoundMute: () => set((state) => {
+      const next = !state.isSoundMuted;
+      localStorage.setItem("zernflow_sound_muted", String(next));
+      return { isSoundMuted: next };
+    }),
+    toggleToastsMute: () => set((state) => {
+      const next = !state.isToastsMuted;
+      localStorage.setItem("zernflow_toasts_muted", String(next));
+      return { isToastsMuted: next };
+    }),
 
     // ── Conversation Actions ────────────────────────────────────────
 

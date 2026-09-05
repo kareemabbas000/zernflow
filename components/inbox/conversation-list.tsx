@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MessageSquare, X, Archive, Clock, CheckCircle, RotateCcw, Loader2, RefreshCw, ChevronDown, Sparkles, MoreVertical, BellOff, BotOff, Trash2, Mail, MailOpen, Volume2, VolumeX, Bell } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Search, MessageSquare, CheckSquare, X, Archive, Clock, CheckCircle, RotateCcw, Loader2, RefreshCw, ChevronDown, Sparkles, MoreVertical, BellOff, BotOff, Trash2, Mail, MailOpen, Volume2, VolumeX, Bell } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useInboxStore,
