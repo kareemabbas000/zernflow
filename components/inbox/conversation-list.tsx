@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Archive, Trash2, Mail, MailOpen, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Search,
@@ -28,6 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PlatformIcon } from "@/components/platform-icon";
 import { Avatar } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ConversationContextMenu } from "@/components/inbox/conversation-context-menu";
 import { LEAD_STAGES } from "@/lib/crm";
 import type {
@@ -90,6 +91,11 @@ export function ConversationList({
   // ── Store-powered state ─────────────────────────────────────────
   const filters = useInboxStore((s) => s.filters);
   const setFilters = useInboxStore((s) => s.setFilters);
+  const selectedConversations = useInboxStore((s) => s.selectedConversations);
+  const toggleSelection = useInboxStore((s) => s.toggleSelection);
+  const clearSelection = useInboxStore((s) => s.clearSelection);
+  const selectAll = useInboxStore((s) => s.selectAll);
+
   const allConversations = useInboxStore(selectConversations);
   const upsertConversation = useInboxStore((s) => s.upsertConversation);
 
@@ -549,7 +555,7 @@ export function ConversationList({
               return (
                 <div
                   key={conversation.id}
-                  onClick={() => onSelect(conversation)}
+                  onClick={() => selectedConversations.size > 0 ? toggleSelection(conversation.id) : onSelect(conversation)}
                   onMouseEnter={() => prefetchMessages(conversation.id)}
                   onContextMenu={(e) => handleContextMenu(e, conversation)}
                   onTouchStart={(e) => handleTouchStart(e, conversation)}
@@ -564,14 +570,30 @@ export function ConversationList({
                         : "bg-[var(--surface-2)] hover:bg-[var(--surface)] border-l-4 border-transparent",
                   )}
                 >
-                  {/* Avatar with platform badge */}
-                  <div className="relative shrink-0">
-                    <Avatar
-                      src={conversation.contacts?.avatar_url}
-                      name={contactName}
-                      platform={conversation.platform as Platform}
-                      size="lg"
-                    />
+                  {/* Avatar with platform badge / Checkbox */}
+                  <div className="relative shrink-0 flex items-center justify-center w-10 h-10">
+                    <div className={cn(
+                      "absolute inset-0 flex items-center justify-center bg-background rounded-full transition-opacity z-20",
+                      selectedConversations.has(conversation.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                    )}>
+                      <Checkbox 
+                        checked={selectedConversations.has(conversation.id)}
+                        onCheckedChange={() => toggleSelection(conversation.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-5 h-5 rounded-full data-[state=checked]:bg-primary"
+                      />
+                    </div>
+                    <div className={cn(
+                      "transition-opacity",
+                      selectedConversations.has(conversation.id) ? "opacity-0" : "opacity-100 group-hover:opacity-0"
+                    )}>
+                      <Avatar
+                        src={conversation.contacts?.avatar_url}
+                        name={contactName}
+                        platform={conversation.platform as Platform}
+                        size="lg"
+                      />
+                    </div>
                   </div>
 
                   {/* Content */}

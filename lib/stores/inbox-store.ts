@@ -40,6 +40,7 @@ interface InboxState {
   // ── Conversations ─────────────────────────────────────────────
   conversations: Conversation[];
   selectedConversationId: string | null;
+  selectedConversations: Set<string>;
   unreadCount: number;
   unreadByPlatform: Record<string, number>;
   filters: InboxFilters;
@@ -54,6 +55,9 @@ interface InboxState {
   setConversations: (conversations: Conversation[], globalCounts?: { all: number; by_platform: Record<string, number> }) => void;
   selectConversation: (id: string | null) => void;
   setFilters: (filters: Partial<InboxFilters>) => void;
+  toggleSelection: (id: string) => void;
+  selectAll: (ids: string[]) => void;
+  clearSelection: () => void;
 
   // Realtime handlers
   upsertConversation: (conversation: Conversation) => void;
@@ -116,6 +120,26 @@ export const useInboxStore = create<InboxState>()(
       set((state) => ({
         filters: { ...state.filters, ...partial },
       }));
+    },
+
+    toggleSelection: (id) => {
+      set((state) => {
+        const next = new Set(state.selectedConversations);
+        if (next.has(id)) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
+        return { selectedConversations: next };
+      });
+    },
+
+    selectAll: (ids) => {
+      set({ selectedConversations: new Set(ids) });
+    },
+
+    clearSelection: () => {
+      set({ selectedConversations: new Set() });
     },
 
     upsertConversation: (conversation) => {
