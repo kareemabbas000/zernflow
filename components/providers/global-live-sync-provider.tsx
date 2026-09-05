@@ -163,7 +163,7 @@ export function GlobalLiveSyncProvider({
         const [ { data }, { data: counts } ] = await Promise.all([
           supabase
             .from("conversations")
-            .select("*, contacts(*)")
+            .select("*, contacts(*), channels(*)")
             .eq("workspace_id", workspaceId)
             .order("last_message_at", {
               ascending: false,
@@ -221,7 +221,7 @@ export function GlobalLiveSyncProvider({
             // Fetch the full conversation with contact data
             const { data: fullConv } = await supabase
               .from("conversations")
-              .select("*, contacts(*)")
+              .select("*, contacts(*), channels(*)")
               .eq("id", updated.id)
               .single();
 
