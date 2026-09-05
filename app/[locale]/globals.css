@@ -160,6 +160,12 @@
   --text-on-brand: #FFFFFF;
   --text-on-accent: #0B0B0F;
 
+  /* Legacy Compat (To prevent bg-[var(--paper)] from being transparent) */
+  --paper: var(--bg);
+  --ink: var(--text-primary);
+  --ink-2: var(--text-secondary);
+  --ink-3: var(--text-muted);
+
   --border: #E6E2DB;
   --border-strong: #D3CEC4;
   --border-subtle: #E6E2DB;
