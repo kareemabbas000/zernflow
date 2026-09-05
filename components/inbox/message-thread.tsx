@@ -1076,84 +1076,66 @@ export function MessageThread({
 
         {/* Right: Actions Toolbar */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 w-full sm:w-auto flex-wrap justify-between sm:justify-end pb-1 sm:pb-0">
-          {/* CRM Lead Stage Custom Popover */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setStageMenuOpen(!stageMenuOpen);
-                setAssigneeMenuOpen(false);
-                setMenuOpen(false);
-              }}
-              disabled={updatingStage}
-              className={cn(
-                "flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer shadow-2xs",
-                LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]
-                  ?.badgeClass ||
-                  "bg-[var(--surface)]/60 text-[var(--ink-2)] border-[var(--border)]",
-              )}
-              title="CRM Lead Stage"
-            >
-              <span
+                    {/* CRM Lead Stage Custom Popover */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                disabled={updatingStage}
                 className={cn(
-                  "h-1.5 w-1.5 rounded-full shrink-0",
-                  LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.dot,
+                  "flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer shadow-2xs outline-none",
+                  LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]
+                    ?.badgeClass ||
+                    "bg-[var(--surface)]/60 text-[var(--ink-2)] border-[var(--border)]",
                 )}
-              />
-              <span className="capitalize">
-                {LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]
-                  ?.label || "Lead"}
-              </span>
-              <ChevronDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 opacity-60" />
-            </button>
-
-            {stageMenuOpen && (
-              <>
+                title="CRM Lead Stage"
+              >
                 <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setStageMenuOpen(false)}
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full shrink-0",
+                    LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.dot || "bg-gray-500",
+                  )}
                 />
-                <div className="absolute right-0 mt-1.5 w-44 rounded-md border border-[var(--border)] bg-[var(--paper)] p-1.5 shadow-xl z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
-                  <p className="px-2 py-1 text-[10px] font-bold text-[var(--ink-2)] uppercase tracking-wider">
-                    CRM Lead Stage
-                  </p>
-                  <div className="space-y-0.5">
-                    {LEAD_STAGE_OPTIONS.map((opt) => {
-                      const isCurrent =
-                        (conversation.contacts?.lead_stage || "lead") ===
-                        opt.id;
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => {
-                            updateLeadStage(opt.id);
-                            setStageMenuOpen(false);
-                          }}
+                <span className="capitalize">
+                  {LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.label || "Lead"}
+                </span>
+                <ChevronDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 opacity-60" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44 p-1.5 bg-[var(--paper)] border-[var(--border)] shadow-xl z-50">
+              <DropdownMenuLabel className="px-2 py-1 text-[10px] font-bold text-[var(--ink-2)] uppercase tracking-wider">
+                CRM Lead Stage
+              </DropdownMenuLabel>
+              <DropdownMenuGroup className="space-y-0.5">
+                {LEAD_STAGE_OPTIONS.map((opt) => {
+                  const isSelected =
+                    (conversation.contacts?.lead_stage || "lead") === opt.id;
+                  return (
+                    <DropdownMenuItem
+                      key={opt.id}
+                      onClick={() => updateLeadStage(opt.id)}
+                      className={cn(
+                        "flex items-center justify-between rounded-md px-2.5 py-1.5 cursor-pointer text-xs",
+                        isSelected
+                          ? "bg-primary/10 text-primary font-bold focus:bg-primary/20 focus:text-primary"
+                          : "text-[var(--ink)]"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
                           className={cn(
-                            "flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-xs transition-colors cursor-pointer",
-                            isCurrent
-                              ? "bg-primary/10 text-primary font-bold"
-                              : "text-[var(--ink)] hover:bg-[var(--surface)] font-medium",
+                            "h-2 w-2 rounded-full",
+                            opt.dot || "bg-gray-500",
                           )}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={cn("h-2 w-2 rounded-full", opt.dot)}
-                            />
-                            <span>{opt.label}</span>
-                          </div>
-                          {isCurrent && (
-                            <Check className="h-3.5 w-3.5 text-primary" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+                        />
+                        <span className="capitalize">{opt.label || opt.id}</span>
+                      </div>
+                      {isSelected && <Check className="h-3.5 w-3.5" />}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Team Assignee Custom Popover */}
           <div className="relative">
