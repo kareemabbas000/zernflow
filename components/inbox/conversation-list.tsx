@@ -88,22 +88,27 @@ export function ConversationList({
       const selected = Array.from(selectedConversations);
       if (selected.length === 0) return;
       
-      let payload = {};
+      let payload: any = {};
       if (action === 'mark_read') payload = { unread_count: 0 };
       if (action === 'close') payload = { status: 'closed' };
       if (action === 'archive') payload = { status: 'archived' };
 
-      // In a real app we would want a bulk API endpoint, 
-      // but we can simulate it with Promise.all for now.
-      await Promise.all(selected.map(id => 
-        fetch(`/api/v1/conversations/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-      ));
+      const supabase = createClient();
+      await Promise.all(
+        selected.map(id => supabase.from("conversations").update(payload).eq("id", id))
+      );
       
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      // Update local store immediately for optimistic UI
+      const store = useInboxStore.getState();
+      const currentConvos = store.conversations;
+      const updatedConvos = currentConvos.map(c => {
+        if (selectedConversations.has(c.id)) {
+          return { ...c, ...payload };
+        }
+        return c;
+      });
+      store.setConversations(updatedConvos);
+      
       clearSelection();
       setIsBulkMode(false);
     } catch (err) {
@@ -332,41 +337,14 @@ export function ConversationList({
         />
       )}
 
-      {/* Main Header */}
-      <div className="flex h-14 items-center justify-between border-b border-[var(--border)] px-4 bg-[var(--surface-2)] shrink-0">
-        <div className="flex items-center gap-2">
-          <h2 className="text-sm font-extrabold text-[var(--ink)] tracking-tight">
-            Live Inbox
-          </h2>
-          {unreadAll > 0 && (
-            <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded-full shrink-0">
-              {unreadAll} unread
-            </span>
-          )}
-        </div>
-        <div className="flex items-center">
-          <button
-            type="button"
-            onClick={() => loadMoreConversations(true)}
-            disabled={syncingPlatform}
-            className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)]/80 transition-colors disabled:opacity-50 focus:outline-none"
-            title="Sync latest chats from Instagram/Facebook"
-          >
-            <RefreshCw
-              className={cn(
-                "h-4 w-4",
-                syncingPlatform && "animate-spin text-[var(--brand)]",
-              )}
-            />
-          </button>
-        </div>
-      </div>
-
-      {/* Utility Strip */}
-      <div className="flex h-10 items-center justify-between border-b border-[var(--border)]/50 px-3 bg-[var(--paper)] shrink-0">
-        <div className="flex items-center gap-2">
-          {isBulkMode ? (
-            <>
+      {/* Unified Header Row */}
+      <div className="flex h-12 items-center justify-between border-b border-[var(--border)] px-3 bg-[var(--surface-2)] shrink-0 transition-all duration-200">
+        {isBulkMode ? (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
+                {selectedConversations.size} selected
+              </span>
               <button
                 type="button"
                 onClick={() => {
@@ -377,9 +355,33 @@ export function ConversationList({
                     selectAll(filtered.map(c => c.id));
                   }
                 }}
-                className="px-2 py-1 rounded border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-2)] text-[10px] font-bold text-[var(--ink)] transition-colors whitespace-nowrap"
+                className="px-2 py-1 rounded text-[10px] font-bold text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors"
               >
                 {selectedConversations.size === filtered.length ? "Deselect All" : "Select All"}
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => executeBulkAction('mark_read')}
+                className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors"
+                title="Mark Read"
+              >
+                <MailOpen className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => executeBulkAction('close')}
+                className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors"
+                title="Close Conversations"
+              >
+                <CheckCircle className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => executeBulkAction('archive')}
+                className="p-1.5 rounded-md text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 transition-colors mr-2"
+                title="Archive Conversations"
+              >
+                <Archive className="h-4 w-4" />
               </button>
               <button
                 type="button"
@@ -387,44 +389,62 @@ export function ConversationList({
                   clearSelection();
                   setIsBulkMode(false);
                 }}
-                className="px-2 py-1 rounded bg-[var(--ink-2)] hover:bg-[var(--ink)] text-white text-[10px] font-bold transition-colors whitespace-nowrap"
+                className="px-3 py-1 rounded-md bg-[var(--ink)] hover:bg-[var(--ink-2)] text-white text-[11px] font-bold transition-colors"
               >
                 Cancel
               </button>
-              <span className="text-[10px] font-medium text-[var(--ink-2)] ml-1 hidden sm:inline-block">
-                {selectedConversations.size} selected
-              </span>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsBulkMode(true)}
-              className="flex items-center gap-1.5 px-2 py-1 rounded border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-2)] text-[10px] font-bold text-[var(--ink-2)] transition-colors"
-            >
-              <CheckSquare className="h-3 w-3" />
-              Select
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            onClick={() => useInboxStore.getState().toggleSoundMute()}
-            className="flex items-center justify-center p-1.5 rounded-md transition-colors text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] focus:outline-none"
-            title={isSoundMuted ? "Unmute Sound" : "Mute Sound"}
-          >
-            {isSoundMuted ? <VolumeX className="h-3.5 w-3.5 text-amber-500" /> : <Volume2 className="h-3.5 w-3.5" />}
-          </button>
-          <button
-            type="button"
-            onClick={() => useInboxStore.getState().toggleToastsMute()}
-            className="flex items-center justify-center p-1.5 rounded-md transition-colors text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] focus:outline-none"
-            title={isToastsMuted ? "Unmute Popups" : "Mute Popups"}
-          >
-            {isToastsMuted ? <BellOff className="h-3.5 w-3.5 text-amber-500" /> : <Bell className="h-3.5 w-3.5" />}
-          </button>
-        </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-extrabold text-[var(--ink)] tracking-tight">
+                Live Inbox
+              </h2>
+              {unreadAll > 0 && (
+                <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+                  {unreadAll} unread
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setIsBulkMode(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-2)] text-[10px] font-bold text-[var(--ink-2)] transition-colors border border-[var(--border)]"
+              >
+                <CheckSquare className="h-3 w-3" />
+                Select
+              </button>
+              <div className="h-4 w-[1px] bg-[var(--border)] mx-1 hidden sm:block" />
+              <button
+                type="button"
+                onClick={() => useInboxStore.getState().toggleSoundMute()}
+                className="p-1.5 rounded-md transition-colors text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] focus:outline-none"
+                title={isSoundMuted ? "Unmute Sound" : "Mute Sound"}
+              >
+                {isSoundMuted ? <VolumeX className="h-4 w-4 text-amber-500" /> : <Volume2 className="h-4 w-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => useInboxStore.getState().toggleToastsMute()}
+                className="p-1.5 rounded-md transition-colors text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] focus:outline-none"
+                title={isToastsMuted ? "Unmute Popups" : "Mute Popups"}
+              >
+                {isToastsMuted ? <BellOff className="h-4 w-4 text-amber-500" /> : <Bell className="h-4 w-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => loadMoreConversations(true)}
+                disabled={syncingPlatform}
+                className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors disabled:opacity-50 focus:outline-none ml-1"
+                title="Sync latest chats"
+              >
+                <RefreshCw className={cn("h-4 w-4", syncingPlatform && "animate-spin text-[var(--brand)]")} />
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Platform Tabs */}
@@ -843,50 +863,6 @@ export function ConversationList({
         )}
       </div>
 
-      {/* Floating Bulk Action Toolbar */}
-      {isBulkMode && selectedConversations.size > 0 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300">
-          <div className="flex items-center gap-1.5 p-1.5 bg-[var(--ink)] text-[var(--paper)] rounded-2xl shadow-2xl border border-white/10 backdrop-blur-md">
-            <div className="px-3 py-1 flex items-center justify-center border-r border-white/10">
-              <span className="text-xs font-bold whitespace-nowrap">{selectedConversations.size} selected</span>
-            </div>
-            
-            <button
-              onClick={async () => {
-                await executeBulkAction('mark_read');
-              }}
-              
-              className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-white/10 rounded-xl transition-colors text-xs font-semibold"
-            >
-              <MailOpen className="h-3.5 w-3.5" />
-              <span>Read</span>
-            </button>
-            
-            <button
-              onClick={async () => {
-                await executeBulkAction('close');
-              }}
-              
-              className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-white/10 rounded-xl transition-colors text-xs font-semibold"
-            >
-              <CheckCircle className="h-3.5 w-3.5" />
-              <span>Close</span>
-            </button>
-            
-            <button
-              onClick={async () => {
-                await executeBulkAction('archive');
-              }}
-              
-              className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-white/10 rounded-xl transition-colors text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
-            >
-              <Archive className="h-3.5 w-3.5" />
-              <span>Archive</span>
-            </button>
           </div>
-        </div>
-      )}
-
-    </div>
   );
 }
