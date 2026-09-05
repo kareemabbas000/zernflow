@@ -1036,17 +1036,6 @@ export function MessageThread({
               <p className="text-sm font-bold text-[var(--ink)] truncate max-w-[160px] sm:max-w-[220px] md:max-w-[280px]">
                 {contactName}
               </p>
-              {conversation.channels?.display_name && (
-                <span
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-[9.5px] font-bold text-primary shrink-0"
-                  title={`Via channel: ${conversation.channels.display_name}${conversation.channels.username ? ` (@${conversation.channels.username})` : ""}`}
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                  <span className="truncate max-w-[90px] sm:max-w-[140px]">
-                    {conversation.channels.display_name}
-                  </span>
-                </span>
-              )}
             </div>
             <div className="text-[10px] sm:text-[11px] text-[var(--ink-2)] capitalize flex items-center gap-1.5 truncate">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
@@ -1539,7 +1528,7 @@ export function MessageThread({
       )}
 
       {/* Bottom Composer */}
-      <div className="border-t border-[var(--border)] bg-[var(--surface)] shrink-0 z-30 shadow-[0_-4px_24px_rgba(0,0,0,0.02)]">
+      <div className="border-t border-[var(--border)] bg-[var(--surface)] shrink-0 z-30 shadow-[0_-4px_24px_rgba(0,0,0,0.02)] pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto max-w-4xl p-2 md:p-3">
           {/* Attachment previews */}
           {attachments.length > 0 && (

@@ -113,7 +113,9 @@ export function GlobalLiveSyncProvider({
 
   const triggerNotification = useCallback(
     (conv: Conversation) => {
-      if (soundEnabled) {
+      const { isSoundMuted, isToastsMuted } = useInboxStore.getState();
+
+      if (soundEnabled && !isSoundMuted) {
         soundManager.playMessageChime();
       }
 
@@ -125,14 +127,16 @@ export function GlobalLiveSyncProvider({
         "Customer";
       const preview = conv.last_message_preview || "New message received";
 
-      setActiveToast({
-        id: `toast-${Date.now()}`,
-        conversationId: conv.id,
-        senderName,
-        preview,
-        platform: (conv.platform as Platform) || "instagram",
-        avatarUrl: conv.contacts?.avatar_url,
-      });
+      if (!isToastsMuted) {
+        setActiveToast({
+          id: `toast-${Date.now()}`,
+          conversationId: conv.id,
+          senderName,
+          preview,
+          platform: (conv.platform as Platform) || "instagram",
+          avatarUrl: conv.contacts?.avatar_url,
+        });
+      }
 
       soundManager.showDesktopNotification(`New message from ${senderName}`, {
         body: preview,

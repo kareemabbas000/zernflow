@@ -79,7 +79,14 @@ export default async function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <NextIntlClientProvider locale={locale} messages={messages}>
             {children}
-            <Toaster />
+            <Toaster 
+              position="top-center" 
+              expand={false} 
+              duration={3000} 
+              toastOptions={{ 
+                className: "backdrop-blur-xl bg-white/60 dark:bg-black/60 border border-[var(--border)] shadow-2xl rounded-2xl font-sans text-[var(--ink)] overflow-hidden" 
+              }} 
+            />
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

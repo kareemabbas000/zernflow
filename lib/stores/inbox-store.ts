@@ -37,6 +37,12 @@ interface InboxFilters {
 }
 
 interface InboxState {
+  // ── Preferences ─────────────────────────────────────────────
+  isSoundMuted: boolean;
+  isToastsMuted: boolean;
+  toggleSoundMute: () => void;
+  toggleToastsMute: () => void;
+
   // ── Conversations ─────────────────────────────────────────────
   conversations: Conversation[];
   selectedConversationId: string | null;
@@ -146,11 +152,22 @@ export const useInboxStore = create<InboxState>()(
     upsertConversation: (conversation) => {
       set((state) => {
         const existing = state.conversations.find((c) => c.id === conversation.id);
+        
+        // Ensure we don't lose joined data (contacts, channels) when receiving raw realtime updates
+        const mergedConversation = existing 
+          ? { 
+              ...existing, 
+              ...conversation, 
+              contacts: conversation.contacts ?? existing.contacts,
+              channels: conversation.channels ?? existing.channels 
+            } 
+          : conversation;
+
         const nextList = existing
           ? state.conversations.map((c) =>
-              c.id === conversation.id ? conversation : c
+              c.id === conversation.id ? mergedConversation : c
             )
-          : [conversation, ...state.conversations];
+          : [mergedConversation, ...state.conversations];
         const sorted = sortConversations(nextList);
 
         // Calculate delta for global counts
