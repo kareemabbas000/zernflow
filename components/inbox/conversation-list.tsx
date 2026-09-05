@@ -521,7 +521,7 @@ export function ConversationList({
       </div>
 
       {/* Conversation list */}
-      <div className="flex-1 overflow-y-auto divide-y divide-[var(--border)]/30 flex flex-col pb-[72px] md:pb-0">
+      <div className="flex-1 overflow-y-auto divide-y divide-[var(--border)]/30 flex flex-col">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-6 h-full flex-1 bg-[var(--paper)]/50">
             <div className="flex h-16 w-16 items-center justify-center rounded-md bg-[var(--surface)] text-[var(--ink-2)] mb-4 shadow-sm border border-[var(--border)]">
@@ -558,7 +558,7 @@ export function ConversationList({
                   className={cn(
                     "flex w-full items-start gap-3 p-4 text-left transition-all duration-300 relative group cursor-pointer border-b border-[var(--border)]/40",
                     isSelected
-                      ? "bg-[var(--surface)] shadow-xl shadow-[var(--brand)]/5 border-l-4 border-[var(--brand)] z-10"
+                      ? "bg-background border-l-4 border-[var(--brand)]"
                       : isUnread
                         ? "bg-[var(--surface-2)] hover:bg-[var(--surface)] border-l-4 border-[var(--brand)]/20"
                         : "bg-[var(--surface-2)] hover:bg-[var(--surface)] border-l-4 border-transparent",
