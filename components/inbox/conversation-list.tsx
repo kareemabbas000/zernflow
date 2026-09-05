@@ -102,6 +102,7 @@ export function ConversationList({
 
   const unreadByPlatform = useInboxStore(selectUnreadByPlatform);
   const unreadAll = useInboxStore(selectUnreadAll);
+  const [isBulkMode, setIsBulkMode] = useState(false);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -540,7 +541,7 @@ export function ConversationList({
               return (
                 <div
                   key={conversation.id}
-                  onClick={() => selectedConversations.size > 0 ? toggleSelection(conversation.id) : onSelect(conversation)}
+                  onClick={() => isBulkMode ? toggleSelection(conversation.id) : onSelect(conversation)}
                   onMouseEnter={() => prefetchMessages(conversation.id)}
                   onContextMenu={(e) => handleContextMenu(e, conversation)}
                   onTouchStart={(e) => handleTouchStart(e, conversation)}
@@ -557,20 +558,19 @@ export function ConversationList({
                 >
                   {/* Avatar with platform badge / Checkbox */}
                   <div className="relative shrink-0 flex items-center justify-center w-10 h-10">
+                    {isBulkMode && (
+                      <div className="absolute -left-1.5 inset-y-0 flex items-center z-20">
+                        <Checkbox 
+                          checked={selectedConversations.has(conversation.id)}
+                          onCheckedChange={() => toggleSelection(conversation.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 rounded-full data-[state=checked]:bg-primary shadow-sm bg-[var(--paper)] border-[var(--border)]"
+                        />
+                      </div>
+                    )}
                     <div className={cn(
-                      "absolute inset-0 flex items-center justify-center bg-background rounded-full transition-opacity z-20",
-                      selectedConversations.has(conversation.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                    )}>
-                      <Checkbox 
-                        checked={selectedConversations.has(conversation.id)}
-                        onCheckedChange={() => toggleSelection(conversation.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-5 h-5 rounded-full data-[state=checked]:bg-primary"
-                      />
-                    </div>
-                    <div className={cn(
-                      "transition-opacity",
-                      selectedConversations.has(conversation.id) ? "opacity-0" : "opacity-100 group-hover:opacity-0"
+                      "transition-transform",
+                      isBulkMode ? "translate-x-4 scale-90" : ""
                     )}>
                       <Avatar
                         src={conversation.contacts?.avatar_url}
