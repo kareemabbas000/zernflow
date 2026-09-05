@@ -1078,7 +1078,7 @@ export function MessageThread({
         </div>
 
         {/* Right: Actions Toolbar */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 w-full sm:w-auto overflow-x-auto scrollbar-none justify-between sm:justify-end pb-1 sm:pb-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 w-full sm:w-auto flex-wrap justify-between sm:justify-end pb-1 sm:pb-0">
           {/* CRM Lead Stage Custom Popover */}
           <div className="relative">
             <button
