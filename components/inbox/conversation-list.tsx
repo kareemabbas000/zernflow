@@ -519,9 +519,6 @@ export function ConversationList({
       {/* Dynamic Multi-Channel Switcher Bar */}
       {channelsForActivePlatform.length > 1 && (
         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface)]/25 border-b border-[var(--border)] overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 animate-in fade-in duration-150">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-2)]/70 shrink-0 select-none">
-            {filters.platform === "all" ? "Channels:" : "Pages:"}
-          </span>
 
           {/* All for active scope */}
           <button
