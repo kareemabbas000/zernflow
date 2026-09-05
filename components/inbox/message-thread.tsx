@@ -1143,8 +1143,7 @@ export function MessageThread({
                 })}
               </DropdownMenuGroup>
             </DropdownMenuContent>
-                </DropdownMenuContent>
-              </DropdownMenu>
+          </DropdownMenu>
             </div>
 
             {/* Team Assignee Custom Popover */}
