@@ -197,7 +197,7 @@ export async function GET(request: NextRequest) {
         sent_by_node_id: null as string | null,
         sent_by_user_id: null as string | null,
         status: isOutbound ? (m.status ?? "delivered") : "delivered",
-        delivery_status: isOutbound ? (matchedLocal?.delivery_status ?? "sent") : "read",
+        delivery_status: isOutbound ? ((m.status === "read" || m.status === "delivered") ? m.status : (matchedLocal?.delivery_status ?? "sent")) : "read",
         is_internal: false,
         created_at: m.createdAt ?? m.sentAt ?? new Date().toISOString(),
         isStoryMention: Boolean(
