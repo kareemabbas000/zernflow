@@ -730,7 +730,6 @@ export function MessageThread({
           conversationId: conversation.id,
           status,
         });
-        setMenuOpen(false);
       } catch {
         alert("Failed to update status");
       }
@@ -744,7 +743,6 @@ export function MessageThread({
       await deleteConversationMutation.mutateAsync(conversation.id);
       removeConversationFromStore(conversation.id);
       setDeleteConfirmOpen(false);
-      setMenuOpen(false);
       router.push("/dashboard/inbox");
     } catch (err) {
       alert(
@@ -763,7 +761,6 @@ export function MessageThread({
     async (userId: string | null) => {
       if (!conversation || assigning) return;
       setAssigning(true);
-      setAssigneeMenuOpen(false);
 
       // Optimistic update in inbox store
       upsertConversation({
@@ -794,7 +791,6 @@ export function MessageThread({
     if (!conversation) return;
     const nextMuted = !conversation.is_muted;
     upsertConversation({ ...conversation, is_muted: nextMuted });
-    setMenuOpen(false);
     try {
       await fetch(`/api/v1/conversations/${conversation.id}/mute`, {
         method: "PATCH",
@@ -810,7 +806,6 @@ export function MessageThread({
     if (!conversation) return;
     const nextPaused = !conversation.is_automation_paused;
     upsertConversation({ ...conversation, is_automation_paused: nextPaused });
-    setMenuOpen(false);
     try {
       await fetch(`/api/v1/conversations/${conversation.id}/automation`, {
         method: "PATCH",
