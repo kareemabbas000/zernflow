@@ -36,13 +36,6 @@ type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
   contacts: Database["public"]["Tables"]["contacts"]["Row"] | null;
 };
 
-interface ToastNotification {
-  id: string;
-  conversationId: string;
-  senderName: string;
-  preview: string;
-  platform: Platform;
-  avatarUrl?: string | null;
 // ── Context (lightweight — just workspace ID and toast state) ─────────────
 
 interface RealtimeContextValue {
