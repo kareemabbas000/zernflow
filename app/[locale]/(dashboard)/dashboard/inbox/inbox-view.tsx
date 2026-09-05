@@ -5,15 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   MessageSquare,
-  RefreshCw,
   User,
   Volume2,
   VolumeX,
   Bell,
   ArrowLeft,
-  ChevronRight,
-  Wifi,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 import { ConversationList } from "@/components/inbox/conversation-list";
 import { MessageThread } from "@/components/inbox/message-thread";
@@ -26,6 +23,7 @@ import { useGlobalLiveSync, useRealtime } from "@/components/providers/global-li
 import { useConversationMessages } from "@/lib/hooks/use-inbox-queries";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/lib/types/database";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 
 export type ChannelInfo = {
   id: string;
@@ -147,56 +145,55 @@ export function InboxView({
 
   const effectiveMessages = queryMessages || storeMessages;
 
+  // Mobile Animation Variants
+  const slideVariants: Variants = {
+    initial: { x: "100%", opacity: 0.9 },
+    animate: { x: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 30 } },
+    exit: { x: "100%", opacity: 0.9, transition: { type: "spring", stiffness: 300, damping: 30 } },
+  };
+
   return (
     <div
       ref={containerRef}
-      className="relative flex h-full w-full min-w-0 overflow-hidden overflow-x-hidden bg-[var(--paper)] font-sans"
+      className="relative flex h-full w-full min-w-0 overflow-hidden bg-[var(--paper)] font-sans"
     >
-      {/* Left panel: Conversation list */}
+      {/* 1. LEFT PANEL: Conversation List */}
       <div
         className={cn(
-          "flex flex-col border-r border-[var(--border)] bg-[var(--surface-2)] transition-transform duration-300 ease-in-out absolute inset-0 z-10 md:relative md:w-80 lg:w-96 md:translate-x-0 md:shrink-0 min-w-0 overflow-hidden",
-          isMobile && selectedId ? "-translate-x-full" : "translate-x-0"
+          "flex flex-col bg-[var(--surface-2)] z-10 border-r border-[var(--border)]",
+          // On mobile, if a conversation is selected, hide the list entirely to avoid z-index bleeding.
+          // On desktop, it's always visible and fixed width.
+          isMobile 
+            ? (selectedId ? "hidden" : "absolute inset-0 w-full")
+            : "relative w-[340px] xl:w-[380px] shrink-0"
         )}
       >
-        {/* Top Controls */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-2)] text-xs shrink-0">
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setSoundEnabled(!soundEnabled)}
-              className={cn(
-                "flex items-center gap-1.5 px-2 py-1 rounded transition-colors",
-                soundEnabled
-                  ? "text-[var(--brand)] bg-[var(--brand-soft)] font-medium"
-                  : "text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-[var(--ink)] font-medium"
-              )}
-              title={
-                soundEnabled
-                  ? "Mute message chimes"
-                  : "Enable message chimes"
-              }
-            >
-              {soundEnabled ? (
-                <Volume2 className="h-4 w-4" />
-              ) : (
-                <VolumeX className="h-4 w-4" />
-              )}
-              <span className="text-[11px] hidden sm:inline">
-                {soundEnabled ? "Sound On" : "Muted"}
-              </span>
-            </button>
-          </div>
+        {/* Top Controls (Floating Glassmorphism) */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-2)]/80 backdrop-blur-xl shrink-0 sticky top-0 z-20">
+          <button
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-200 border",
+              soundEnabled
+                ? "bg-[var(--brand)] text-white border-[var(--brand)] shadow-lg shadow-[var(--brand)]/20"
+                : "bg-transparent text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--surface)] hover:text-[var(--ink)]"
+            )}
+            title={soundEnabled ? "Mute message chimes" : "Enable message chimes"}
+          >
+            {soundEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+            <span className="text-[11px] font-bold tracking-wide uppercase hidden sm:inline">
+              {soundEnabled ? "Sound On" : "Muted"}
+            </span>
+          </button>
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handleEnableNotifications}
-              className="flex items-center gap-1.5 px-2 py-1 rounded text-[var(--ink-2)] font-medium hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors"
-              title="Enable desktop notifications"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="text-[11px] hidden sm:inline">Alerts</span>
-            </button>
-          </div>
+          <button
+            onClick={handleEnableNotifications}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[var(--ink-2)] font-bold tracking-wide uppercase text-[11px] border border-[var(--border)] hover:bg-[var(--surface)] hover:text-[var(--ink)] transition-all duration-200"
+            title="Enable desktop notifications"
+          >
+            <Bell className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Alerts</span>
+          </button>
         </div>
 
         <div className="flex-1 min-h-0 bg-[var(--surface-2)]">
@@ -210,119 +207,138 @@ export function InboxView({
         </div>
       </div>
 
-      {/* Center panel: Message thread */}
-      <div 
-        className={cn(
-          "flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--paper)] transition-transform duration-300 ease-in-out absolute inset-0 z-20 md:relative md:translate-x-0 overflow-hidden",
-          isMobile ? (selectedId && !contactPanelOpen ? "translate-x-0" : selectedId && contactPanelOpen ? "-translate-x-full" : "translate-x-full") : ""
-        )}
-      >
-        {/* Mobile: Back bar */}
-        {isMobile && selectedId && (
-          <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-2 shrink-0 bg-[var(--surface)]">
-            <button
-              onClick={() => selectConversation(null)}
-              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-[var(--ink)] bg-[var(--surface-2)] hover:bg-[var(--border)] transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back</span>
-            </button>
-            <button
-              onClick={() => setContactPanelOpen(true)}
-              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-[var(--ink-2)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] transition-colors"
-            >
-              <User className="h-4 w-4" />
-              <span>Contact</span>
-            </button>
-          </div>
-        )}
+      {/* 2. CENTER PANEL: Message Thread */}
+      <AnimatePresence initial={false}>
+        {(!isMobile || (isMobile && selectedId && !contactPanelOpen)) && (
+          <motion.div
+            key="message-thread"
+            variants={isMobile ? slideVariants : undefined}
+            initial={isMobile ? "initial" : false}
+            animate={isMobile ? "animate" : false}
+            exit={isMobile ? "exit" : undefined}
+            className={cn(
+              "flex flex-col flex-1 min-w-0 bg-[var(--paper)] z-20 overflow-hidden",
+              isMobile ? "absolute inset-0 w-full" : "relative"
+            )}
+          >
+            {/* Mobile Header for Thread */}
+            {isMobile && selectedId && (
+              <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3 shrink-0 bg-[var(--surface)]/90 backdrop-blur-xl z-30 shadow-sm">
+                <button
+                  onClick={() => selectConversation(null)}
+                  className="flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-[var(--ink)] bg-[var(--surface-2)] border border-[var(--border)] shadow-sm active:scale-95 transition-transform"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </button>
+                <button
+                  onClick={() => setContactPanelOpen(true)}
+                  className="flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-[var(--ink)] bg-[var(--surface-2)] border border-[var(--border)] shadow-sm active:scale-95 transition-transform"
+                >
+                  <User className="h-4 w-4 text-[var(--brand)]" />
+                  Profile
+                </button>
+              </div>
+            )}
 
-        {/* Desktop: Contact panel toggle */}
-        {!isMobile && selectedConversation && !contactPanelOpen && (
-          <div className="flex shrink-0 justify-end border-b border-[var(--border)] px-4 py-2 bg-[var(--paper)]">
-            <button
-              onClick={() => setContactPanelOpen(true)}
-              className="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium text-[var(--ink-2)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] transition-colors border border-[var(--border)]"
-              aria-label="Show contact CRM info"
-            >
-              <User className="h-4 w-4 text-[var(--brand)]" />
-              <span>Contact Profile</span>
-            </button>
-          </div>
-        )}
+            {/* Desktop Contact Panel Toggle */}
+            {!isMobile && selectedConversation && !contactPanelOpen && (
+              <div className="absolute top-4 right-4 z-30">
+                <button
+                  onClick={() => setContactPanelOpen(true)}
+                  className="flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-[var(--ink)] bg-[var(--surface)]/80 backdrop-blur-md border border-[var(--border)] shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <User className="h-4 w-4 text-[var(--brand)]" />
+                  Contact Info
+                </button>
+              </div>
+            )}
 
-        <div className="min-h-0 flex-1 relative overflow-hidden flex flex-col">
-          {displayConversations.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center px-6 text-center animate-in fade-in duration-300">
-              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[var(--surface-2)] border border-[var(--border)] mb-6">
-                <MessageSquare className="h-8 w-8 text-[var(--ink-3)]" />
-              </div>
-              <h3 className="text-xl font-bold text-[var(--ink)] flex items-center gap-2">
-                Live Inbox Ready
-              </h3>
-              <p className="mt-2 max-w-sm text-sm text-[var(--ink-2)] leading-relaxed">
-                Connect your social channels to see inbound messages here.
-              </p>
-              <Link
-                href="/dashboard/channels"
-                className="mt-6 inline-flex items-center gap-2 rounded-md bg-[var(--brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--brand-hover)] transition-colors"
-              >
-                Connect Channels
-              </Link>
+            <div className="min-h-0 flex-1 relative overflow-hidden flex flex-col">
+              {displayConversations.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-[var(--brand)] blur-3xl opacity-20 rounded-full" />
+                    <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-[var(--surface-2)] to-[var(--surface)] border border-[var(--border)] shadow-2xl mb-8 transform -rotate-6">
+                      <MessageSquare className="h-10 w-10 text-[var(--brand)]" />
+                    </div>
+                  </div>
+                  <h3 className="text-3xl font-black text-[var(--ink)] tracking-tight">
+                    Live Inbox Ready
+                  </h3>
+                  <p className="mt-4 max-w-sm text-sm font-medium text-[var(--ink-2)] leading-relaxed">
+                    Your command center is online. Connect your social channels to start receiving inbound messages.
+                  </p>
+                  <Link
+                    href="/dashboard/channels"
+                    className="mt-8 inline-flex items-center gap-2 rounded-full bg-[var(--brand)] px-8 py-3.5 text-sm font-bold text-white shadow-xl shadow-[var(--brand)]/20 hover:shadow-2xl hover:bg-[var(--brand-hover)] hover:-translate-y-1 transition-all duration-300"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Connect Channels
+                  </Link>
+                </div>
+              ) : !selectedConversation ? (
+                <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--surface-2)] border border-[var(--border)] shadow-sm mb-6">
+                    <MessageSquare className="h-8 w-8 text-[var(--ink-3)]" />
+                  </div>
+                  <h3 className="text-xl font-bold text-[var(--ink)]">
+                    No Conversation Selected
+                  </h3>
+                  <p className="text-sm font-medium text-[var(--ink-2)] mt-2">
+                    Choose a chat from the sidebar to view the thread.
+                  </p>
+                </div>
+              ) : messagesLoading && effectiveMessages.length === 0 ? (
+                <div className="flex h-full flex-col p-8 space-y-8 justify-end">
+                  <div className="flex justify-start">
+                    <Skeleton className="h-12 w-2/3 rounded-2xl rounded-bl-sm bg-[var(--surface-2)]" />
+                  </div>
+                  <div className="flex justify-end">
+                    <Skeleton className="h-12 w-1/2 rounded-2xl rounded-br-sm bg-[var(--brand-soft)]" />
+                  </div>
+                  <div className="flex justify-start">
+                    <Skeleton className="h-24 w-3/4 rounded-2xl rounded-bl-sm bg-[var(--surface-2)]" />
+                  </div>
+                </div>
+              ) : (
+                <MessageThread
+                  conversation={selectedConversation}
+                  messages={effectiveMessages}
+                />
+              )}
             </div>
-          ) : !selectedConversation ? (
-            <div className="flex h-full flex-col items-center justify-center px-6 text-center text-[var(--ink-2)]">
-              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[var(--surface-2)] border border-[var(--border)] mb-4">
-                <MessageSquare className="h-8 w-8 text-[var(--ink-3)]" />
-              </div>
-              <p className="text-base font-bold text-[var(--ink)]">
-                Select a conversation
-              </p>
-              <p className="text-sm mt-1">
-                Choose a chat from the left to view messages
-              </p>
-            </div>
-          ) : messagesLoading && effectiveMessages.length === 0 ? (
-            <div className="flex h-full flex-col p-6 space-y-6">
-              <div className="flex justify-start">
-                <Skeleton className="h-12 w-2/3 rounded-lg bg-[var(--surface-2)]" />
-              </div>
-              <div className="flex justify-end">
-                <Skeleton className="h-12 w-1/2 rounded-lg bg-[var(--brand-soft)]" />
-              </div>
-              <div className="flex justify-start">
-                <Skeleton className="h-20 w-3/4 rounded-lg bg-[var(--surface-2)]" />
-              </div>
-            </div>
-          ) : (
-            <MessageThread
-              conversation={selectedConversation}
-              messages={effectiveMessages}
-            />
-          )}
-        </div>
-      </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Right panel: Contact info */}
-      <div
-        className={cn(
-          "bg-[var(--surface-2)] transition-all duration-300 ease-in-out absolute inset-0 z-30 border-l border-[var(--border)]",
-          isMobile
-            ? (contactPanelOpen && selectedId ? "translate-x-0" : "translate-x-full")
-            : !contactPanelOpen
-            ? "hidden"
-            : "md:absolute md:inset-y-0 md:right-0 md:z-30 md:w-80 lg:w-[360px] md:shadow-xl xl:relative xl:shadow-none xl:z-auto xl:w-[360px] xl:shrink-0"
+      {/* 3. RIGHT PANEL: Contact Info */}
+      <AnimatePresence initial={false}>
+        {((isMobile && contactPanelOpen) || (!isMobile && contactPanelOpen)) && (
+          <motion.div
+            key="contact-panel"
+            variants={slideVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className={cn(
+              "bg-[var(--surface-2)] z-40 border-l border-[var(--border)] flex flex-col shadow-2xl overflow-hidden",
+              isMobile
+                ? "absolute inset-0 w-full"
+                : "relative w-[340px] xl:w-[380px] shrink-0"
+            )}
+          >
+            {selectedConversation?.contact_id && (
+              <ContactPanel
+                contactId={selectedConversation.contact_id}
+                workspaceId={workspaceId}
+                onClose={() => setContactPanelOpen(false)}
+                isMobile={isMobile}
+              />
+            )}
+          </motion.div>
         )}
-      >
-        {selectedConversation?.contact_id && (
-          <ContactPanel
-            contactId={selectedConversation.contact_id}
-            workspaceId={workspaceId}
-            onClose={() => setContactPanelOpen(false)}
-            isMobile={isMobile}
-          />
-        )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }

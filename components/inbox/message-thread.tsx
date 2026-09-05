@@ -153,6 +153,8 @@ function MessageBubble({
   contactName,
   avatarUrl,
   platform,
+  isSequentialNext,
+  isSequentialPrev,
 }: {
   message: Message;
   onRetry?: (msg: Message) => void;

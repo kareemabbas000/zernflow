@@ -5,6 +5,7 @@ import { GlobalLiveSyncProvider } from "@/components/providers/global-live-sync-
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ResponsiveLayoutWrapper } from "@/components/responsive-layout-wrapper";
 import { CommandPalette } from "@/components/command-palette";
+import { DashboardPageWrapper } from "@/components/dashboard-page-wrapper";
 
 export default async function DashboardLayout({
   children,
@@ -55,9 +56,9 @@ export default async function DashboardLayout({
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[var(--paper)]">
             <Topbar user={user} />
             <main className="flex-1 overflow-auto overflow-x-hidden relative">
-              <div className="max-w-[1200px] mx-auto w-full p-4 lg:p-8">
+              <DashboardPageWrapper>
                 {children}
-              </div>
+              </DashboardPageWrapper>
             </main>
           </div>
         </ResponsiveLayoutWrapper>
