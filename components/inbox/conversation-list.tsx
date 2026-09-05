@@ -332,19 +332,41 @@ export function ConversationList({
         />
       )}
 
-      {/* Header */}
+      {/* Main Header */}
       <div className="flex h-14 items-center justify-between border-b border-[var(--border)] px-4 bg-[var(--surface-2)] shrink-0">
-        {isBulkMode ? (
-          <>
-            <div className="flex items-center gap-1.5 shrink-0 overflow-hidden">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] shrink-0 hidden sm:inline-block">
-                Bulk Selection
-              </span>
-              <span className="flex h-5 items-center justify-center rounded-full bg-primary/10 px-2 text-[10px] font-bold text-primary shrink-0 whitespace-nowrap">
-                {selectedConversations.size} selected
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-extrabold text-[var(--ink)] tracking-tight">
+            Live Inbox
+          </h2>
+          {unreadAll > 0 && (
+            <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+              {unreadAll} unread
+            </span>
+          )}
+        </div>
+        <div className="flex items-center">
+          <button
+            type="button"
+            onClick={() => loadMoreConversations(true)}
+            disabled={syncingPlatform}
+            className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)]/80 transition-colors disabled:opacity-50 focus:outline-none"
+            title="Sync latest chats from Instagram/Facebook"
+          >
+            <RefreshCw
+              className={cn(
+                "h-4 w-4",
+                syncingPlatform && "animate-spin text-[var(--brand)]",
+              )}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* Utility Strip */}
+      <div className="flex h-10 items-center justify-between border-b border-[var(--border)]/50 px-3 bg-[var(--paper)] shrink-0">
+        <div className="flex items-center gap-2">
+          {isBulkMode ? (
+            <>
               <button
                 type="button"
                 onClick={() => {
@@ -355,7 +377,7 @@ export function ConversationList({
                     selectAll(filtered.map(c => c.id));
                   }
                 }}
-                className="px-2 py-1 rounded-md text-[10px] font-bold transition-all bg-[var(--surface)] hover:bg-[var(--surface-2)] text-[var(--ink)] border border-[var(--border)] whitespace-nowrap"
+                className="px-2 py-1 rounded border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-2)] text-[10px] font-bold text-[var(--ink)] transition-colors whitespace-nowrap"
               >
                 {selectedConversations.size === filtered.length ? "Deselect All" : "Select All"}
               </button>
@@ -365,68 +387,44 @@ export function ConversationList({
                   clearSelection();
                   setIsBulkMode(false);
                 }}
-                className="px-2 py-1 rounded-md text-[10px] font-bold transition-all text-white bg-[var(--ink)] hover:bg-[var(--ink-2)]"
+                className="px-2 py-1 rounded bg-[var(--ink-2)] hover:bg-[var(--ink)] text-white text-[10px] font-bold transition-colors whitespace-nowrap"
               >
-                Done
+                Cancel
               </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-extrabold text-[var(--ink)] tracking-tight">
-                Live Inbox
-              </h2>
-              {unreadAll > 0 && (
-                <span className="flex h-5 items-center justify-center rounded-full bg-rose-500 px-2 text-[10px] font-black text-white shadow-none">
-                  {unreadAll} unread
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <div className="flex items-center gap-0.5 mr-1 bg-[var(--surface)] border border-[var(--border)] rounded-md p-0.5">
-                <button
-                  type="button"
-                  onClick={() => useInboxStore.getState().toggleSoundMute()}
-                  className="p-1 rounded-md transition-colors text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)]"
-                  title={isSoundMuted ? "Unmute Sound" : "Mute Sound"}
-                >
-                  {isSoundMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => useInboxStore.getState().toggleToastsMute()}
-                  className="p-1 rounded-md transition-colors text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)]"
-                  title={isToastsMuted ? "Unmute Popups" : "Mute Popups"}
-                >
-                  {isToastsMuted ? <BellOff className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => loadMoreConversations(true)}
-                disabled={syncingPlatform}
-                className="p-1 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)]/80 transition-colors disabled:opacity-50"
-                title="Sync latest chats from Instagram/Facebook"
-              >
-                <RefreshCw
-                  className={cn(
-                    "h-3.5 w-3.5",
-                    syncingPlatform && "animate-spin text-primary",
-                  )}
-                />
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setIsBulkMode(true)}
-                className="px-2.5 py-1 rounded-md text-[11px] font-bold transition-all shadow-sm cursor-pointer bg-[var(--surface)] text-[var(--ink-2)] hover:text-[var(--ink)] border border-[var(--border)]"
-              >
-                Select
-              </button>
-            </div>
-          </>
-        )}
+              <span className="text-[10px] font-medium text-[var(--ink-2)] ml-1 hidden sm:inline-block">
+                {selectedConversations.size} selected
+              </span>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsBulkMode(true)}
+              className="flex items-center gap-1.5 px-2 py-1 rounded border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-2)] text-[10px] font-bold text-[var(--ink-2)] transition-colors"
+            >
+              <CheckSquare className="h-3 w-3" />
+              Select
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => useInboxStore.getState().toggleSoundMute()}
+            className="flex items-center justify-center p-1.5 rounded-md transition-colors text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] focus:outline-none"
+            title={isSoundMuted ? "Unmute Sound" : "Mute Sound"}
+          >
+            {isSoundMuted ? <VolumeX className="h-3.5 w-3.5 text-amber-500" /> : <Volume2 className="h-3.5 w-3.5" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => useInboxStore.getState().toggleToastsMute()}
+            className="flex items-center justify-center p-1.5 rounded-md transition-colors text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] focus:outline-none"
+            title={isToastsMuted ? "Unmute Popups" : "Mute Popups"}
+          >
+            {isToastsMuted ? <BellOff className="h-3.5 w-3.5 text-amber-500" /> : <Bell className="h-3.5 w-3.5" />}
+          </button>
+        </div>
       </div>
 
       {/* Platform Tabs */}

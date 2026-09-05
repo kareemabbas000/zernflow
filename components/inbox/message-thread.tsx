@@ -1085,7 +1085,7 @@ export function MessageThread({
                     LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.dot || "bg-gray-500",
                   )}
                 />
-                <span className="capitalize">
+                <span className="capitalize hidden lg:inline-block">
                   {LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.label || "Lead"}
                 </span>
                 <ChevronDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 opacity-60" />
@@ -1157,7 +1157,7 @@ export function MessageThread({
                     ) : (
                       <User className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[var(--ink-2)]" />
                     )}
-                    <span className="max-w-[65px] sm:max-w-[85px] truncate">
+                    <span className="max-w-[65px] sm:max-w-[85px] truncate hidden xl:inline-block">
                       {assignedMember
                         ? isAssignedToMe
                           ? "Me"
@@ -1247,7 +1247,7 @@ export function MessageThread({
               className="flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-[var(--surface)]/60 text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-[var(--ink)] transition-all shadow-2xs cursor-pointer"
             >
               <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="hidden md:inline">Close</span>
+              <span className="hidden xl:inline">Close</span>
             </button>
           ) : (
             <button
@@ -1256,7 +1256,7 @@ export function MessageThread({
               className="flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-all shadow-2xs cursor-pointer"
             >
               <RotateCcw className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="hidden md:inline">Reopen</span>
+              <span className="hidden xl:inline">Reopen</span>
             </button>
           )}
 
