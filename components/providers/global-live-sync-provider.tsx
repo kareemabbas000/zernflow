@@ -23,6 +23,8 @@ import React, {
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { X, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
+import { NotificationToast } from "@/components/inbox/notification-toast";
 import { createClient } from "@/lib/supabase/client";
 import { useInboxStore } from "@/lib/stores/inbox-store";
 import { useUIStore } from "@/lib/stores/ui-store";
@@ -41,8 +43,6 @@ interface ToastNotification {
   preview: string;
   platform: Platform;
   avatarUrl?: string | null;
-}
-
 // ── Context (lightweight — just workspace ID and toast state) ─────────────
 
 interface RealtimeContextValue {
@@ -98,7 +98,6 @@ export function GlobalLiveSyncProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [activeToast, setActiveToast] = useState<ToastNotification | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "reconnecting" | "disconnected">("disconnected");
 
   const soundEnabled = useUIStore((s) => s.soundEnabled);
@@ -128,28 +127,29 @@ export function GlobalLiveSyncProvider({
       const preview = conv.last_message_preview || "New message received";
 
       if (!isToastsMuted) {
-        setActiveToast({
-          id: `toast-${Date.now()}`,
-          conversationId: conv.id,
-          senderName,
-          preview,
-          platform: (conv.platform as Platform) || "instagram",
-          avatarUrl: conv.contacts?.avatar_url,
+        toast.custom((t) => (
+          <NotificationToast
+            toastId={t}
+            senderName={senderName}
+            preview={preview}
+            platform={(conv.platform as Platform) || "instagram"}
+            avatarUrl={conv.contacts?.avatar_url}
+            onDismiss={() => toast.dismiss(t)}
+            onClick={() => {
+              toast.dismiss(t);
+              router.push(`/dashboard/inbox?conversationId=${conv.id}`);
+            }}
+          />
+        ), {
+          duration: 5000,
         });
       }
 
       soundManager.showDesktopNotification(`New message from ${senderName}`, {
         body: preview,
       });
-
-      // Auto dismiss after 5 seconds
-      setTimeout(() => {
-        setActiveToast((curr) =>
-          curr?.conversationId === conv.id ? null : curr
-        );
-      }, 5000);
     },
-    [soundEnabled]
+    [soundEnabled, router]
   );
 
   // ── 1. Initial load: fetch conversations from Supabase directly ────────
@@ -298,74 +298,9 @@ export function GlobalLiveSyncProvider({
     };
   }, [workspaceId, upsertConversation, addMessage, triggerNotification]);
 
-  // ── Toast click handler ────────────────────────────────────────────────
-
-  const handleToastClick = useCallback(
-    (conversationId: string) => {
-      setActiveToast(null);
-      router.push(`/dashboard/inbox?conversationId=${conversationId}`);
-    },
-    [router]
-  );
-
   return (
     <RealtimeContext.Provider value={{ workspaceId, connectionStatus }}>
       {children}
-
-      {/* Global Floating Toast Popup */}
-      {activeToast && (
-        <div className="fixed top-5 right-5 z-[9999] flex w-80 sm:w-96 items-center gap-3 rounded-2xl border border-primary/40 bg-card/95 backdrop-blur-xl p-4 shadow-2xl animate-in slide-in-from-top-4 fade-in duration-200">
-          <div
-            className="relative shrink-0 cursor-pointer"
-            onClick={() => handleToastClick(activeToast.conversationId)}
-          >
-            {activeToast.avatarUrl ? (
-              <img
-                src={activeToast.avatarUrl}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="h-10 w-10 rounded-full object-cover border border-border"
-              />
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm">
-                {activeToast.senderName.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="absolute -bottom-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full border border-background bg-background shadow-xs">
-              <PlatformIcon
-                platform={activeToast.platform}
-                className="h-2.5 w-2.5"
-                size={10}
-              />
-            </div>
-          </div>
-
-          <div
-            className="flex-1 min-w-0 cursor-pointer"
-            onClick={() => handleToastClick(activeToast.conversationId)}
-          >
-            <div className="flex items-center justify-between">
-              <h5 className="font-bold text-xs text-foreground truncate">
-                {activeToast.senderName}
-              </h5>
-              <span className="text-[10px] font-bold text-rose-500 flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping" />
-                New Message
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground truncate mt-0.5">
-              {activeToast.preview}
-            </p>
-          </div>
-
-          <button
-            onClick={() => setActiveToast(null)}
-            className="shrink-0 rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
 
       {/* Connection Status Indicator */}
       {connectionStatus !== "connected" && (

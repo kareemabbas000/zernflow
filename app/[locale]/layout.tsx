@@ -80,11 +80,13 @@ export default async function RootLayout({
           <NextIntlClientProvider locale={locale} messages={messages}>
             {children}
             <Toaster 
-              position="top-center" 
+              position="bottom-right" 
               expand={false} 
-              duration={3000} 
+              duration={5000} 
               toastOptions={{ 
-                className: "backdrop-blur-xl bg-white/60 dark:bg-black/60 border border-[var(--border)] shadow-2xl rounded-2xl font-sans text-[var(--ink)] overflow-hidden" 
+                // We use unstyled so our custom NotificationToast can render without a wrapper box
+                unstyled: true,
+                className: "font-sans text-[var(--ink)]" 
               }} 
             />
           </NextIntlClientProvider>
