@@ -27,6 +27,10 @@ export default function DashboardError({
         <p className="text-sm text-[var(--ink-2)] mb-6">
           We encountered a problem while rendering this page. You can try reloading, or contact support if the issue persists.
         </p>
+        <div className="bg-red-100 text-red-800 p-4 rounded text-left overflow-auto text-xs font-mono mb-6">
+          <strong>Error Message:</strong> {error?.message || "Unknown error"}<br/>
+          <strong>Stack:</strong> {error?.stack || "No stack trace available"}
+        </div>
         <button 
           onClick={() => reset()} 
           className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--ink)] text-white text-sm font-medium rounded-md hover:bg-black transition-colors"
