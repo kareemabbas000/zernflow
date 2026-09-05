@@ -130,7 +130,7 @@ export function InboxView({
             {selectedId ? (
               <div className="flex-1 flex flex-col relative w-full h-full">
                 {effectiveMessages ? (
-                  <ErrorBoundary fallback={<div className="flex h-full items-center justify-center p-4"><div className="bg-red-50 text-red-500 p-4 rounded-xl border border-red-200">MessageThread crashed.</div></div>}><MessageThread
+                  <ErrorBoundary fallbackRender={({ error }) => <div className="flex h-full items-center justify-center p-4"><div className="bg-red-50 text-red-500 p-4 rounded-xl border border-red-200 max-w-full overflow-auto"><h3 className="font-bold">MessageThread crashed:</h3><pre className="text-xs mt-2">{error.message}</pre><pre className="text-[9px] mt-2 opacity-70">{error.stack}</pre></div></div>}><MessageThread
                     conversation={selectedConversation}
                     messages={effectiveMessages}
                     onOpenProfile={() => setContactPanelOpen(!contactPanelOpen)}

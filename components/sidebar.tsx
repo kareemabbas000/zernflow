@@ -80,7 +80,7 @@ export function Sidebar({
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
+    setMounted(true);  
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 

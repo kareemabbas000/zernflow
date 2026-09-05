@@ -69,7 +69,7 @@ const EXPECTED_URL = "https://app.zernflow.test/api/webhooks/late";
 describe("ensureWebhookRegistered", () => {
   it("creates the webhook when none exists (AC1)", async () => {
     const z = fakeZernio([]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const res = await ensureWebhookRegistered(z.client as any, { ...opts, events: [...opts.events] });
 
     expect(res.action).toBe("created");
@@ -89,7 +89,7 @@ describe("ensureWebhookRegistered", () => {
     const z = fakeZernio([
       { _id: "wh1", name: WEBHOOK_NAME, url: EXPECTED_URL, secret: "s3cr3t", events: ["message.received", "comment.received"] },
     ]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const res = await ensureWebhookRegistered(z.client as any, { ...opts, events: [...opts.events] });
 
     expect(res.action).toBe("unchanged");
@@ -101,7 +101,7 @@ describe("ensureWebhookRegistered", () => {
     const z = fakeZernio([
       { _id: "wh1", name: WEBHOOK_NAME, url: "https://old.example/api/webhooks/late", events: ["message.received", "comment.received"] },
     ]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const res = await ensureWebhookRegistered(z.client as any, { ...opts, events: [...opts.events] });
 
     expect(res.action).toBe("updated");
@@ -122,7 +122,7 @@ describe("ensureWebhookRegistered", () => {
     const z = fakeZernio([
       { _id: "wh1", name: WEBHOOK_NAME, url: EXPECTED_URL, secret: "old-secret", events: ["message.received", "comment.received"] },
     ]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const res = await ensureWebhookRegistered(z.client as any, { ...opts, events: [...opts.events] });
 
     expect(res.action).toBe("updated");
@@ -141,7 +141,7 @@ describe("ensureWebhookRegistered", () => {
     const z = fakeZernio([
       { _id: "wh1", name: WEBHOOK_NAME, url: EXPECTED_URL, events: ["message.received"] },
     ]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const res = await ensureWebhookRegistered(z.client as any, { ...opts, events: [...opts.events] });
 
     expect(res.action).toBe("updated");
@@ -151,7 +151,7 @@ describe("ensureWebhookRegistered", () => {
   it("strips whitespace from appUrl (newline in env var corrupted the registered URL, #10)", async () => {
     const z = fakeZernio([]);
     await ensureWebhookRegistered(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       z.client as any,
       { ...opts, appUrl: "https://app.zernflow.test\n", events: [...opts.events] },
     );
@@ -171,7 +171,7 @@ describe("ensureWebhookRegistered", () => {
       { _id: "wh1", name: WEBHOOK_NAME, url: EXPECTED_URL, secret: "s3cr3t", events: ["message.received", "comment.received"] },
     ]);
     const res = await ensureWebhookRegistered(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       z.client as any,
       { ...opts, appUrl: "https://app.zernflow.test/", events: [...opts.events] },
     );
@@ -188,7 +188,7 @@ describe("ensureWebhookRegistered", () => {
         events: ["message.received", "comment.received"],
       },
     ]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const res = await ensureWebhookRegistered(z.client as any, { ...opts, events: [...opts.events] });
 
     expect(res.action).toBe("updated");
@@ -213,7 +213,7 @@ describe("ensureWebhookRegistered", () => {
         events: ["message.received", "comment.received"],
       },
     ]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const res = await ensureWebhookRegistered(z.client as any, { ...opts, events: [...opts.events] });
 
     // Same path but url differs (query token) → update to strip it and set our secret.
@@ -226,7 +226,7 @@ describe("ensureWebhookRegistered", () => {
       { _id: "a", name: "Other A", url: "https://x.example/hook", events: [] },
       { _id: "b", name: "Other B", url: "https://y.example/hook", events: [] },
     ]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const res = await ensureWebhookRegistered(z.client as any, { ...opts, events: [...opts.events] });
 
     expect(res.action).toBe("created");
@@ -243,7 +243,7 @@ describe("ensureWebhookRegistered", () => {
         events: ["message.received"],
       },
     ]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const res = await ensureWebhookRegistered(z.client as any, { ...opts, events: [...opts.events] });
 
     expect(res.action).toBe("created");
