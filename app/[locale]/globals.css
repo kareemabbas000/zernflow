@@ -298,6 +298,7 @@
   body {
     @apply bg-bg text-text-primary antialiased;
     scroll-behavior: smooth;
+    overscroll-behavior-y: none;
   }
   /* Selection styling */
   ::selection {

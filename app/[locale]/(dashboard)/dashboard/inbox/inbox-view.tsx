@@ -86,7 +86,10 @@ export function InboxView({
   const effectiveMessages = queryMessages || storeMessages;
 
   return (
-    <div className="flex h-[calc(100dvh-64px)] w-full bg-[var(--surface-2)] overflow-hidden font-sans">
+    <div className={cn(
+      "absolute inset-0 flex w-full bg-[var(--surface-2)] overflow-hidden font-sans",
+      isMobile && "pb-16" // Account for the mobile bottom nav so text input isn't hidden
+    )}>
       
       {/* 1. LEFT PANE: Native Conversation List */}
       <AnimatePresence>
