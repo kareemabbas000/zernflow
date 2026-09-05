@@ -85,19 +85,26 @@ export function ConversationList({
       const selected = Array.from(selectedConversations);
       if (selected.length === 0) return;
       
-      const response = await fetch('/api/v1/conversations/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, conversationIds: selected }),
-      });
+      let payload = {};
+      if (action === 'mark_read') payload = { unread_count: 0 };
+      if (action === 'close') payload = { status: 'closed' };
+      if (action === 'archive') payload = { status: 'archived' };
+
+      // In a real app we would want a bulk API endpoint, 
+      // but we can simulate it with Promise.all for now.
+      await Promise.all(selected.map(id => 
+        fetch(`/api/v1/conversations/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+      ));
       
-      if (!response.ok) throw new Error('Failed to execute bulk action');
-      
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
       clearSelection();
       setIsBulkMode(false);
-      // In a real app we'd mutate SWR or trigger a refresh here
     } catch (err) {
-      console.error(err);
+      console.error("Bulk action failed:", err);
     }
   };
   const selectAll = useInboxStore((s) => s.selectAll);
@@ -326,15 +333,15 @@ export function ConversationList({
       <div className="flex h-14 items-center justify-between border-b border-[var(--border)] px-4 bg-[var(--surface-2)] shrink-0">
         {isBulkMode ? (
           <>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-extrabold text-[var(--ink)] tracking-tight">
-                Select Chats
-              </h2>
-              <span className="text-xs font-medium text-[var(--ink-2)]">
+            <div className="flex items-center gap-1.5 shrink-0 overflow-hidden">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] shrink-0 hidden sm:inline-block">
+                Bulk Selection
+              </span>
+              <span className="flex h-5 items-center justify-center rounded-full bg-primary/10 px-2 text-[10px] font-bold text-primary shrink-0 whitespace-nowrap">
                 {selectedConversations.size} selected
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
                 onClick={() => {
@@ -345,7 +352,7 @@ export function ConversationList({
                     selectAll(filtered.map(c => c.id));
                   }
                 }}
-                className="px-2.5 py-1 rounded-md text-[11px] font-bold transition-all shadow-sm cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90"
+                className="px-2 py-1 rounded-md text-[10px] font-bold transition-all bg-[var(--surface)] hover:bg-[var(--surface-2)] text-[var(--ink)] border border-[var(--border)] whitespace-nowrap"
               >
                 {selectedConversations.size === filtered.length ? "Deselect All" : "Select All"}
               </button>
@@ -355,9 +362,9 @@ export function ConversationList({
                   clearSelection();
                   setIsBulkMode(false);
                 }}
-                className="px-2.5 py-1 rounded-md text-[11px] font-bold transition-all shadow-sm cursor-pointer bg-[var(--ink)] text-[var(--paper)] hover:bg-[var(--ink-2)]"
+                className="px-2 py-1 rounded-md text-[10px] font-bold transition-all text-white bg-[var(--ink)] hover:bg-[var(--ink-2)]"
               >
-                Cancel
+                Done
               </button>
             </div>
           </>
@@ -822,7 +829,7 @@ export function ConversationList({
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-8 fade-in duration-300">
           <div className="flex items-center gap-1.5 p-1.5 bg-[var(--ink)] text-[var(--paper)] rounded-2xl shadow-2xl border border-white/10 backdrop-blur-md">
             <div className="px-3 py-1 flex items-center justify-center border-r border-white/10">
-              <span className="text-xs font-bold">{selectedConversations.size} selected</span>
+              <span className="text-xs font-bold whitespace-nowrap">{selectedConversations.size} selected</span>
             </div>
             
             <button
