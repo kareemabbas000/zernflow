@@ -153,6 +153,7 @@ function MessageBubble({
   onReply,
   contactName,
   avatarUrl,
+  channelAvatar,
   platform,
   isSequentialNext,
   isSequentialPrev,
