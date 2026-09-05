@@ -742,7 +742,7 @@ export function ConversationList({
                               </span>
                             )}
                           </div>
-                          {conversation.channels?.display_name && (
+                          {conversation.channels?.display_name && filters.platform !== "all" && filters.channelId === "all" && (
                             <div className="flex items-center gap-1 mt-0.5">
                               <span
                                 className="inline-flex items-center gap-1 rounded-md bg-[var(--surface)]/80 hover:bg-[var(--surface)] px-1.5 py-0.5 text-[9.5px] font-semibold text-[var(--ink-2)] border border-[var(--border)] max-w-[130px] truncate shrink-0 shadow-2xs"
