@@ -1139,25 +1139,20 @@ export function MessageThread({
           </DropdownMenu>
 
           {/* Team Assignee Custom Popover */}
-          <div className="relative">
-            {(() => {
-              const assignedMember = members.find(
-                (m) => m.userId === conversation.assigned_to,
-              );
-              const isAssignedToMe =
-                currentUserId && conversation.assigned_to === currentUserId;
-              return (
-                <>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              {(() => {
+                const assignedMember = members.find(
+                  (m) => m.userId === conversation.assigned_to,
+                );
+                const isAssignedToMe =
+                  currentUserId && conversation.assigned_to === currentUserId;
+                return (
                   <button
                     type="button"
-                    onClick={() => {
-                      setAssigneeMenuOpen(!assigneeMenuOpen);
-                      setStageMenuOpen(false);
-                      setMenuOpen(false);
-                    }}
                     disabled={assigning}
                     className={cn(
-                      "flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer shadow-2xs",
+                      "flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer shadow-2xs outline-none",
                       assignedMember
                         ? isAssignedToMe
                           ? "bg-primary/10 text-primary border-primary/30"
@@ -1182,94 +1177,78 @@ export function MessageThread({
                     </span>
                     <ChevronDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 opacity-60" />
                   </button>
-
-                  {assigneeMenuOpen && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setAssigneeMenuOpen(false)}
-                      />
-                      <div className="absolute right-0 mt-1.5 w-52 rounded-md border border-[var(--border)] bg-[var(--paper)] p-1.5 shadow-xl z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
-                        <p className="px-2 py-1 text-[10px] font-bold text-[var(--ink-2)] uppercase tracking-wider">
-                          Assign Conversation
-                        </p>
-
-                        {/* Quick Assign to Me */}
-                        {currentUserId && (
-                          <button
-                            type="button"
-                            onClick={() => updateAssignee(currentUserId)}
-                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-primary hover:bg-primary/10 transition-colors font-semibold cursor-pointer"
-                          >
-                            <UserCheck className="h-3.5 w-3.5" />
-                            <span>Assign to Me</span>
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => updateAssignee(null)}
+                );
+              })()}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 p-1.5 bg-[var(--paper)] border-[var(--border)] shadow-xl z-50">
+              <DropdownMenuLabel className="px-2 py-1 text-[10px] font-bold text-[var(--ink-2)] uppercase tracking-wider">
+                Assign Conversation
+              </DropdownMenuLabel>
+              <DropdownMenuGroup>
+                {/* Quick Assign to Me */}
+                {currentUserId && (
+                  <DropdownMenuItem
+                    onClick={() => updateAssignee(currentUserId)}
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 cursor-pointer text-primary font-semibold focus:bg-primary/10 focus:text-primary"
+                  >
+                    <UserCheck className="h-3.5 w-3.5" />
+                    <span>Assign to Me</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onClick={() => updateAssignee(null)}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-md px-2.5 py-1.5 cursor-pointer",
+                    !conversation.assigned_to
+                      ? "bg-[var(--surface)] font-bold text-[var(--ink)]"
+                      : "text-[var(--ink-2)]"
+                  )}
+                >
+                  <span>Unassigned</span>
+                  {!conversation.assigned_to && (
+                    <Check className="h-3.5 w-3.5" />
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              {members.length > 0 && (
+                <>
+                  <DropdownMenuSeparator className="my-1 border-t border-[var(--border)]" />
+                  <DropdownMenuGroup className="max-h-48 overflow-y-auto space-y-0.5">
+                    {members.map((m) => {
+                      const isSelected = conversation.assigned_to === m.userId;
+                      return (
+                        <DropdownMenuItem
+                          key={m.userId}
+                          onClick={() => updateAssignee(m.userId)}
                           className={cn(
-                            "flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left transition-colors cursor-pointer",
-                            !conversation.assigned_to
-                              ? "bg-[var(--surface)] font-bold text-[var(--ink)]"
-                              : "text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-[var(--ink)]",
+                            "flex w-full items-center justify-between rounded-md px-2.5 py-1.5 cursor-pointer",
+                            isSelected
+                              ? "bg-primary/10 text-primary font-bold focus:bg-primary/20 focus:text-primary"
+                              : "text-[var(--ink)]"
                           )}
                         >
-                          <span>Unassigned</span>
-                          {!conversation.assigned_to && (
-                            <Check className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-
-                        {members.length > 0 && (
-                          <>
-                            <div className="my-1 border-t border-[var(--border)]" />
-                            <div className="max-h-48 overflow-y-auto space-y-0.5">
-                              {members.map((m) => {
-                                const isSelected =
-                                  conversation.assigned_to === m.userId;
-                                return (
-                                  <button
-                                    key={m.userId}
-                                    type="button"
-                                    onClick={() => updateAssignee(m.userId)}
-                                    className={cn(
-                                      "flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left transition-colors cursor-pointer",
-                                      isSelected
-                                        ? "bg-primary/10 text-primary font-bold"
-                                        : "text-[var(--ink)] hover:bg-[var(--surface)]",
-                                    )}
-                                  >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary shrink-0">
-                                        {m.name.slice(0, 1).toUpperCase()}
-                                      </div>
-                                      <div className="min-w-0 flex flex-col">
-                                        <span className="truncate text-xs">
-                                          {m.name}
-                                        </span>
-                                        <span className="text-[9px] text-[var(--ink-2)] capitalize">
-                                          {m.role}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    {isSelected && (
-                                      <Check className="h-3.5 w-3.5 text-primary shrink-0" />
-                                    )}
-                                  </button>
-                                );
-                              })}
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary shrink-0">
+                              {m.name.slice(0, 1).toUpperCase()}
                             </div>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  )}
+                            <div className="min-w-0 flex flex-col">
+                              <span className="truncate text-xs">{m.name}</span>
+                              <span className="text-[9px] text-[var(--ink-2)] capitalize">
+                                {m.role}
+                              </span>
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                          )}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuGroup>
                 </>
-              );
-            })()}
-          </div>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Status quick toggle */}
           {conversation.status === "open" ? (
@@ -1309,112 +1288,93 @@ export function MessageThread({
           )}
 
           {/* More Actions Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors"
-              title="Chat Options"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </button>
-
-            {menuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setMenuOpen(false)}
-                />
-                <div className="absolute right-0 mt-1 w-44 rounded-md border border-[var(--border)] bg-[var(--paper)] p-1 shadow-lg z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
-                  <button
-                    onClick={() =>
-                      updateConversationStatus(
-                        conversation.status === "open" ? "closed" : "open",
-                      )
-                    }
-                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors"
-                  >
-                    {conversation.status === "open" ? (
-                      <>
-                        <CheckCircle className="h-3.5 w-3.5 text-[var(--ink-2)]" />
-                        <span>Mark as Closed</span>
-                      </>
-                    ) : (
-                      <>
-                        <RotateCcw className="h-3.5 w-3.5 text-primary" />
-                        <span>Reopen Chat</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={toggleMute}
-                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors cursor-pointer"
-                  >
-                    {conversation.is_muted ? (
-                      <>
-                        <BellOff className="h-3.5 w-3.5 text-primary" />
-                        <span>Unmute Notifications</span>
-                      </>
-                    ) : (
-                      <>
-                        <BellOff className="h-3.5 w-3.5 text-[var(--ink-2)]" />
-                        <span>Mute Notifications</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={toggleAutomation}
-                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors cursor-pointer"
-                  >
-                    {conversation.is_automation_paused ? (
-                      <>
-                        <Bot className="h-3.5 w-3.5 text-emerald-500" />
-                        <span>Resume AI Bot</span>
-                      </>
-                    ) : (
-                      <>
-                        <BotOff className="h-3.5 w-3.5 text-rose-500" />
-                        <span>Pause AI Bot</span>
-                      </>
-                    )}
-                  </button>
-
-                  <div className="my-1 border-t border-[var(--border)]" />
-
-                  <button
-                    onClick={() => updateConversationStatus("snoozed")}
-                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors"
-                  >
-                    <Clock className="h-3.5 w-3.5 text-amber-500" />
-                    <span>Snooze Chat</span>
-                  </button>
-
-                  <button
-                    onClick={() => updateConversationStatus("archived")}
-                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors"
-                  >
-                    <Archive className="h-3.5 w-3.5 text-indigo-500" />
-                    <span>Archive Chat</span>
-                  </button>
-
-                  <div className="my-1 border-t border-[var(--border)]" />
-
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setDeleteConfirmOpen(true);
-                    }}
-                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    <span>Delete Chat</span>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors outline-none cursor-pointer"
+                title="Chat Options"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44 p-1 bg-[var(--paper)] border-[var(--border)] shadow-xl z-50">
+              <DropdownMenuItem
+                onClick={() =>
+                  updateConversationStatus(
+                    conversation.status === "open" ? "closed" : "open",
+                  )
+                }
+                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 cursor-pointer"
+              >
+                {conversation.status === "open" ? (
+                  <>
+                    <CheckCircle className="h-3.5 w-3.5 text-[var(--ink-2)]" />
+                    <span>Mark as Closed</span>
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="h-3.5 w-3.5 text-primary" />
+                    <span>Reopen Chat</span>
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={toggleMute}
+                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 cursor-pointer"
+              >
+                {conversation.is_muted ? (
+                  <>
+                    <BellOff className="h-3.5 w-3.5 text-primary" />
+                    <span>Unmute Notifications</span>
+                  </>
+                ) : (
+                  <>
+                    <BellOff className="h-3.5 w-3.5 text-[var(--ink-2)]" />
+                    <span>Mute Notifications</span>
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={toggleAutomation}
+                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 cursor-pointer"
+              >
+                {conversation.is_automation_paused ? (
+                  <>
+                    <Bot className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>Resume AI Bot</span>
+                  </>
+                ) : (
+                  <>
+                    <BotOff className="h-3.5 w-3.5 text-rose-500" />
+                    <span>Pause AI Bot</span>
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-1 border-t border-[var(--border)]" />
+              <DropdownMenuItem
+                onClick={() => updateConversationStatus("snoozed")}
+                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 cursor-pointer"
+              >
+                <Clock className="h-3.5 w-3.5 text-amber-500" />
+                <span>Snooze Chat</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => updateConversationStatus("archived")}
+                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 cursor-pointer"
+              >
+                <Archive className="h-3.5 w-3.5 text-indigo-500" />
+                <span>Archive Chat</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-1 border-t border-[var(--border)]" />
+              <DropdownMenuItem
+                onClick={() => setDeleteConfirmOpen(true)}
+                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-rose-600 focus:bg-rose-500/10 focus:text-rose-600 cursor-pointer"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Delete Chat</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
       </div>
 
       {/* Messages Scroll Area */}

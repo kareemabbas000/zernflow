@@ -1,0 +1,107 @@
+          {/* More Actions Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors"
+              title="Chat Options"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
+
+            {menuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div className="absolute right-0 mt-1 w-44 rounded-md border border-[var(--border)] bg-[var(--paper)] p-1 shadow-lg z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
+                  <button
+                    onClick={() =>
+                      updateConversationStatus(
+                        conversation.status === "open" ? "closed" : "open",
+                      )
+                    }
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors"
+                  >
+                    {conversation.status === "open" ? (
+                      <>
+                        <CheckCircle className="h-3.5 w-3.5 text-[var(--ink-2)]" />
+                        <span>Mark as Closed</span>
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw className="h-3.5 w-3.5 text-primary" />
+                        <span>Reopen Chat</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={toggleMute}
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors cursor-pointer"
+                  >
+                    {conversation.is_muted ? (
+                      <>
+                        <BellOff className="h-3.5 w-3.5 text-primary" />
+                        <span>Unmute Notifications</span>
+                      </>
+                    ) : (
+                      <>
+                        <BellOff className="h-3.5 w-3.5 text-[var(--ink-2)]" />
+                        <span>Mute Notifications</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={toggleAutomation}
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors cursor-pointer"
+                  >
+                    {conversation.is_automation_paused ? (
+                      <>
+                        <Bot className="h-3.5 w-3.5 text-emerald-500" />
+                        <span>Resume AI Bot</span>
+                      </>
+                    ) : (
+                      <>
+                        <BotOff className="h-3.5 w-3.5 text-rose-500" />
+                        <span>Pause AI Bot</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="my-1 border-t border-[var(--border)]" />
+
+                  <button
+                    onClick={() => updateConversationStatus("snoozed")}
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors"
+                  >
+                    <Clock className="h-3.5 w-3.5 text-amber-500" />
+                    <span>Snooze Chat</span>
+                  </button>
+
+                  <button
+                    onClick={() => updateConversationStatus("archived")}
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors"
+                  >
+                    <Archive className="h-3.5 w-3.5 text-indigo-500" />
+                    <span>Archive Chat</span>
+                  </button>
+
+                  <div className="my-1 border-t border-[var(--border)]" />
+
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setDeleteConfirmOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Delete Chat</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
