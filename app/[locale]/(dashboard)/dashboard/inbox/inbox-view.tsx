@@ -59,11 +59,6 @@ export function InboxView({
 
   const { data: queryMessages } = useConversationMessages(selectedId);
 
-  useEffect(() => {
-    if (selectedId && queryMessages) {
-      setMessages(selectedId, queryMessages);
-    }
-  }, [selectedId, queryMessages, setMessages]);
 
   useEffect(() => {
     if (!conversationsLoaded && initialConversations.length > 0) {
@@ -86,14 +81,6 @@ export function InboxView({
     [selectConversation, markConversationAsRead, isMobile, setContactPanelOpen]
   );
 
-  useEffect(() => {
-    if (targetConvId && displayConversations.length > 0) {
-      const match = displayConversations.find((c) => c.id === targetConvId);
-      if (match && selectedId !== match.id) {
-        handleSelectConversation(match);
-      }
-    }
-  }, [targetConvId, displayConversations, selectedId, handleSelectConversation]);
 
   const effectiveMessages = queryMessages || storeMessages;
 

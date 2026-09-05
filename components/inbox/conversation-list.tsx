@@ -481,7 +481,7 @@ export function ConversationList({
       )}
 
       {/* Search & Status Filters */}
-      <div className="flex flex-col gap-2 p-3 shrink-0 relative z-10 border-b border-[var(--border)]/40 bg-[var(--surface-2)]/30">
+      <div className="flex flex-col gap-1.5 px-3 py-2 shrink-0 relative z-10 border-b border-[var(--border)]/40 bg-[var(--surface-2)]/30">
         <div className="relative group">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink-3)] group-focus-within:text-[var(--brand)] transition-colors" />
           <input

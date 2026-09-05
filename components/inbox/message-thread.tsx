@@ -1005,9 +1005,9 @@ export function MessageThread({
   return (
     <div className="flex h-full flex-col bg-[var(--paper)] relative">
       {/* Header */}
-      <div className="flex h-13 sm:h-14 items-center justify-between border-b border-[var(--border)] px-3 sm:px-4 bg-[var(--paper)]/90 backdrop-blur-md shrink-0 z-10 gap-2">
+      <div className="flex flex-wrap sm:flex-nowrap min-h-14 items-center justify-between border-b border-[var(--border)] px-3 sm:px-4 py-2 sm:py-0 bg-[var(--paper)]/90 backdrop-blur-md shrink-0 z-10 gap-y-2 gap-x-2">
         {/* Left: Contact Info */}
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1 w-full sm:w-auto">
           <Avatar
             src={conversation.contacts?.avatar_url}
             name={contactName}
@@ -1016,7 +1016,7 @@ export function MessageThread({
           />
           <div className="min-w-0 flex flex-col justify-center">
             <div className="flex items-center gap-1.5 min-w-0">
-              <p className="text-xs sm:text-sm font-bold text-[var(--ink)] truncate max-w-[120px] sm:max-w-[200px] md:max-w-[280px]">
+              <p className="text-sm font-bold text-[var(--ink)] truncate max-w-[160px] sm:max-w-[220px] md:max-w-[280px]">
                 {contactName}
               </p>
               {conversation.channels?.display_name && (
@@ -1059,7 +1059,7 @@ export function MessageThread({
         </div>
 
         {/* Right: Actions Toolbar */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 w-full sm:w-auto overflow-x-auto scrollbar-none justify-between sm:justify-end pb-1 sm:pb-0">
           {/* CRM Lead Stage Custom Popover */}
           <div className="relative">
             <button
@@ -1579,8 +1579,8 @@ export function MessageThread({
       )}
 
       {/* Bottom Composer */}
-      <div className="border-t border-[var(--border)] bg-[var(--surface)] shrink-0 z-30">
-        <div className="mx-auto max-w-4xl p-3 md:p-4">
+      <div className="border-t border-[var(--border)] bg-[var(--surface)] shrink-0 z-30 shadow-[0_-4px_24px_rgba(0,0,0,0.02)]">
+        <div className="mx-auto max-w-4xl p-2 md:p-3">
           {/* Attachment previews */}
           {attachments.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-2">
