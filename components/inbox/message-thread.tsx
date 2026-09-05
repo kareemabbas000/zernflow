@@ -406,8 +406,6 @@ export function MessageThread({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Dropdown States
-  const [stageMenuOpen, setStageMenuOpen] = useState(false);
-  const [assigneeMenuOpen, setAssigneeMenuOpen] = useState(false);
 
   const [attachments, setAttachments] = useState<
     {
@@ -442,7 +440,6 @@ export function MessageThread({
   const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
 
   // Action Menu Dropdown State
-  const [menuOpen, setMenuOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
