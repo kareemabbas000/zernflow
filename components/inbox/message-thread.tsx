@@ -370,8 +370,8 @@ export function MessageThread({
   const deleteConversationMutation = useDeleteConversation();
 
   const storeMessages = useInboxStore((s) =>
-    conversation?.id ? (s.messagesByConversation[conversation.id] ?? []) : [],
-  );
+    conversation?.id ? s.messagesByConversation[conversation.id] : undefined
+  ) || [];
   const sendMessageToStore = useInboxStore((s) => s.sendMessage);
   const confirmMessage = useInboxStore((s) => s.confirmMessage);
   const failMessage = useInboxStore((s) => s.failMessage);
