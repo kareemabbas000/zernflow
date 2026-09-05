@@ -39,7 +39,11 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { uploadAttachment } from "@/lib/storage";
 import { useInboxStore } from "@/lib/stores/inbox-store";
-import { useConversationMessages, useUpdateConversationStatus, useDeleteConversation } from "@/lib/hooks/use-inbox-queries";
+import {
+  useConversationMessages,
+  useUpdateConversationStatus,
+  useDeleteConversation,
+} from "@/lib/hooks/use-inbox-queries";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 import { cn } from "@/lib/utils";
@@ -48,9 +52,15 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { AttachmentRenderer } from "@/components/inbox/attachment-renderer";
 import { LEAD_STAGE_OPTIONS, LEAD_STAGES } from "@/lib/crm";
-import type { Database, ConversationStatus, Platform } from "@/lib/types/database";
+import type {
+  Database,
+  ConversationStatus,
+  Platform,
+} from "@/lib/types/database";
 
-type Message = Database["public"]["Tables"]["messages"]["Row"] & { is_internal?: boolean };
+type Message = Database["public"]["Tables"]["messages"]["Row"] & {
+  is_internal?: boolean;
+};
 type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
   contacts: Database["public"]["Tables"]["contacts"]["Row"] | null;
   channels?: {
@@ -64,11 +74,46 @@ type Conversation = Database["public"]["Tables"]["conversations"]["Row"] & {
 };
 
 const POPULAR_EMOJIS = [
-  "😀", "😂", "🤣", "😊", "😍", "🥰", "😎", "🤩",
-  "🤔", "🤫", "🙄", "😴", "😭", "😤", "😡", "🤯",
-  "👍", "👎", "👏", "🙌", "🙏", "🤝", "💪", "✌️",
-  "❤️", "🔥", "✨", "🎉", "💯", "🚀", "💡", "⭐",
-  "👀", "🎯", "✅", "❌", "❓", "❗", "💬", "📦"
+  "😀",
+  "😂",
+  "🤣",
+  "😊",
+  "😍",
+  "🥰",
+  "😎",
+  "🤩",
+  "🤔",
+  "🤫",
+  "🙄",
+  "😴",
+  "😭",
+  "😤",
+  "😡",
+  "🤯",
+  "👍",
+  "👎",
+  "👏",
+  "🙌",
+  "🙏",
+  "🤝",
+  "💪",
+  "✌️",
+  "❤️",
+  "🔥",
+  "✨",
+  "🎉",
+  "💯",
+  "🚀",
+  "💡",
+  "⭐",
+  "👀",
+  "🎯",
+  "✅",
+  "❌",
+  "❓",
+  "❗",
+  "💬",
+  "📦",
 ];
 
 function formatMessageTime(dateStr: string): string {
@@ -93,7 +138,7 @@ function formatDateSeparator(dateStr: string): string {
 
 function shouldShowDateSeparator(
   current: Message,
-  previous: Message | undefined
+  previous: Message | undefined,
 ): boolean {
   if (!previous) return true;
   const currentDate = new Date(current.created_at).toDateString();
@@ -115,6 +160,8 @@ function MessageBubble({
   contactName?: string | null;
   avatarUrl?: string | null;
   platform?: Platform | null;
+  isSequentialNext?: boolean;
+  isSequentialPrev?: boolean;
 }) {
   const isInbound = message.direction === "inbound";
   const isBot = message.sent_by_flow_id !== null;
@@ -127,7 +174,7 @@ function MessageBubble({
     <div
       className={cn(
         "flex items-end gap-2 group transition-all relative",
-        isInbound ? "justify-start" : "justify-end"
+        isInbound ? "justify-start" : "justify-end",
       )}
     >
       {isInbound && (
@@ -144,22 +191,22 @@ function MessageBubble({
         <button
           type="button"
           onClick={() => onReply(message)}
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-[var(--surface)] text-[var(--ink-2)] hover:text-[var(--ink)] transition-all shrink-0 mb-3 cursor-pointer shadow-2xs"
+          className="opacity-0 group-hover:opacity-100 p-2 rounded-full hover:bg-[var(--surface-2)] text-[var(--ink-3)] hover:text-[var(--ink)] transition-all shrink-0 mb-3 cursor-pointer shadow-sm border border-[var(--border)] bg-[var(--surface)]"
           title="Reply to this message"
         >
           <Reply className="h-3.5 w-3.5" />
         </button>
       )}
 
-      <div className="max-w-[75%] sm:max-w-[70%] flex flex-col">
+      <div className="max-w-[85%] sm:max-w-[75%] flex flex-col">
         <div
           className={cn(
-            "rounded-md px-4 py-2.5 text-sm shadow-xs transition-shadow",
+            "px-4 py-3 text-[14px] shadow-sm transition-shadow",
             isInbound
-              ? "rounded-tl-xs bg-[var(--surface)] text-[var(--ink)] border border-[var(--border)]/40"
-              : message.is_internal 
-                ? "rounded-tr-xs bg-amber-500/10 text-amber-900 dark:text-amber-200 border border-amber-500/30"
-                : "rounded-tr-xs bg-[var(--brand)] text-white shadow-none"
+              ? `bg-[var(--surface-2)] text-[var(--ink)] border border-[var(--border)] ${isSequentialPrev ? "rounded-tl-sm mt-0.5" : "rounded-tl-2xl mt-2"} ${isSequentialNext ? "rounded-bl-sm" : "rounded-bl-2xl"} rounded-r-2xl`
+              : message.is_internal
+                ? `bg-amber-500/10 text-amber-900 dark:text-amber-200 border border-amber-500/30 ${isSequentialPrev ? "rounded-tr-sm mt-0.5" : "rounded-tr-2xl mt-2"} ${isSequentialNext ? "rounded-br-sm" : "rounded-br-2xl"} rounded-l-2xl`
+                : `bg-[var(--brand)] text-white shadow-md shadow-[var(--brand)]/10 ${isSequentialPrev ? "rounded-tr-sm mt-0.5" : "rounded-tr-2xl mt-2"} ${isSequentialNext ? "rounded-br-sm" : "rounded-br-2xl"} rounded-l-2xl`,
           )}
         >
           {message.is_internal && (
@@ -175,12 +222,14 @@ function MessageBubble({
                 "mb-2.5 rounded-md border-l-3 px-3 py-1.5 text-xs select-none",
                 isInbound
                   ? "border-primary bg-[var(--paper)]/60 text-[var(--ink)]"
-                  : "border-primary-foreground/70 bg-black/20 text-primary-foreground"
+                  : "border-primary-foreground/70 bg-black/20 text-primary-foreground",
               )}
             >
               <div className="flex items-center gap-1 font-bold text-[10px] opacity-90">
                 <Reply className="h-3 w-3 shrink-0" />
-                <span className="truncate">{replyInfo.sender_name || "Replying to"}</span>
+                <span className="truncate">
+                  {replyInfo.sender_name || "Replying to"}
+                </span>
               </div>
               <p className="text-[11px] opacity-80 truncate mt-0.5 font-normal">
                 {replyInfo.text || "Media message"}
@@ -190,28 +239,31 @@ function MessageBubble({
 
           {message.text ? (
             <p className="whitespace-pre-wrap leading-relaxed break-words">
-              {typeof message.text === "string" ? message.text : JSON.stringify(message.text)}
+              {typeof message.text === "string"
+                ? message.text
+                : JSON.stringify(message.text)}
             </p>
           ) : (
-            (!message.attachments || !Array.isArray(message.attachments) || message.attachments.length === 0) && (
-              isInbound ? (
-                (message as any).referral ? (
-                  <div className="flex items-center gap-1.5 text-xs text-[var(--ink-2)] font-medium py-0.5">
-                    <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-                    <span>Started conversation from your Instagram Ad</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 text-xs text-[var(--ink-2)] font-medium py-0.5">
-                    <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-                    <span>Started conversation / Sent a reaction</span>
-                  </div>
-                )
+            (!message.attachments ||
+              !Array.isArray(message.attachments) ||
+              message.attachments.length === 0) &&
+            (isInbound ? (
+              (message as any).referral ? (
+                <div className="flex items-center gap-1.5 text-xs text-[var(--ink-2)] font-medium py-0.5">
+                  <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span>Started conversation from your Instagram Ad</span>
+                </div>
               ) : (
-                <span className="text-xs text-primary-foreground/85 font-medium">
-                  Sent message
-                </span>
+                <div className="flex items-center gap-1.5 text-xs text-[var(--ink-2)] font-medium py-0.5">
+                  <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span>Started conversation / Sent a reaction</span>
+                </div>
               )
-            )
+            ) : (
+              <span className="text-xs text-primary-foreground/85 font-medium">
+                Sent message
+              </span>
+            ))
           )}
 
           <AttachmentRenderer
@@ -226,7 +278,7 @@ function MessageBubble({
         <div
           className={cn(
             "mt-1 flex items-center gap-1 text-[10px] text-[var(--ink-2)] px-1",
-            isInbound ? "justify-start" : "justify-end"
+            isInbound ? "justify-start" : "justify-end",
           )}
         >
           {isBot && (
@@ -238,16 +290,27 @@ function MessageBubble({
           <span>{formatMessageTime(message.created_at)}</span>
           {!isInbound && (
             <span className="ml-1 flex items-center">
-              {message.status === "pending" && <Clock className="h-3 w-3 animate-spin" />}
-              {message.delivery_status === "sent" && <Check className="h-3.5 w-3.5 text-[var(--ink-2)]" />}
-              {message.delivery_status === "delivered" && <CheckCheck className="h-3.5 w-3.5 text-[var(--ink-2)]" />}
-              {message.delivery_status === "read" && <CheckCheck className="h-3.5 w-3.5 text-blue-500" />}
+              {message.status === "pending" && (
+                <Clock className="h-3 w-3 animate-spin" />
+              )}
+              {message.delivery_status === "sent" && (
+                <Check className="h-3.5 w-3.5 text-[var(--ink-2)]" />
+              )}
+              {message.delivery_status === "delivered" && (
+                <CheckCheck className="h-3.5 w-3.5 text-[var(--ink-2)]" />
+              )}
+              {message.delivery_status === "read" && (
+                <CheckCheck className="h-3.5 w-3.5 text-blue-500" />
+              )}
               {message.status === "failed" && (
                 <div className="flex items-center gap-1 text-red-500 font-medium">
                   <AlertCircle className="h-3 w-3" />
                   <span>Failed</span>
                   {onRetry && (
-                    <button onClick={() => onRetry(message)} className="ml-1 underline font-bold">
+                    <button
+                      onClick={() => onRetry(message)}
+                      className="ml-1 underline font-bold"
+                    >
                       Retry
                     </button>
                   )}
@@ -294,29 +357,30 @@ export function MessageThread({
   const router = useRouter();
 
   // ── TanStack Query + Zustand fallback ────────────────────────────
-  const { data: queryMessages } = useConversationMessages(conversation?.id ?? null);
+  const { data: queryMessages } = useConversationMessages(
+    conversation?.id ?? null,
+  );
   const updateStatusMutation = useUpdateConversationStatus();
   const deleteConversationMutation = useDeleteConversation();
 
-  const storeMessages = useInboxStore(
-    (s) =>
-      conversation?.id
-        ? s.messagesByConversation[conversation.id] ?? []
-        : []
+  const storeMessages = useInboxStore((s) =>
+    conversation?.id ? (s.messagesByConversation[conversation.id] ?? []) : [],
   );
   const sendMessageToStore = useInboxStore((s) => s.sendMessage);
   const confirmMessage = useInboxStore((s) => s.confirmMessage);
   const failMessage = useInboxStore((s) => s.failMessage);
   const upsertConversation = useInboxStore((s) => s.upsertConversation);
-  const removeConversationFromStore = useInboxStore((s) => s.removeConversation);
+  const removeConversationFromStore = useInboxStore(
+    (s) => s.removeConversation,
+  );
 
   // Combine query and store messages for instant reactivity
   const messages =
     queryMessages && queryMessages.length > 0
       ? queryMessages
       : storeMessages.length > 0
-      ? storeMessages
-      : initialMessages;
+        ? storeMessages
+        : initialMessages;
 
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -324,20 +388,30 @@ export function MessageThread({
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [assigning, setAssigning] = useState(false);
   const [updatingStage, setUpdatingStage] = useState(false);
-  const [members, setMembers] = useState<{
-    userId: string;
-    name: string;
-    email: string;
-    role: string;
-    avatarUrl: string | null;
-  }[]>([]);
+  const [members, setMembers] = useState<
+    {
+      userId: string;
+      name: string;
+      email: string;
+      role: string;
+      avatarUrl: string | null;
+    }[]
+  >([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Dropdown States
   const [stageMenuOpen, setStageMenuOpen] = useState(false);
   const [assigneeMenuOpen, setAssigneeMenuOpen] = useState(false);
-  
-  const [attachments, setAttachments] = useState<{url: string, type: string, name: string, path?: string, isVoiceNote?: boolean}[]>([]);
+
+  const [attachments, setAttachments] = useState<
+    {
+      url: string;
+      type: string;
+      name: string;
+      path?: string;
+      isVoiceNote?: boolean;
+    }[]
+  >([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -345,11 +419,14 @@ export function MessageThread({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  
+
   // Voice recording state & microphone diagnostics
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [micErrorInfo, setMicErrorInfo] = useState<{ name: string; message: string } | null>(null);
+  const [micErrorInfo, setMicErrorInfo] = useState<{
+    name: string;
+    message: string;
+  } | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -381,7 +458,9 @@ export function MessageThread({
     if (!conversation?.workspace_id) return;
     async function loadMembers() {
       try {
-        const res = await fetch(`/api/v1/workspaces/${conversation!.workspace_id}/members`);
+        const res = await fetch(
+          `/api/v1/workspaces/${conversation!.workspace_id}/members`,
+        );
         if (res.ok) {
           const data = await res.json();
           setMembers(data.members || []);
@@ -401,24 +480,45 @@ export function MessageThread({
   }, [conversation?.workspace_id]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files.length || !conversation?.workspace_id) return;
-    
+    if (
+      !e.target.files ||
+      !e.target.files.length ||
+      !conversation?.workspace_id
+    )
+      return;
+
     setUploadingFiles(true);
     try {
-      const newAttachments: {url: string, type: string, name: string, path?: string}[] = [];
+      const newAttachments: {
+        url: string;
+        type: string;
+        name: string;
+        path?: string;
+      }[] = [];
       for (let i = 0; i < e.target.files.length; i++) {
         const file = e.target.files[i];
-        const { url, path } = await uploadAttachment(conversation.workspace_id, conversation.id, file);
+        const { url, path } = await uploadAttachment(
+          conversation.workspace_id,
+          conversation.id,
+          file,
+        );
         newAttachments.push({
           url,
           path,
-          type: file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "document",
-          name: file.name
+          type: file.type.startsWith("image/")
+            ? "image"
+            : file.type.startsWith("video/")
+              ? "video"
+              : "document",
+          name: file.name,
         });
       }
       setAttachments((prev) => [...prev, ...newAttachments]);
     } catch (err) {
-      alert("Failed to upload attachment: " + (err instanceof Error ? err.message : String(err)));
+      alert(
+        "Failed to upload attachment: " +
+          (err instanceof Error ? err.message : String(err)),
+      );
     } finally {
       setUploadingFiles(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -448,16 +548,20 @@ export function MessageThread({
   const startRecording = async () => {
     setMicErrorInfo(null);
     try {
-      if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      if (
+        typeof window === "undefined" ||
+        !navigator.mediaDevices?.getUserMedia
+      ) {
         setMicErrorInfo({
           name: "NotSupportedError",
-          message: "Media recording is not supported in this browser or over an insecure (HTTP) connection.",
+          message:
+            "Media recording is not supported in this browser or over an insecure (HTTP) connection.",
         });
         return;
       }
-      
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
+
       // Determine supported audio mime type
       let mimeType = "audio/webm";
       if (!MediaRecorder.isTypeSupported("audio/webm")) {
@@ -472,7 +576,7 @@ export function MessageThread({
 
       const options = mimeType ? { mimeType } : undefined;
       const mediaRecorder = new MediaRecorder(stream, options);
-      
+
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -484,48 +588,80 @@ export function MessageThread({
 
       mediaRecorder.onstop = async () => {
         const actualMime = mediaRecorder.mimeType || mimeType || "audio/webm";
-        const extension = actualMime.includes("mp4") ? "mp4" : actualMime.includes("ogg") ? "ogg" : "webm";
-        
-        const audioBlob = new Blob(audioChunksRef.current, { type: actualMime });
+        const extension = actualMime.includes("mp4")
+          ? "mp4"
+          : actualMime.includes("ogg")
+            ? "ogg"
+            : "webm";
+
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: actualMime,
+        });
         stream.getTracks().forEach((track) => track.stop());
-        
+
         let finalBlob = audioBlob;
         let finalExtension = extension;
         let finalMimeType = actualMime;
         let isVoiceNote = false;
 
         // WhatsApp strictly requires .ogg OPUS. Transcode if FFmpeg is ready!
-        if (ffmpegLoaded && ffmpegRef.current && conversation?.platform === "whatsapp") {
+        if (
+          ffmpegLoaded &&
+          ffmpegRef.current &&
+          conversation?.platform === "whatsapp"
+        ) {
           try {
             const ffmpeg = ffmpegRef.current;
             const inputName = `input.${extension}`;
             const outputName = `output.ogg`;
-            
+
             await ffmpeg.writeFile(inputName, await fetchFile(audioBlob));
-            await ffmpeg.exec(['-i', inputName, '-c:a', 'libopus', '-ac', '1', outputName]);
-            
+            await ffmpeg.exec([
+              "-i",
+              inputName,
+              "-c:a",
+              "libopus",
+              "-ac",
+              "1",
+              outputName,
+            ]);
+
             const data = await ffmpeg.readFile(outputName);
             finalBlob = new Blob([data as any], { type: "audio/ogg" });
             finalExtension = "ogg";
             finalMimeType = "audio/ogg";
             isVoiceNote = true;
           } catch (transcodeErr) {
-            console.error("FFmpeg transcode failed, falling back to raw audio", transcodeErr);
+            console.error(
+              "FFmpeg transcode failed, falling back to raw audio",
+              transcodeErr,
+            );
           }
         }
-        
-        const file = new File([finalBlob], `voice_note_${Date.now()}.${finalExtension}`, { type: finalMimeType });
-        
+
+        const file = new File(
+          [finalBlob],
+          `voice_note_${Date.now()}.${finalExtension}`,
+          { type: finalMimeType },
+        );
+
         setUploadingFiles(true);
         try {
           if (!conversation?.workspace_id) throw new Error("Missing workspace");
-          const { url, path } = await uploadAttachment(conversation.workspace_id, conversation.id, file);
+          const { url, path } = await uploadAttachment(
+            conversation.workspace_id,
+            conversation.id,
+            file,
+          );
           setAttachments((prev) => [
             ...prev,
-            { url, path, type: "audio", name: "Voice Note", isVoiceNote }
+            { url, path, type: "audio", name: "Voice Note", isVoiceNote },
           ]);
         } catch (err) {
-          alert("Failed to upload voice note: " + (err instanceof Error ? err.message : String(err)));
+          alert(
+            "Failed to upload voice note: " +
+              (err instanceof Error ? err.message : String(err)),
+          );
         } finally {
           setUploadingFiles(false);
         }
@@ -584,7 +720,7 @@ export function MessageThread({
         alert("Failed to update status");
       }
     },
-    [conversation, updateStatusMutation]
+    [conversation, updateStatusMutation],
   );
 
   const handleDeleteConversation = useCallback(async () => {
@@ -596,9 +732,17 @@ export function MessageThread({
       setMenuOpen(false);
       router.push("/dashboard/inbox");
     } catch (err) {
-      alert("Failed to delete conversation: " + (err instanceof Error ? err.message : String(err)));
+      alert(
+        "Failed to delete conversation: " +
+          (err instanceof Error ? err.message : String(err)),
+      );
     }
-  }, [conversation, deleteConversationMutation, removeConversationFromStore, router]);
+  }, [
+    conversation,
+    deleteConversationMutation,
+    removeConversationFromStore,
+    router,
+  ]);
 
   const updateAssignee = useCallback(
     async (userId: string | null) => {
@@ -613,11 +757,14 @@ export function MessageThread({
       });
 
       try {
-        const res = await fetch(`/api/v1/conversations/${conversation.id}/assign`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ assignedTo: userId || null }),
-        });
+        const res = await fetch(
+          `/api/v1/conversations/${conversation.id}/assign`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ assignedTo: userId || null }),
+          },
+        );
         if (!res.ok) throw new Error("Failed to assign");
       } catch (err) {
         console.error("Failed to assign conversation:", err);
@@ -625,7 +772,7 @@ export function MessageThread({
         setAssigning(false);
       }
     },
-    [conversation, assigning, upsertConversation]
+    [conversation, assigning, upsertConversation],
   );
 
   const toggleMute = useCallback(async () => {
@@ -677,11 +824,14 @@ export function MessageThread({
       }
 
       try {
-        const res = await fetch(`/api/v1/contacts/${conversation.contact_id}/lead-stage`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ leadStage: stage }),
-        });
+        const res = await fetch(
+          `/api/v1/contacts/${conversation.contact_id}/lead-stage`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ leadStage: stage }),
+          },
+        );
         if (!res.ok) throw new Error("Failed to update lead stage");
       } catch (err) {
         console.error("Failed to update lead stage:", err);
@@ -689,7 +839,7 @@ export function MessageThread({
         setUpdatingStage(false);
       }
     },
-    [conversation, updatingStage, upsertConversation]
+    [conversation, updatingStage, upsertConversation],
   );
 
   const [userScrolled, setUserScrolled] = useState(false);
@@ -717,7 +867,13 @@ export function MessageThread({
   }, [conversation?.id, messages.length, userScrolled]);
 
   async function handleSend() {
-    if ((!input.trim() && attachments.length === 0) || !conversation || sending || uploadingFiles) return;
+    if (
+      (!input.trim() && attachments.length === 0) ||
+      !conversation ||
+      sending ||
+      uploadingFiles
+    )
+      return;
 
     const text = input.trim();
     setInput("");
@@ -730,8 +886,13 @@ export function MessageThread({
     const replyPayload = currentReply
       ? {
           id: currentReply.id,
-          text: currentReply.text || ((currentReply.attachments as any[])?.length ? "Attached media" : "Message"),
-          sender_name: currentReply.direction === "inbound" ? contactName : "You",
+          text:
+            currentReply.text ||
+            ((currentReply.attachments as any[])?.length
+              ? "Attached media"
+              : "Message"),
+          sender_name:
+            currentReply.direction === "inbound" ? contactName : "You",
         }
       : null;
 
@@ -743,7 +904,9 @@ export function MessageThread({
       direction: "outbound",
       text,
       attachments: attachmentsToSend.length > 0 ? attachmentsToSend : null,
-      quick_reply_payload: replyPayload ? ({ reply_to: replyPayload } as any) : null,
+      quick_reply_payload: replyPayload
+        ? ({ reply_to: replyPayload } as any)
+        : null,
       postback_payload: null,
       callback_data: null,
       platform_message_id: null,
@@ -824,7 +987,8 @@ export function MessageThread({
           Select a conversation
         </h3>
         <p className="mt-1 text-xs text-[var(--ink-2)] max-w-xs">
-          Choose a chat from the list to view messages and interact with your customer
+          Choose a chat from the list to view messages and interact with your
+          customer
         </p>
       </div>
     );
@@ -855,7 +1019,9 @@ export function MessageThread({
                   title={`Via channel: ${conversation.channels.display_name}${conversation.channels.username ? ` (@${conversation.channels.username})` : ""}`}
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                  <span className="truncate max-w-[90px] sm:max-w-[140px]">{conversation.channels.display_name}</span>
+                  <span className="truncate max-w-[90px] sm:max-w-[140px]">
+                    {conversation.channels.display_name}
+                  </span>
                 </span>
               )}
             </div>
@@ -863,14 +1029,22 @@ export function MessageThread({
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
               <span>{conversation.platform}</span>
               <span className="text-[var(--ink-2)]/40">•</span>
-              <span className="text-[var(--ink-2)]/80">{conversation.status}</span>
+              <span className="text-[var(--ink-2)]/80">
+                {conversation.status}
+              </span>
               {conversation.is_muted && (
-                <span title="Conversation Muted" className="inline-flex items-center text-amber-500 ml-0.5">
+                <span
+                  title="Conversation Muted"
+                  className="inline-flex items-center text-amber-500 ml-0.5"
+                >
                   <BellOff className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 </span>
               )}
               {conversation.is_automation_paused && (
-                <span title="AI Automation Paused" className="inline-flex items-center text-rose-500 ml-0.5">
+                <span
+                  title="AI Automation Paused"
+                  className="inline-flex items-center text-rose-500 ml-0.5"
+                >
                   <BotOff className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 </span>
               )}
@@ -892,26 +1066,40 @@ export function MessageThread({
               disabled={updatingStage}
               className={cn(
                 "flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer shadow-2xs",
-                LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.badgeClass ||
-                  "bg-[var(--surface)]/60 text-[var(--ink-2)] border-[var(--border)]"
+                LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]
+                  ?.badgeClass ||
+                  "bg-[var(--surface)]/60 text-[var(--ink-2)] border-[var(--border)]",
               )}
               title="CRM Lead Stage"
             >
-              <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.dot)} />
-              <span className="capitalize">{LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.label || "Lead"}</span>
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 rounded-full shrink-0",
+                  LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]?.dot,
+                )}
+              />
+              <span className="capitalize">
+                {LEAD_STAGES[conversation.contacts?.lead_stage || "lead"]
+                  ?.label || "Lead"}
+              </span>
               <ChevronDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 opacity-60" />
             </button>
 
             {stageMenuOpen && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setStageMenuOpen(false)} />
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setStageMenuOpen(false)}
+                />
                 <div className="absolute right-0 mt-1.5 w-44 rounded-md border border-[var(--border)] bg-[var(--paper)] p-1.5 shadow-xl z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
                   <p className="px-2 py-1 text-[10px] font-bold text-[var(--ink-2)] uppercase tracking-wider">
                     CRM Lead Stage
                   </p>
                   <div className="space-y-0.5">
                     {LEAD_STAGE_OPTIONS.map((opt) => {
-                      const isCurrent = (conversation.contacts?.lead_stage || "lead") === opt.id;
+                      const isCurrent =
+                        (conversation.contacts?.lead_stage || "lead") ===
+                        opt.id;
                       return (
                         <button
                           key={opt.id}
@@ -924,14 +1112,18 @@ export function MessageThread({
                             "flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-xs transition-colors cursor-pointer",
                             isCurrent
                               ? "bg-primary/10 text-primary font-bold"
-                              : "text-[var(--ink)] hover:bg-[var(--surface)] font-medium"
+                              : "text-[var(--ink)] hover:bg-[var(--surface)] font-medium",
                           )}
                         >
                           <div className="flex items-center gap-2">
-                            <span className={cn("h-2 w-2 rounded-full", opt.dot)} />
+                            <span
+                              className={cn("h-2 w-2 rounded-full", opt.dot)}
+                            />
                             <span>{opt.label}</span>
                           </div>
-                          {isCurrent && <Check className="h-3.5 w-3.5 text-primary" />}
+                          {isCurrent && (
+                            <Check className="h-3.5 w-3.5 text-primary" />
+                          )}
                         </button>
                       );
                     })}
@@ -944,8 +1136,11 @@ export function MessageThread({
           {/* Team Assignee Custom Popover */}
           <div className="relative">
             {(() => {
-              const assignedMember = members.find((m) => m.userId === conversation.assigned_to);
-              const isAssignedToMe = currentUserId && conversation.assigned_to === currentUserId;
+              const assignedMember = members.find(
+                (m) => m.userId === conversation.assigned_to,
+              );
+              const isAssignedToMe =
+                currentUserId && conversation.assigned_to === currentUserId;
               return (
                 <>
                   <button
@@ -962,7 +1157,7 @@ export function MessageThread({
                         ? isAssignedToMe
                           ? "bg-primary/10 text-primary border-primary/30"
                           : "bg-[var(--surface)] text-[var(--ink)] border-[var(--border)]"
-                        : "bg-[var(--paper)]/80 text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--surface)]"
+                        : "bg-[var(--paper)]/80 text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--surface)]",
                     )}
                     title="Assigned team member"
                   >
@@ -974,14 +1169,21 @@ export function MessageThread({
                       <User className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[var(--ink-2)]" />
                     )}
                     <span className="max-w-[65px] sm:max-w-[85px] truncate">
-                      {assignedMember ? (isAssignedToMe ? "Me" : assignedMember.name) : "Unassigned"}
+                      {assignedMember
+                        ? isAssignedToMe
+                          ? "Me"
+                          : assignedMember.name
+                        : "Unassigned"}
                     </span>
                     <ChevronDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 opacity-60" />
                   </button>
 
                   {assigneeMenuOpen && (
                     <>
-                      <div className="fixed inset-0 z-40" onClick={() => setAssigneeMenuOpen(false)} />
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setAssigneeMenuOpen(false)}
+                      />
                       <div className="absolute right-0 mt-1.5 w-52 rounded-md border border-[var(--border)] bg-[var(--paper)] p-1.5 shadow-xl z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
                         <p className="px-2 py-1 text-[10px] font-bold text-[var(--ink-2)] uppercase tracking-wider">
                           Assign Conversation
@@ -1006,11 +1208,13 @@ export function MessageThread({
                             "flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left transition-colors cursor-pointer",
                             !conversation.assigned_to
                               ? "bg-[var(--surface)] font-bold text-[var(--ink)]"
-                              : "text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-[var(--ink)]"
+                              : "text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-[var(--ink)]",
                           )}
                         >
                           <span>Unassigned</span>
-                          {!conversation.assigned_to && <Check className="h-3.5 w-3.5" />}
+                          {!conversation.assigned_to && (
+                            <Check className="h-3.5 w-3.5" />
+                          )}
                         </button>
 
                         {members.length > 0 && (
@@ -1018,7 +1222,8 @@ export function MessageThread({
                             <div className="my-1 border-t border-[var(--border)]" />
                             <div className="max-h-48 overflow-y-auto space-y-0.5">
                               {members.map((m) => {
-                                const isSelected = conversation.assigned_to === m.userId;
+                                const isSelected =
+                                  conversation.assigned_to === m.userId;
                                 return (
                                   <button
                                     key={m.userId}
@@ -1028,7 +1233,7 @@ export function MessageThread({
                                       "flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left transition-colors cursor-pointer",
                                       isSelected
                                         ? "bg-primary/10 text-primary font-bold"
-                                        : "text-[var(--ink)] hover:bg-[var(--surface)]"
+                                        : "text-[var(--ink)] hover:bg-[var(--surface)]",
                                     )}
                                   >
                                     <div className="flex items-center gap-2 min-w-0">
@@ -1036,11 +1241,17 @@ export function MessageThread({
                                         {m.name.slice(0, 1).toUpperCase()}
                                       </div>
                                       <div className="min-w-0 flex flex-col">
-                                        <span className="truncate text-xs">{m.name}</span>
-                                        <span className="text-[9px] text-[var(--ink-2)] capitalize">{m.role}</span>
+                                        <span className="truncate text-xs">
+                                          {m.name}
+                                        </span>
+                                        <span className="text-[9px] text-[var(--ink-2)] capitalize">
+                                          {m.role}
+                                        </span>
                                       </div>
                                     </div>
-                                    {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                                    {isSelected && (
+                                      <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                                    )}
                                   </button>
                                 );
                               })}
@@ -1088,10 +1299,17 @@ export function MessageThread({
 
             {menuOpen && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setMenuOpen(false)}
+                />
                 <div className="absolute right-0 mt-1 w-44 rounded-md border border-[var(--border)] bg-[var(--paper)] p-1 shadow-lg z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
                   <button
-                    onClick={() => updateConversationStatus(conversation.status === "open" ? "closed" : "open")}
+                    onClick={() =>
+                      updateConversationStatus(
+                        conversation.status === "open" ? "closed" : "open",
+                      )
+                    }
                     className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-[var(--surface)] transition-colors"
                   >
                     {conversation.status === "open" ? (
@@ -1183,28 +1401,50 @@ export function MessageThread({
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth"
       >
-        <div className="mx-auto max-w-2xl space-y-4">
-          {messages.map((message, i) => (
-            <div key={message.id}>
-              {shouldShowDateSeparator(message, messages[i - 1]) && (
-                <div className="my-4 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-border/60" />
-                  <span className="text-[11px] font-semibold text-[var(--ink-2)] bg-[var(--surface)]/40 px-2 py-0.5 rounded-full">
-                    {formatDateSeparator(message.created_at)}
-                  </span>
-                  <div className="h-px flex-1 bg-border/60" />
-                </div>
-              )}
-              <MessageBubble
-                message={message}
-                onRetry={handleRetry}
-                onReply={setReplyingTo}
-                contactName={contactName}
-                avatarUrl={conversation.contacts?.avatar_url}
-                platform={conversation.platform as Platform}
-              />
-            </div>
-          ))}
+        <div className="mx-auto max-w-4xl space-y-0.5 px-2 md:px-6">
+          {messages.map((message, i) => {
+            const nextMessage = messages[i + 1];
+            const prevMessage = messages[i - 1];
+
+            const isSequentialNext =
+              nextMessage &&
+              nextMessage.direction === message.direction &&
+              !shouldShowDateSeparator(nextMessage, message) &&
+              new Date(nextMessage.created_at).getTime() -
+                new Date(message.created_at).getTime() <
+                60000;
+            const isSequentialPrev =
+              prevMessage &&
+              prevMessage.direction === message.direction &&
+              !shouldShowDateSeparator(message, prevMessage) &&
+              new Date(message.created_at).getTime() -
+                new Date(prevMessage.created_at).getTime() <
+                60000;
+
+            return (
+              <div key={message.id}>
+                {shouldShowDateSeparator(message, messages[i - 1]) && (
+                  <div className="my-8 flex items-center gap-4">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[var(--border)]" />
+                    <span className="text-[12px] font-bold text-[var(--ink-2)] bg-[var(--surface)]/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-[var(--border)]/50 shadow-sm">
+                      {formatDateSeparator(message.created_at)}
+                    </span>
+                    <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[var(--border)]" />
+                  </div>
+                )}
+                <MessageBubble
+                  message={message}
+                  onRetry={handleRetry}
+                  onReply={setReplyingTo}
+                  contactName={contactName}
+                  avatarUrl={conversation.contacts?.avatar_url}
+                  platform={conversation.platform as Platform}
+                  isSequentialNext={isSequentialNext}
+                  isSequentialPrev={isSequentialPrev}
+                />
+              </div>
+            );
+          })}
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -1213,9 +1453,12 @@ export function MessageThread({
       {deleteConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
           <div className="w-full max-w-sm rounded-md border border-[var(--border)] bg-[var(--paper)] p-5 shadow-2xl animate-in zoom-in-95 duration-150">
-            <h4 className="text-base font-bold text-[var(--ink)]">Delete Conversation?</h4>
+            <h4 className="text-base font-bold text-[var(--ink)]">
+              Delete Conversation?
+            </h4>
             <p className="mt-2 text-xs text-[var(--ink-2)] leading-relaxed">
-              This will permanently delete this conversation and its local message history for <strong>{contactName}</strong>.
+              This will permanently delete this conversation and its local
+              message history for <strong>{contactName}</strong>.
             </p>
             <div className="mt-5 flex items-center justify-end gap-2">
               <Button
@@ -1246,15 +1489,18 @@ export function MessageThread({
                 <Mic className="h-6 w-6" />
               </div>
               <div>
-                <h4 className="text-base font-bold text-[var(--ink)]">Microphone Access Denied</h4>
+                <h4 className="text-base font-bold text-[var(--ink)]">
+                  Microphone Access Denied
+                </h4>
                 <p className="text-[11px] text-[var(--ink-2)] font-mono mt-0.5">
                   Browser error: {micErrorInfo.name} ({micErrorInfo.message})
                 </p>
               </div>
             </div>
-            
+
             <p className="text-xs text-[var(--ink-2)] leading-relaxed">
-              Google Chrome or macOS blocked access to your microphone hardware. Follow these two quick checks:
+              Google Chrome or macOS blocked access to your microphone hardware.
+              Follow these two quick checks:
             </p>
 
             <div className="mt-4 space-y-3">
@@ -1264,17 +1510,24 @@ export function MessageThread({
                   <span>1. Check Chrome Site Settings</span>
                 </p>
                 <p className="text-[var(--ink-2)] text-[11px]">
-                  Click the <strong>Tune / Padlock icon 🔒</strong> on the far left of your address bar (URL) and ensure <strong>Microphone</strong> is set to <strong>Allow</strong>.
+                  Click the <strong>Tune / Padlock icon 🔒</strong> on the far
+                  left of your address bar (URL) and ensure{" "}
+                  <strong>Microphone</strong> is set to <strong>Allow</strong>.
                 </p>
               </div>
 
               {/* Check 2: Mac System Settings */}
               <div className="bg-[var(--surface)]/40 p-3.5 rounded-md border border-[var(--border)] text-xs space-y-1.5">
                 <p className="font-bold text-[var(--ink)] flex items-center gap-1.5">
-                  <span>2. Check macOS System Permissions (Crucial on Mac)</span>
+                  <span>
+                    2. Check macOS System Permissions (Crucial on Mac)
+                  </span>
                 </p>
                 <p className="text-[var(--ink-2)] text-[11px]">
-                  Open Mac <strong>System Settings</strong> ➔ <strong>Privacy & Security</strong> ➔ <strong>Microphone</strong> ➔ Make sure <strong>Google Chrome</strong> is toggled <strong>ON</strong>.
+                  Open Mac <strong>System Settings</strong> ➔{" "}
+                  <strong>Privacy & Security</strong> ➔{" "}
+                  <strong>Microphone</strong> ➔ Make sure{" "}
+                  <strong>Google Chrome</strong> is toggled <strong>ON</strong>.
                 </p>
               </div>
             </div>
@@ -1304,236 +1557,254 @@ export function MessageThread({
       )}
 
       {/* Composer */}
-      <div className="border-t border-[var(--border)] bg-[var(--paper)]/95 backdrop-blur-md p-3 sm:p-4 shrink-0">
-        {/* Attachment previews */}
-        {attachments.length > 0 && (
-          <div className="mb-2 flex flex-wrap gap-2">
-            {attachments.map((att, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-xs"
-              >
-                {att.type === "image" ? (
-                  <ImageIcon className="h-3.5 w-3.5 text-primary" />
-                ) : att.type === "audio" ? (
-                  <Volume2 className="h-3.5 w-3.5 text-emerald-500" />
-                ) : (
-                  <Paperclip className="h-3.5 w-3.5 text-[var(--ink-2)]" />
-                )}
-                <span className="max-w-[150px] truncate font-medium">{att.name}</span>
-                <button
-                  onClick={() => removeAttachment(index)}
-                  className="ml-1 text-[var(--ink-2)] hover:text-[var(--ink)] p-0.5 rounded-full"
+      <div className="bg-[var(--surface-2)]/90 backdrop-blur-xl p-4 md:p-6 shrink-0 relative z-20">
+        {/* Container for composer */}
+        <div className="mx-auto max-w-4xl relative">
+          {/* Attachment previews */}
+          {attachments.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {attachments.map((att, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-xs"
                 >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Recording active bar */}
-        {isRecording ? (
-          <div className="flex items-center justify-between rounded-md border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm ">
-            <div className="flex items-center gap-2 text-[var(--danger)] font-bold">
-              <span className="h-3 w-3 rounded-full bg-rose-500 animate-ping" />
-              <span>Recording Voice Note... {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, "0")}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={cancelRecording}
-                className="text-xs text-[var(--ink-2)] hover:text-[var(--ink)]"
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={stopRecording}
-                className="bg-rose-500 hover:bg-rose-600 text-white shadow-sm"
-              >
-                <Square className="h-3.5 w-3.5 mr-1" />
-                Stop & Attach
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-md border border-input bg-[var(--paper)] shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all relative">
-            {/* Mode switch (Chat vs Internal Note) */}
-            <div className="flex items-center justify-between px-3 pt-2 pb-1 border-b border-[var(--border)]/40 text-xs">
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setIsInternal(false)}
-                  className={cn(
-                    "px-2 py-0.5 rounded-md font-semibold transition-colors cursor-pointer",
-                    !isInternal
-                      ? "bg-primary/10 text-primary"
-                      : "text-[var(--ink-2)] hover:bg-[var(--surface)]"
+                  {att.type === "image" ? (
+                    <ImageIcon className="h-3.5 w-3.5 text-primary" />
+                  ) : att.type === "audio" ? (
+                    <Volume2 className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <Paperclip className="h-3.5 w-3.5 text-[var(--ink-2)]" />
                   )}
-                >
-                  Reply to Customer
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsInternal(true)}
-                  className={cn(
-                    "px-2 py-0.5 rounded-md font-semibold transition-colors cursor-pointer",
-                    isInternal
-                      ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
-                      : "text-[var(--ink-2)] hover:bg-[var(--surface)]"
-                  )}
-                >
-                  Internal Note (Team Only)
-                </button>
-              </div>
-            </div>
-
-            {/* Quoting / Replying Banner */}
-            {replyingTo && (
-              <div className="flex items-center justify-between border-b border-[var(--border)] bg-primary/5 px-3 py-2 text-xs">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Reply className="h-4 w-4 text-primary shrink-0" />
-                  <div className="min-w-0">
-                    <p className="font-bold text-[11px] text-primary truncate">
-                      Replying to {replyingTo.direction === "inbound" ? contactName : "You"}
-                    </p>
-                    <p className="text-[11px] text-[var(--ink-2)] truncate">
-                      {replyingTo.text || ((replyingTo.attachments as any[])?.length ? "Attached media" : "Message")}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setReplyingTo(null)}
-                  className="rounded-md p-1 text-[var(--ink-2)] hover:bg-[var(--surface)] hover:text-[var(--ink)] transition-colors cursor-pointer"
-                  title="Cancel reply"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
-
-            {/* Textarea */}
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => {
-                setInput(e.target.value);
-                autoResize();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder={
-                isInternal
-                  ? "Write an internal note for your team..."
-                  : `Message ${contactName}...`
-              }
-              rows={2}
-              className="w-full resize-none bg-transparent px-4 py-2.5 text-xs focus:outline-none placeholder:text-[var(--ink-2)]/60"
-            />
-
-            {/* Bottom tools */}
-            <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
-              <div className="flex items-center gap-1 relative">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingFiles}
-                  className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors disabled:opacity-50"
-                  title="Attach file"
-                >
-                  <Paperclip className="h-4 w-4" />
-                </button>
-
-                {/* Emoji Picker Button */}
-                <div className="relative">
+                  <span className="max-w-[150px] truncate font-medium">
+                    {att.name}
+                  </span>
                   <button
-                    type="button"
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className={cn(
-                      "p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors",
-                      showEmojiPicker && "bg-[var(--surface)] text-[var(--ink)]"
-                    )}
-                    title="Insert emoji"
+                    onClick={() => removeAttachment(index)}
+                    className="ml-1 text-[var(--ink-2)] hover:text-[var(--ink)] p-0.5 rounded-full"
                   >
-                    <Smile className="h-4 w-4" />
+                    <X className="h-3 w-3" />
                   </button>
-
-                  {/* Emoji Popover */}
-                  {showEmojiPicker && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
-                      <div className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-md border border-[var(--border)] bg-popover p-2.5 shadow-xl animate-in slide-in-from-bottom-2 fade-in">
-                        <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
-                          {POPULAR_EMOJIS.map((emoji) => (
-                            <button
-                              key={emoji}
-                              type="button"
-                              onClick={() => handleInsertEmoji(emoji)}
-                              className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--surface)] text-base transition-transform hover:scale-125"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
                 </div>
+              ))}
+            </div>
+          )}
 
-                <button
-                  type="button"
-                  onClick={startRecording}
-                  disabled={uploadingFiles}
-                  className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors disabled:opacity-50"
-                  title="Record voice note"
-                >
-                  <Mic className="h-4 w-4" />
-                </button>
+          {/* Recording active bar */}
+          {isRecording ? (
+            <div className="flex items-center justify-between rounded-3xl border border-rose-500/40 bg-rose-500/10 px-6 py-4 shadow-lg backdrop-blur-md">
+              <div className="flex items-center gap-3 text-[var(--danger)] font-black text-sm">
+                <span className="h-3 w-3 rounded-full bg-rose-500 animate-ping shadow-[var(--danger)]" />
+                <span>
+                  Recording... {Math.floor(recordingTime / 60)}:
+                  {(recordingTime % 60).toString().padStart(2, "0")}
+                </span>
               </div>
-
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={cancelRecording}
+                  className="text-xs text-[var(--ink-2)] hover:text-[var(--ink)]"
+                >
+                  Cancel
+                </Button>
                 <Button
                   size="sm"
-                  onClick={handleSend}
-                  disabled={
-                    (!input.trim() && attachments.length === 0) ||
-                    sending ||
-                    uploadingFiles
-                  }
-                  className={cn(
-                    "rounded-md px-3 text-xs font-semibold shadow-sm transition-all",
-                    isInternal
-                      ? "bg-amber-500 hover:bg-amber-600 text-white"
-                      : "bg-[var(--brand)] text-white hover:opacity-90"
-                  )}
+                  onClick={stopRecording}
+                  className="bg-rose-500 hover:bg-rose-600 text-white shadow-sm"
                 >
-                  {sending || uploadingFiles ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <>
-                      <Send className="h-3.5 w-3.5 mr-1" />
-                      <span>{isInternal ? "Save Note" : "Send"}</span>
-                    </>
-                  )}
+                  <Square className="h-3.5 w-3.5 mr-1" />
+                  Stop & Attach
                 </Button>
               </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="rounded-3xl border-2 border-[var(--border)] bg-[var(--paper)] shadow-xl focus-within:ring-4 focus-within:ring-[var(--brand)]/20 focus-within:border-[var(--brand)]/50 transition-all duration-300 relative overflow-hidden">
+              {/* Mode switch (Chat vs Internal Note) */}
+              <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border)] bg-[var(--surface-2)]/50">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsInternal(false)}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer",
+                      !isInternal
+                        ? "bg-[var(--brand)] text-white shadow-md shadow-[var(--brand)]/20"
+                        : "text-[var(--ink-2)] hover:bg-[var(--surface)]",
+                    )}
+                  >
+                    Customer Reply
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsInternal(true)}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer",
+                      isInternal
+                        ? "bg-amber-500 text-white shadow-md shadow-amber-500/20"
+                        : "text-[var(--ink-2)] hover:bg-[var(--surface)]",
+                    )}
+                  >
+                    Internal Note
+                  </button>
+                </div>
+              </div>
+
+              {/* Quoting / Replying Banner */}
+              {replyingTo && (
+                <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--brand)]/5 px-4 py-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Reply className="h-4 w-4 text-[var(--brand)] shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-bold text-xs text-[var(--brand)] truncate">
+                        Replying to{" "}
+                        {replyingTo.direction === "inbound"
+                          ? contactName
+                          : "You"}
+                      </p>
+                      <p className="text-[11px] font-medium text-[var(--ink-2)] truncate mt-0.5">
+                        {replyingTo.text ||
+                          ((replyingTo.attachments as any[])?.length
+                            ? "Attached media"
+                            : "Message")}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setReplyingTo(null)}
+                    className="rounded-full p-1.5 text-[var(--ink-2)] hover:bg-[var(--danger)]/10 hover:text-[var(--danger)] transition-colors cursor-pointer"
+                    title="Cancel reply"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Textarea */}
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  autoResize();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder={
+                  isInternal
+                    ? "Write an internal note for your team... (Hidden from customer)"
+                    : `Type your message to ${contactName}...`
+                }
+                rows={1}
+                className="w-full resize-none bg-transparent px-5 py-4 text-sm font-medium focus:outline-none placeholder:text-[var(--ink-3)] text-[var(--ink)] min-h-[60px] max-h-[200px] overflow-y-auto"
+              />
+
+              {/* Bottom tools */}
+              <div className="flex items-center justify-between px-4 pb-3 pt-1 border-t border-transparent bg-gradient-to-t from-[var(--surface-2)]/30 to-transparent">
+                <div className="flex items-center gap-1.5 relative">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingFiles}
+                    className="p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors disabled:opacity-50"
+                    title="Attach file"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </button>
+
+                  {/* Emoji Picker Button */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className={cn(
+                        "p-1.5 rounded-md text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--surface)] transition-colors",
+                        showEmojiPicker &&
+                          "bg-[var(--surface)] text-[var(--ink)]",
+                      )}
+                      title="Insert emoji"
+                    >
+                      <Smile className="h-4 w-4" />
+                    </button>
+
+                    {/* Emoji Popover */}
+                    {showEmojiPicker && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowEmojiPicker(false)}
+                        />
+                        <div className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-md border border-[var(--border)] bg-popover p-2.5 shadow-xl animate-in slide-in-from-bottom-2 fade-in">
+                          <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
+                            {POPULAR_EMOJIS.map((emoji) => (
+                              <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => handleInsertEmoji(emoji)}
+                                className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--surface)] text-base transition-transform hover:scale-125"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={startRecording}
+                    disabled={uploadingFiles}
+                    className="p-2 rounded-full text-[var(--ink-2)] hover:text-[var(--brand)] hover:bg-[var(--brand-soft)] transition-colors disabled:opacity-50"
+                    title="Record voice note"
+                  >
+                    <Mic className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="default"
+                    onClick={handleSend}
+                    disabled={
+                      (!input.trim() && attachments.length === 0) ||
+                      sending ||
+                      uploadingFiles
+                    }
+                    className={cn(
+                      "rounded-full px-6 shadow-xl transition-all font-bold tracking-wide active:scale-95 text-sm",
+                      isInternal
+                        ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20"
+                        : "bg-gradient-to-r from-[var(--brand)] to-[var(--brand-hover)] text-white hover:opacity-90 shadow-[var(--brand)]/30 border-t border-white/20",
+                    )}
+                  >
+                    {sending || uploadingFiles ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        <span>{isInternal ? "Save Note" : "Send"}</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
