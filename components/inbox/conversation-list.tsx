@@ -1,23 +1,8 @@
 "use client";
 
-import { Archive, Trash2, Mail, MailOpen, useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Search,
-  MessageSquare,
-  X,
-  Archive,
-  Clock,
-  CheckCircle,
-  RotateCcw,
-  Loader2,
-  RefreshCw,
-  ChevronDown,
-  Sparkles,
-  MoreVertical,
-  BellOff,
-  BotOff,
-} from "lucide-react";
+import { Search, MessageSquare, X, Archive, Clock, CheckCircle, RotateCcw, Loader2, RefreshCw, ChevronDown, Sparkles, MoreVertical, BellOff, BotOff, Trash2, Mail, MailOpen } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useInboxStore,
