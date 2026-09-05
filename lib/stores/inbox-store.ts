@@ -81,6 +81,7 @@ export const useInboxStore = create<InboxState>()(
     // ── Initial State ─────────────────────────────────────────────
     conversations: [],
     selectedConversationId: null,
+    selectedConversations: new Set(),
     unreadCount: 0,
     unreadByPlatform: {},
     filters: { status: "open", platform: "all", channelId: "all", search: "" },
